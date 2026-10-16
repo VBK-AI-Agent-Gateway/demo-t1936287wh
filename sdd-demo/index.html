@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SDD 看板 · 规格驱动开发</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#141b33; --line:#24304f; --ink:#e8eeff;
+    --muted:#8fa0c8; --accent:#5b8cff; --ok:#28c76f; --warn:#f2a93b; --bad:#e35d5d;
+    --radius:14px;
+    * { box-sizing:border-box; }
+    html,body{margin:0;padding:0}
+    body{
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+      background:radial-gradient(1200px 600px at 10% -10%,#182144 0%,var(--bg) 55%);
+      color:var(--ink); min-height:100vh; line-height:1.5;
+    }
+    header{padding:28px 20px 10px;max-width:1080px;margin:0 auto}
+    h1{margin:0 0 6px;font-size:26px;letter-spacing:.5px}
+    .sub{color:var(--muted);font-size:14px}
+    main{max-width:1080px;margin:0 auto;padding:16px 20px 48px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 14px}
+    input[type=text],select{
+      background:var(--panel);border:1px solid var(--line);color:var(--ink);
+      padding:10px 12px;border-radius:10px;font-size:14px;outline:none;
+    }
+    input[type=text]{flex:1;min-width:200px}
+    button{
+      background:var(--accent);border:none;color:#fff;padding:10px 16px;
+      border-radius:10px;font-size:14px;cursor:pointer;transition:.15s;
+    }
+    button:hover{filter:brightness(1.1)}
+    button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+    button.ghost:hover{color:var(--ink);border-color:var(--accent)}
+    .board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
+    .col{background:rgba(20,27,51,.75);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-height:220px}
+    .col h2{margin:2px 4px 10px;font-size:14px;color:var(--muted);display:flex;justify-content:space-between}
+    .col h2 .cnt{background:var(--line);border-radius:99px;padding:0 8px;font-size:12px}
+    .card{
+      background:var(--panel);border:1px solid var(--line);border-radius:12px;
+      padding:10px 12px;margin-bottom:10px;cursor:grab;transition:.15s;
+    }
+    .card:hover{border-color:var(--accent);transform:translateY(-1px)}
+    .card .t{font-size:14px;font-weight:600;margin-bottom:4px}
+    .card .d{font-size:12px;color:var(--muted);word-break:break-all}
+    .card .meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+    .tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#20294a;color:var(--muted)}
+    .tag.p0{background:rgba(227,93,93,.18);color:#ff8a8a}
+    .tag.p1{background:rgba(242,169,59,.16);color:#f2c078}
+    .tag.p2{background:rgba(40,199,111,.15);color:#6fe0a3}
+    .act{display:flex;gap:6px}
+    .act button{padding:4px 8px;font-size:12px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;color:var(--muted);font-size:13px}
+    .stats b{color:var(--ink)}
+    footer{max-width:1080px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:12px}
+    .empty{color:var(--muted);font-size:12px;text-align:center;padding:18px 0;opacity:.6}
+    @media (max-width:900px){ .board{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:560px){
+      .board{grid-template-columns:1fr}
+      header{padding-top:20px}
+      input[type=text]{min-width:100%}
+    }
+</style>
+</head>
+<body>
+<header>
+  <h1>📋 SDD 看板</h1>
+  <div class="sub">规格驱动开发 · SPEC → PLAN → TASKS → DONE，拖动卡片推进状态</div>
+</header>
+<main>
+  <div class="toolbar">
+    <input id="title" type="text" placeholder="任务标题（必填）" />
+    <input id="desc" type="text" placeholder="验收标准（可选）" />
+    <select id="prio">
+      <option value="P0">P0</option>
+      <option value="P1" selected>P1</option>
+      <option value="P2">P2</option>
+    </select>
+    <button id="add">+ 添加任务</button>
+    <button id="seed" class="ghost">载入示例</button>
+    <button id="reset" class="ghost">清空</button>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="board" id="board"></div>
+</main>
+<footer>纯前端本地存储（localStorage），无后端、无追踪。</footer>
+<script>
+(function(){
+  var COLS = [
+    {id:'spec',  name:'SPEC 规格'},
+    {id:'plan',  name:'PLAN 方案'},
+    {id:'tasks', name:'TASKS 执行'},
+    {id:'done',  name:'DONE 完成'}
+  ];
+  var KEY = 'sdd-board-v1';
+  var items = [];
+
+  function load(){
+    try{ items = JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch(e){ items = []; }
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(items)); }catch(e){}
+  }
+  function uid(){ return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function render(){
+    var board = document.getElementById('board');
+    board.innerHTML = '';
+    COLS.forEach(function(col){
+      var list = items.filter(function(i){ return i.col === col.id; });
+      var div = document.createElement('div');
+      div.className = 'col';
+      div.dataset.col = col.id;
+      var html = '<h2>'+col.name+'<span class="cnt">'+list.length+'</span></h2>';
+      if(!list.length){ html += '<div class="empty">拖动卡片到这里</div>'; }
+      list.forEach(function(it){
+        html += '<div class="card" draggable="true" data-id="'+it.id+'">'
+          + '<div class="t">'+esc(it.title)+'</div>'
+          + (it.desc ? '<div class="d">✓ '+esc(it.desc)+'</div>' : '')
+          + '<div class="meta"><span class="tag '+it.prio.toLowerCase()+'">'+it.prio+'</span>'
+          + '<span class="act">'
+          + '<button data-act="left" title="上一步">←</button>'
+          + '<button data-act="del" title="删除">✕</button>'
+          + '<button data-act="right" title="下一步">→</button>'
+          + '</span></div></div>';
+      });
+      div.innerHTML = html;
+      board.appendChild(div);
+    });
+    bindDrag();
+    renderStats();
+  }
+
+  function renderStats(){
+    var total = items.length;
+    var done = items.filter(function(i){ return i.col==='done'; }).length;
+    var p0 = items.filter(function(i){ return i.prio==='P0' && i.col!=='done'; }).length;
+    var pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById('stats').innerHTML =
+      '<span>总任务 <b>'+total+'</b></span>'
+      + '<span>已完成 <b>'+done+'</b>（'+pct+'%）</span>'
+      + '<span>未完成 P0 <b>'+p0+'</b></span>';
+  }
+
+  function bindDrag(){
+    var cards = document.querySelectorAll('.card');
+    var cols = document.querySelectorAll('.col');
+    cards.forEach(function(c){
+      c.addEventListener('dragstart', function(e){
+        e.dataTransfer.setData('text/plain', c.dataset.id);
+        c.style.opacity = .5;
+      });
+      c.addEventListener('dragend', function(){ c.style.opacity = 1; });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('dragover', function(e){ e.preventDefault(); });
+      col.addEventListener('drop', function(e){
+        e.preventDefault();
+        var id = e.dataTransfer.getData('text/plain');
+        var it = items.find(function(i){ return i.id===id; });
+        if(it){ it.col = col.dataset.col; save(); render(); }
+      });
+    });
+  }
+
+  function move(id, dir){
+    var it = items.find(function(i){ return i.id===id; });
+    if(!it) return;
+    var idx = COLS.findIndex(function(c){ return c.id===it.col; });
+    var next = idx + dir;
+    if(next >= 0 && next < COLS.length){ it.col = COLS[next].id; save(); render(); }
+  }
+
+  document.getElementById('board').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-act]');
+    if(!btn) return;
+    var id = btn.closest('.card').dataset.id;
+    var act = btn.dataset.act;
+    if(act === 'del'){
+      items = items.filter(function(i){ return i.id !== id; });
+      save(); render();
+    } else if(act === 'right'){ move(id, 1); }
+    else if(act === 'left'){ move(id, -1); }
+  });
+
+  document.getElementById('add').addEventListener('click', function(){
+    var t = document.getElementById('title').value.trim();
+    if(!t){ document.getElementById('title').focus(); return; }
+    items.push({
+      id: uid(),
+      title: t,
+      desc: document.getElementById('desc').value.trim(),
+      prio: document.getElementById('prio').value,
+      col: 'spec'
+    });
+    document.getElementById('title').value = '';
+    document.getElementById('desc').value = '';
+    save(); render();
+  });
+
+  document.getElementById('title').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') document.getElementById('add').click();
+  });
+
+  document.getElementById('seed').addEventListener('click', function(){
+    items = [
+      {id:uid(), title:'SPEC: 明确输入输出与验收', desc:'一段话描述做完长什么样', prio:'P0', col:'done'},
+      {id:uid(), title:'PLAN: 选定技术栈与文件结构', desc:'零构建静态页', prio:'P1', col:'plan'},
+      {id:uid(), title:'T1: 环境检查',  desc:'git/curl/密钥就绪', prio:'P2', col:'done'},
+      {id:uid(), title:'T2: 编写页面',  desc:'单文件 index.html', prio:'P1', col:'tasks'},
+      {id:uid(), title:'T3: 部署到 Pages', desc:'status=built', prio:'P0', col:'spec'}
+    ];
+    save(); render();
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    if(confirm('确认清空所有任务？')){ items = []; save(); render(); }
+  });
+
+  load(); render();
+})();
+</script>
+</body>
+</html>
