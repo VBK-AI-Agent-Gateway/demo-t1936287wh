@@ -1,0 +1,31 @@
+{
+  "page": "a11y-demo/index.html",
+  "axe": {
+    "tool": "axe-style ruleset (offline subset)",
+    "description": "核心 WCAG A/AA 规则静态等价检查",
+    "violations": [],
+    "counts": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 0
+    },
+    "pass": true
+  },
+  "breakpoints": {
+    "widths": [
+      375,
+      768,
+      1280
+    ],
+    "assertions": {
+      "viewport_meta": true,
+      "grid(gap+fr)": true,
+      "breakpoint_640": true,
+      "breakpoint_960": true,
+      "focus_visible(:focus-visible)": true,
+      "aria_live": true,
+      "semantic_landmarks(header/main/footer)": true
+    },
+    "pass": true
+  }
+}
