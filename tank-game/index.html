@@ -16,7 +16,7 @@
   #msg p { color:#9fd0ff; margin:5px 0; font-size:14px; }
   #msg button { margin-top:18px; padding:12px 34px; font-size:18px; font-family:inherit; background:#c33; color:#fff; border:2px solid #f77; cursor:pointer; }
   #msg button:hover { background:#e55; }
-  #lore { position:fixed; inset:0; background:linear-gradient(#0b1020ee,#0b1020f5),repeating-linear-gradient(45deg,#1a2340 0 12px,#141c34 12px 24px); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9; padding:24px; text-align:center; }
+  #lore { position:fixed; inset:0; background:linear-gradient(rgba(6,9,20,.72),rgba(6,9,20,.86)), url("source.png") center/cover no-repeat, #0b1020; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9; padding:24px; text-align:center; }
   #lore h1 { color:#ffd75e; font-size:30px; margin-bottom:6px; text-shadow:3px 3px #7a3b00; letter-spacing:2px; }
   #lore .era { color:#c66; letter-spacing:6px; font-size:14px; margin-bottom:18px; }
   #loreArt { width:min(420px,86vw); height:150px; image-rendering:pixelated; border:2px solid #444; background:#101830; margin-bottom:18px; }
@@ -102,6 +102,22 @@
   };
 
   function zoneOf() { return LORE[(stage - 1) % LORE.length]; }
+
+  // 用户提供的图片作为游戏战斗背景
+  var bgImg = new Image();
+  bgImg.src = "source.png";
+  function drawBattleBg() {
+    if (bgImg.complete && bgImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      // 按 cover 比例铺满 520x520 画布
+      var iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
+      var s = Math.max(W / iw, H / ih);
+      var dw = iw * s, dh = ih * s;
+      ctx.drawImage(bgImg, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      ctx.restore();
+    }
+  }
 
   function drawLoreArt() {
     var a = document.getElementById("loreArt"); if (!a) return;
@@ -505,6 +521,8 @@
   function draw() {
     var th = THEME[zoneOf().theme] || THEME.grass;
     ctx.fillStyle = th.ground; ctx.fillRect(0, 0, W, H);
+    drawBattleBg(); // 用户图片背景
+    ctx.fillStyle = th.ground; ctx.globalAlpha = 0.35; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
     // 背景纹理: 草丛/泥点/碎砖散布
     var si = (stage * 7919) % 1000;
     for (var d = 0; d < 90; d++) {
