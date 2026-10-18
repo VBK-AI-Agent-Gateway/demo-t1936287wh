@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>坦克大战 · 经典坦克网页版</title>
+<title>铁甲突围 · 经典坦克网页版(战场背景)</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { background:#000; color:#ddd; font-family:"Courier New",monospace; height:100%; overflow:hidden; }
@@ -16,6 +16,19 @@
   #msg p { color:#9fd0ff; margin:5px 0; font-size:14px; }
   #msg button { margin-top:18px; padding:12px 34px; font-size:18px; font-family:inherit; background:#c33; color:#fff; border:2px solid #f77; cursor:pointer; }
   #msg button:hover { background:#e55; }
+  #lore { position:fixed; inset:0; background:linear-gradient(#0b1020ee,#0b1020f5),repeating-linear-gradient(45deg,#1a2340 0 12px,#141c34 12px 24px); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9; padding:24px; text-align:center; }
+  #lore h1 { color:#ffd75e; font-size:30px; margin-bottom:6px; text-shadow:3px 3px #7a3b00; letter-spacing:2px; }
+  #lore .era { color:#c66; letter-spacing:6px; font-size:14px; margin-bottom:18px; }
+  #loreArt { width:min(420px,86vw); height:150px; image-rendering:pixelated; border:2px solid #444; background:#101830; margin-bottom:18px; }
+  #loreText { color:#cfe3ff; font-size:15px; line-height:1.7; max-width:560px; min-height:96px; white-space:pre-wrap; }
+  #loreCaret { color:#ffd75e; }
+  #loreBtn { margin-top:20px; padding:12px 34px; font-size:18px; font-family:inherit; background:#c33; color:#fff; border:2px solid #f77; cursor:pointer; }
+  #loreBtn:hover { background:#e55; }
+  #brief { position:fixed; inset:0; background:rgba(5,8,16,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:8; text-align:center; padding:20px; }
+  #brief h2 { color:#ffd75e; font-size:26px; margin-bottom:4px; }
+  #brief .zone { color:#9fd0ff; letter-spacing:4px; font-size:13px; margin-bottom:14px; }
+  #brief .intel { color:#cfe3ff; font-size:15px; line-height:1.7; max-width:540px; white-space:pre-wrap; }
+  #brief button { margin-top:20px; padding:12px 34px; font-size:17px; font-family:inherit; background:#2a5; color:#fff; border:2px solid #5f8; cursor:pointer; }
   .hidden { display:none !important; }
   #touch { display:none; gap:8px; align-items:center; justify-content:center; width:100%; padding-top:4px; }
   .tb { width:54px; height:54px; font-size:22px; background:#222; border:2px solid #666; color:#ffd75e; border-radius:8px; user-select:none; -webkit-user-select:none; }
@@ -30,6 +43,7 @@
     <span>🚩 关卡 <b id="stage">1</b></span>
     <span>👾 敌军 <b id="enemies">0</b></span>
     <span>🔥 火力 <b id="power">1</b></span>
+    <span>🗺️ 战区 <b id="zone">—</b></span>
   </div>
   <canvas id="cv" width="520" height="520" aria-label="坦克大战游戏画布"></canvas>
   <div id="touch">
@@ -40,8 +54,22 @@
     <button class="tb" data-k="Space" aria-label="开火">💣</button>
   </div>
 </div>
+
+<div id="lore" class="hidden">
+  <h1>铁甲突围</h1>
+  <div class="era">1944 — 1945 · 欧洲战场</div>
+  <canvas id="loreArt" width="420" height="150" aria-label="战场像素画"></canvas>
+  <div id="loreText"><span id="loreCaret">▌</span></div>
+  <button id="loreBtn" class="hidden">进入战区简报 →</button>
+</div>
+<div id="brief" class="hidden">
+  <h2 id="briefTitle">战区简报</h2>
+  <div class="zone" id="briefZone"></div>
+  <div class="intel" id="briefIntel"></div>
+  <button id="briefBtn">发动进攻！</button>
+</div>
 <div id="msg">
-  <h1 id="msgTitle">坦克大战</h1>
+  <h1 id="msgTitle">铁甲突围</h1>
   <p id="msgLine1">WASD / 方向键 移动 ｜ 空格 / J 开火 ｜ P 暂停</p>
   <p id="msgLine2">击毁全部敌军，保护基地（老鹰）！</p>
   <p>道具：🔧 升级火力 ｜ ❤ 加一命 ｜ ☢ 全屏轰炸</p>
@@ -52,6 +80,73 @@
 (function () {
   var cv = document.getElementById("cv"), ctx = cv.getContext("2d");
   var TILE = 26, COLS = 20, ROWS = 20, W = COLS * TILE, H = ROWS * TILE;
+
+  var LORE = [
+    { zone:"诺曼底灌木篱墙", era:"1944 · 法国", theme:"grass",
+      brief:"敌军装甲纵队藏匿于树篱之间。\n你的任务：穿越灌木篱墙封锁线，\n击毁拦路坦克，夺取前沿阵地。\n地形：草地 + 泥泞壕沟，可击毁砖墙。" },
+    { zone:"阿登森林", era:"1944 · 比利时", theme:"forest",
+      brief:"严寒中敌军负隅顽抗。\n任务：沿林间小道突进，肃清残敌。\n地形：林地 + 钢制工事，火力点密集。" },
+    { zone:"莱茵河渡口", era:"1945 · 德国", theme:"mud",
+      brief:"渡河前哨站已暴露你的行踪。\n任务：突破河岸壕沟网，护送推进。\n地形：泥地 + 交叉堑壕，敌军增援频繁。" },
+    { zone:"柏林街垒", era:"1945 · 柏林", theme:"street",
+      brief:"最后的巷战。断壁残垣间处处伏击。\n任务：摧毁街垒守军，终结战役。\n地形：街道 + 废墟，无险可守，速战速决。" },
+    { zone:"太平洋环礁", era:"1944 · 太平洋", theme:"sand",
+      brief:"珊瑚岛礁上的意外遭遇战。\n任务：在开阔沙地歼灭守岛装甲。\n地形：沙地 + 弹坑，几乎无掩体。" }
+  ];
+  var THEME = {
+    grass:  { ground:"#20351c", grid:"#1a2c17", decor:"#2c4a24" },
+    forest: { ground:"#182a1e", grid:"#132117", decor:"#0f3b28" },
+    mud:    { ground:"#2e2418", grid:"#241c12", decor:"#4a3a20" },
+    street: { ground:"#26262e", grid:"#1d1d24", decor:"#3a3a44" },
+    sand:   { ground:"#3a3624", grid:"#2e2b1c", decor:"#56503a" }
+  };
+
+  function zoneOf() { return LORE[(stage - 1) % LORE.length]; }
+
+  function drawLoreArt() {
+    var a = document.getElementById("loreArt"); if (!a) return;
+    var g = a.getContext("2d");
+    g.fillStyle = "#101830"; g.fillRect(0, 0, 420, 150);
+    g.fillStyle = "#1c2b52"; g.fillRect(0, 0, 420, 60);
+    g.fillStyle = "#ffd75e"; g.fillRect(350, 18, 16, 16);
+    g.fillStyle = "#0d1424"; for (var i = 0; i < 40; i++) g.fillRect((i * 53) % 420, (i * 29) % 55, 2, 2);
+    g.fillStyle = "#14261a"; g.fillRect(0, 60, 420, 90);
+    g.fillStyle = "#1e3a22";
+    for (i = 0; i < 14; i++) { var tx = i * 32 + 8; g.beginPath(); g.moveTo(tx, 70); g.lineTo(tx + 12, 40); g.lineTo(tx + 24, 70); g.fill(); }
+    g.fillStyle = "#2a4a2a"; for (i = 0; i < 60; i++) g.fillRect((i * 47) % 420, 70 + ((i * 31) % 80), 3, 3);
+    g.fillStyle = "#3a3226"; g.fillRect(0, 120, 420, 30);
+    g.fillStyle = "#0a0a0a"; g.fillRect(60, 96, 70, 26); g.fillRect(78, 84, 34, 14); g.fillRect(108, 88, 46, 6);
+    g.fillStyle = "#d9a441"; g.fillRect(64, 100, 62, 18); g.fillRect(82, 88, 26, 10);
+    g.fillStyle = "#111"; g.fillRect(66, 118, 14, 14); g.fillRect(112, 118, 14, 14);
+    g.fillStyle = "#555"; g.fillRect(68, 121, 8, 8); g.fillRect(114, 121, 8, 8);
+    g.fillStyle = "#c66"; g.fillRect(300, 96, 50, 20); g.fillRect(316, 88, 30, 10);
+    g.fillStyle = "#000"; g.fillRect(302, 112, 10, 10); g.fillRect(338, 112, 10, 10);
+    g.fillStyle = "#ffd75e"; g.font = "12px 'Courier New',monospace"; g.textAlign = "left";
+    g.fillText("EST. 1944 — ARMORED BREAKOUT", 12, 142);
+  }
+
+  var loreFull = "1944年，诺曼底登陆后的欧洲战场。\n你是一名孤军深入的坦克手，奉命驾驶铁甲战车穿越壕沟密布的封锁线。\n\n灌木篱墙后埋伏着敌军装甲，堑壕与废墟间寸步难行。\n唯有击毁拦路之敌，才能一路突进，直捣敌阵核心。\n\n历史，将由履带碾过的地方书写。";
+  function showLore() {
+    var el = document.getElementById("lore"); if (!el) return;
+    el.classList.remove("hidden"); drawLoreArt();
+    var t = document.getElementById("loreText"), i = 0;
+    var caret = '<span id="loreCaret">\u25CC</span>';
+    (function type() {
+      if (!document.getElementById("lore").classList.contains("hidden")) {
+        t.innerHTML = loreFull.slice(0, i) + caret; i++;
+        if (i <= loreFull.length) setTimeout(type, 28);
+        else document.getElementById("loreBtn").classList.remove("hidden");
+      }
+    })();
+  }
+  function showBrief() {
+    document.getElementById("lore").classList.add("hidden");
+    var z = zoneOf();
+    document.getElementById("briefZone").textContent = z.era + " · " + z.zone;
+    document.getElementById("briefTitle").textContent = "战区简报 · 第 " + stage + " 关";
+    document.getElementById("briefIntel").textContent = z.brief;
+    document.getElementById("brief").classList.remove("hidden");
+  }
   cv.width = W; cv.height = H;
   function $(id) { return document.getElementById(id); }
   var msgEl = $("msg"), btn = $("btn");
@@ -134,16 +229,19 @@
   }
   function startGame() {
     score = 0; lives = 3; stage = 1; resetStage();
-    $("msgTitle").textContent = "坦克大战";
+    $("msgTitle").textContent = "铁甲突围";
     $("msgLine1").textContent = "WASD / 方向键 移动 ｜ 空格 / J 开火 ｜ P 暂停";
-    $("msgLine2").textContent = "击毁全部敌军，保护基地（老鹰）！";
+    $("msgLine2").textContent = "穿越封锁线，击毁全部敌军，保护基地（老鹰）！";
     btn.textContent = "开始游戏";
-    state = "play"; msgEl.classList.add("hidden"); updateHUD();
+    msgEl.classList.add("hidden");
+    state = "play"; updateHUD();
+    showLore(); // 开场背景故事
   }
   function updateHUD() {
     hud.lives.textContent = lives; hud.score.textContent = score;
     hud.stage.textContent = stage; hud.enemies.textContent = enemiesLeft;
     hud.power.textContent = power;
+    var zEl = document.getElementById("zone"); if (zEl) zEl.textContent = zoneOf().zone;
   }
 
   // ---- 输入 ----
@@ -173,6 +271,10 @@
     b.addEventListener("touchcancel", off, { passive: false });
   });
   btn.onclick = startGame;
+  document.getElementById("loreBtn").onclick = showBrief;
+  document.getElementById("briefBtn").onclick = function () {
+    document.getElementById("brief").classList.add("hidden");
+  };
 
   var DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
@@ -333,8 +435,9 @@
   }
   function winStage() {
     if (state !== "play") return;
-    state = "stageclear"; clearTimer = 130;
-    score += 500; updateHUD();
+    score += 500; stage += 1; resetStage(); updateHUD();
+    showBrief(); // 关卡间战区背景简报过场
+    state = "play";
   }
   function gameOver(text) {
     state = "over";
@@ -400,13 +503,29 @@
     ctx.fillText(map[p.kind], p.x + TILE / 2, p.y + TILE - 6);
   }
   function draw() {
-    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "#111"; ctx.lineWidth = 1;
+    var th = THEME[zoneOf().theme] || THEME.grass;
+    ctx.fillStyle = th.ground; ctx.fillRect(0, 0, W, H);
+    // 背景纹理: 草丛/泥点/碎砖散布
+    var si = (stage * 7919) % 1000;
+    for (var d = 0; d < 90; d++) {
+      var dx = (d * 173 + si * 13) % W, dy = (d * 271 + si * 7) % H;
+      ctx.fillStyle = th.decor; ctx.fillRect(dx, dy, 3, 3);
+    }
+    ctx.strokeStyle = th.grid; ctx.lineWidth = 1;
     var i;
     for (i = 0; i <= COLS; i++) {
       ctx.beginPath(); ctx.moveTo(i * TILE, 0); ctx.lineTo(i * TILE, H); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0, i * TILE); ctx.lineTo(W, i * TILE); ctx.stroke();
     }
+    // 战区背景装饰: 每关固定的树影/弹坑/废墟剪影(不阻挡移动)
+    ctx.globalAlpha = 0.55;
+    for (d = 0; d < 8; d++) {
+      var ex = (d * 137 + si * 29) % (W - 30), ey = (d * 211 + si * 11) % (H - 30);
+      if (zoneOf().theme === "street") { ctx.fillStyle = "#3a3a44"; ctx.fillRect(ex, ey, 18, 14); ctx.fillStyle = "#26262e"; ctx.fillRect(ex + 3, ey + 3, 5, 5); ctx.fillRect(ex + 11, ey + 3, 5, 5); }
+      else if (zoneOf().theme === "sand") { ctx.fillStyle = "#241f14"; ctx.beginPath(); ctx.ellipse(ex + 9, ey + 7, 9, 6, 0, 0, 6.3); ctx.fill(); }
+      else { ctx.fillStyle = "#0d1f14"; ctx.beginPath(); ctx.arc(ex + 8, ey + 8, 8, 0, 6.3); ctx.fill(); ctx.fillStyle = "#0a150d"; ctx.fillRect(ex + 6, ey + 12, 4, 7); }
+    }
+    ctx.globalAlpha = 1;
     var r, c;
     for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
       var v = grid[r][c];
