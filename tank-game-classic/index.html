@@ -171,16 +171,15 @@ function tankBlocked(x,y){
 }
 function tryMove(t, dir, sp){
   let nx=t.x, ny=t.y;
+  // 第一步：把"垂直于移动方向"的坐标强吸附到格子边界，保证坦克只占一列/一行
+  if(dir==='left'||dir==='right'){
+    ny = Math.round(ny/TS)*TS;           // 水平移动 → 纵向吸附
+  } else {
+    nx = Math.round(nx/TS)*TS;           // 垂直移动 → 横向吸附
+  }
+  // 第二步：沿移动方向推进
   if(dir==='left') nx-=sp; else if(dir==='right') nx+=sp;
   else if(dir==='up') ny-=sp; else ny+=sp;
-  // 对齐：沿移动方向先对齐格子再推进
-  if(dir==='left'||dir==='right'){
-    const aligned = Math.round(ny/TS)*TS;
-    if(Math.abs(aligned-ny)<sp*2) ny = aligned;
-  } else {
-    const aligned = Math.round(nx/TS)*TS;
-    if(Math.abs(aligned-nx)<sp*2) nx = aligned;
-  }
   if(!tankBlocked(nx,ny)){ t.x=nx; t.y=ny; t.dir=dir; return true; }
   return false;
 }
