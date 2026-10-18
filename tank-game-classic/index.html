@@ -246,10 +246,6 @@ function enemyAI(e){
   e.turnT--;
   // 随机换向
   if(e.turnT<=0){
-    const dirs=['left','right','up','down'].filter(d=>{
-      const t={x:e.x,y:e.y,dir:d};
-      return !tryMove({...t}, d, e.speed);
-    });
     // 换一个能走的方向
     const options=['down','left','right','up'];
     for(const d of options){
@@ -447,8 +443,11 @@ function update(){
 // ===== 渲染 =====
 const C_BRICK='#b5502a', C_STEEL='#e8e8e8', C_WATER='#2a5cd6', C_GRASS='#2e8b2e';
 function drawMap(){
-  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
-    const v=G.map[y][x], px=x*TS, py=y*TS;
+  for(let y=0;y<ROWS;y++){
+    const row=G.map[y];
+    if(!row) continue;
+    for(let x=0;x<COLS;x++){
+    const v=row[x], px=x*TS, py=y*TS;
     if(v===1){
       ctx.fillStyle=C_BRICK; ctx.fillRect(px,py,TS,TS);
       ctx.fillStyle='#8a3a1c';
@@ -483,17 +482,22 @@ function drawMap(){
       ctx.fillStyle='#e33d1c';
       ctx.fillRect(px+TS/2-1,py+2,3,10);
     }
+    }
   }
 }
 function drawGrass(){
-  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
-    if(G.map[y][x]===4){
+  for(let y=0;y<ROWS;y++){
+    const row=G.map[y];
+    if(!row) continue;
+    for(let x=0;x<COLS;x++){
+    if(row[x]===4){
       const px=x*TS, py=y*TS;
       ctx.fillStyle=C_GRASS; ctx.fillRect(px,py,TS,TS);
       ctx.fillStyle='#3fbf3f';
       for(let k=0;k<6;k++){
         ctx.fillRect(px+3+((k*7)%20), py+3+((k*5)%18), 4, 6);
       }
+    }
     }
   }
 }
@@ -537,6 +541,7 @@ function drawTank(t, isPlayer){
 function render(){
   ctx.fillStyle='#636363';
   ctx.fillRect(0,0,CW,CH);
+  if(!G.map || G.map.length===0) return;
   drawMap();
   // 草下的坦克
   const p=G.player;
@@ -584,7 +589,10 @@ function render(){
   }
 }
 
-function loop(){ update(); render(); requestAnimationFrame(loop); }
+function loop(){
+  try{ update(); render(); }catch(e){ console.error('loop error:', e); }
+  requestAnimationFrame(loop);
+}
 loop();
 </script>
 </body>
