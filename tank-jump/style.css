@@ -23,7 +23,7 @@ h1 {
 .hud b { color: #a7f070; }
 canvas {
   display: block;
-  background: #86b6f0;
+  background: #86b6f0 url('background.jpg') center/cover no-repeat;
   border: 3px solid #000;
   image-rendering: pixelated;
   max-width: 100%;
