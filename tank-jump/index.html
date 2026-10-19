@@ -315,23 +315,38 @@ function update(){
   }
 }
 
+// ---------- 背景图 ----------
+var bgImg = new Image();
+bgImg.src = 'background.jpg';
+var bgReady = false;
+bgImg.onload = function(){ bgReady = true; };
+bgImg.onerror = function(){ bgReady = false; };
+
 // ---------- 绘制 ----------
 function draw(){
   ctx.clearRect(0,0,VW,VH);
-  var g=ctx.createLinearGradient(0,0,0,VH);
-  g.addColorStop(0,'#1b2233'); g.addColorStop(1,'#2a3348');
-  ctx.fillStyle=g; ctx.fillRect(0,0,VW,VH);
-  // 星星
-  ctx.fillStyle='rgba(255,255,255,.5)';
-  for(var s=0;s<40;s++){
-    var sx=((s*137 - camX*0.1)%VW+VW)%VW, sy=(s*61)%260;
-    ctx.fillRect(sx,sy,2,2);
-  }
-  // 远山
-  ctx.fillStyle='#232c40';
-  for(var m=0;m<8;m++){
-    var bx=(((m*300 - camX*0.3)%(VW+400))+(VW+400))%(VW+400)-200;
-    ctx.beginPath(); ctx.moveTo(bx-160,GROUND_Y); ctx.lineTo(bx,GROUND_Y-150); ctx.lineTo(bx+160,GROUND_Y); ctx.fill();
+  if(bgReady){
+    // 用户背景图：全屏铺底 + 轻微暗化保证前景可读
+    var off = (camX / Math.max(1, W*TILE - VW)) * (VW*0.12);
+    ctx.drawImage(bgImg, -off, 0, VW*1.12, VH);
+    ctx.fillStyle = 'rgba(8,10,16,.30)';
+    ctx.fillRect(0,0,VW,VH);
+  } else {
+    var g=ctx.createLinearGradient(0,0,0,VH);
+    g.addColorStop(0,'#1b2233'); g.addColorStop(1,'#2a3348');
+    ctx.fillStyle=g; ctx.fillRect(0,0,VW,VH);
+    // 星星
+    ctx.fillStyle='rgba(255,255,255,.5)';
+    for(var s=0;s<40;s++){
+      var sx=((s*137 - camX*0.1)%VW+VW)%VW, sy=(s*61)%260;
+      ctx.fillRect(sx,sy,2,2);
+    }
+    // 远山
+    ctx.fillStyle='#232c40';
+    for(var m=0;m<8;m++){
+      var bx=(((m*300 - camX*0.3)%(VW+400))+(VW+400))%(VW+400)-200;
+      ctx.beginPath(); ctx.moveTo(bx-160,GROUND_Y); ctx.lineTo(bx,GROUND_Y-150); ctx.lineTo(bx+160,GROUND_Y); ctx.fill();
+    }
   }
 
   ctx.save();
