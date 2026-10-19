@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>坦克跳坑 · Tank Hops</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #14161c; color: #eee;
+    font-family: "Courier New", monospace; overflow: hidden; }
+  #wrap { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; }
+  #hud { position: absolute; top: 8px; left: 10px; right: 10px; display: flex;
+    justify-content: space-between; font-size: 14px; z-index: 5; pointer-events: none;
+    text-shadow: 0 0 4px #000; flex-wrap: wrap; gap: 6px; }
+  #hud span { background: rgba(0,0,0,.45); padding: 3px 8px; border-radius: 4px; }
+  canvas { background: #7ec0ee; border: 3px solid #2b2f3a; border-radius: 6px;
+    max-width: 96vw; max-height: 78vh; image-rendering: pixelated; touch-action: none; }
+  #panel { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; background: rgba(10,12,16,.86);
+    z-index: 10; text-align: center; gap: 14px; padding: 20px; }
+  #panel h1 { font-size: clamp(26px, 6vw, 46px); margin: 0; color: #ffd75e;
+    text-shadow: 3px 3px 0 #7a4b00; letter-spacing: 4px; }
+  #panel p { margin: 4px 0; color: #bcd; line-height: 1.7; font-size: 14px; }
+  button { font-family: inherit; font-size: 18px; padding: 12px 34px; cursor: pointer;
+    background: #ffb300; border: 0; border-radius: 6px; color: #241a00; font-weight: bold;
+    box-shadow: 0 4px 0 #a06f00; }
+  button:active { transform: translateY(3px); box-shadow: 0 1px 0 #a06f00; }
+  #ctrl { position: absolute; bottom: 12px; left: 0; right: 0; display: flex;
+    justify-content: space-between; padding: 0 16px; z-index: 6; pointer-events: none; }
+  .grp { display: flex; gap: 12px; }
+  .btn { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.16);
+    border: 2px solid rgba(255,255,255,.4); color: #fff; font-size: 26px;
+    display: flex; align-items: center; justify-content: center; user-select: none;
+    pointer-events: auto; touch-action: none; }
+  .btn:active { background: rgba(255,255,255,.4); }
+  #sndBtn { position: absolute; top: 8px; right: 10px; z-index: 7; font-size: 13px;
+    padding: 5px 10px; background: rgba(0,0,0,.5); color: #ffd75e; border: 1px solid #ffd75e;
+    border-radius: 4px; cursor: pointer; box-shadow: none; }
+  @media (min-width: 900px) and (pointer: fine) { #ctrl { opacity: .35; } }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <span id="lives">❤❤❤</span>
+    <span id="score">得分 0</span>
+    <span id="dist">进度 0%</span>
+    <span id="time">⏱ 0.0s</span>
+  </div>
+  <button id="sndBtn">🔊 音效开</button>
+  <canvas id="game" width="960" height="540"></canvas>
+  <div id="ctrl">
+    <div class="grp">
+      <div class="btn" data-k="left">◀</div>
+      <div class="btn" data-k="right">▶</div>
+    </div>
+    <div class="grp">
+      <div class="btn" data-k="fire">●</div>
+      <div class="btn" data-k="jump">▲</div>
+    </div>
+  </div>
+  <div id="panel">
+    <h1>坦克跳坑</h1>
+    <p id="msg">跨越陷阱坑洞，击碎砖块，收集油桶，冲向终点！</p>
+    <p>🎮 方向键/AD 移动 · 空格/↑ 跳跃 · K/回车 开炮<br>📱 手机用屏幕下方按钮</p>
+    <button id="startBtn">开始游戏</button>
+  </div>
+</div>
+<script>
+"use strict";
+// ================== 基础 ==================
+const cvs = document.getElementById("game");
+const ctx = cvs.getContext("2d");
+const W = cvs.width, H = cvs.height;
+const GROUND_Y = H - 80;
+const panel = document.getElementById("panel");
+const msgEl = document.getElementById("msg");
+const startBtn = document.getElementById("startBtn");
+const hudLives = document.getElementById("lives");
+const hudScore = document.getElementById("score");
+const hudDist = document.getElementById("dist");
+const hudTime = document.getElementById("time");
+const sndBtn = document.getElementById("sndBtn");
+
+// ================== 音效 ==================
+let audioCtx = null, sndOn = true;
+function beep(freq, dur, type, vol) {
+  if (!sndOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type || "square"; o.frequency.value = freq;
+    g.gain.value = vol || 0.06;
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+sndBtn.onclick = () => { sndOn = !sndOn; sndBtn.textContent = sndOn ? "🔊 音效开" : "🔇 音效关"; };
+
+// ================== 关卡 ==================
+const TILE = 40, WORLD_W = 4800;
+const level = [];
+function buildLevel() {
+  level.length = 0;
+  const pits = [[900,120],[1500,150],[2200,180],[3000,160],[3700,200],[4300,140]];
+  const inPit = x => pits.some(p => x >= p[0] && x < p[0] + p[1]);
+  for (let x = 0; x < WORLD_W; x += TILE) {
+    if (!inPit(x)) level.push({ x, y: GROUND_Y, w: TILE, h: H - GROUND_Y, kind: "G" });
+    else level.push({ x, y: GROUND_Y + 60, w: TILE, h: 40, kind: "P" });
+  }
+  const bricks = [
+    [640, GROUND_Y - 120], [680, GROUND_Y - 120], [720, GROUND_Y - 120],
+    [1150, GROUND_Y - 160], [1190, GROUND_Y - 160],
+    [1900, GROUND_Y - 140], [1940, GROUND_Y - 140], [1980, GROUND_Y - 140],
+    [2600, GROUND_Y - 180], [2640, GROUND_Y - 180],
+    [3300, GROUND_Y - 130], [3340, GROUND_Y - 130], [3380, GROUND_Y - 130],
+    [4000, GROUND_Y - 160], [4040, GROUND_Y - 160]
+  ];
+  bricks.forEach(b => level.push({ x: b[0], y: b[1], w: TILE, h: TILE, kind: "B", alive: true }));
+  const cans = [[780, GROUND_Y - 60], [1300, GROUND_Y - 60], [2020, GROUND_Y - 220],
+                [2750, GROUND_Y - 60], [3450, GROUND_Y - 60], [4120, GROUND_Y - 60],
+                [1650, GROUND_Y - 200], [3150, GROUND_Y - 220]];
+  cans.forEach(c => level.push({ x: c[0], y: c[1], w: 26, h: 30, kind: "O", alive: true }));
+}
+const FINISH_X = WORLD_W - 160;
+
+// ================== 状态 ==================
+const state = { running: false, lives: 3, score: 0, time: 0, camX: 0,
+  bullets: [], particles: [], checkpoint: 60 };
+const tank = { x: 60, y: GROUND_Y - 34, w: 56, h: 34, vx: 0, vy: 0,
+  onGround: false, facing: 1, track: 0, dead: false, respawnT: 0 };
+
+// ================== 输入 ==================
+const keys = { left: false, right: false, jump: false, fire: false };
+const KEYMAP = {
+  ArrowLeft: "left", a: "left", A: "left",
+  ArrowRight: "right", d: "right", D: "right",
+  ArrowUp: "jump", w: "jump", W: "jump", " ": "jump",
+  k: "fire", K: "fire", Enter: "fire"
+};
+addEventListener("keydown", e => {
+  const k = KEYMAP[e.key];
+  if (k) { keys[k] = true; e.preventDefault(); if (!state.running) tryStart(); }
+});
+addEventListener("keyup", e => { const k = KEYMAP[e.key]; if (k) { keys[k] = false; e.preventDefault(); } });
+document.querySelectorAll(".btn").forEach(b => {
+  const k = b.dataset.k;
+  const on = e => { e.preventDefault(); keys[k] = true; if (!state.running) tryStart(); };
+  const off = e => { e.preventDefault(); keys[k] = false; };
+  b.addEventListener("touchstart", on, { passive: false });
+  b.addEventListener("touchend", off, { passive: false });
+  b.addEventListener("touchcancel", off, { passive: false });
+  b.addEventListener("mousedown", on);
+  b.addEventListener("mouseup", off);
+  b.addEventListener("mouseleave", off);
+});
+
+function tryStart() { startGame(); }
+startBtn.onclick = () => startGame();
+
+function startGame() {
+  buildLevel();
+  Object.assign(state, { running: true, lives: 3, score: 0, time: 0, camX: 0,
+    bullets: [], particles: [], checkpoint: 60 });
+  Object.assign(tank, { x: 60, y: GROUND_Y - 34, vx: 0, vy: 0, onGround: false,
+    facing: 1, dead: false, respawnT: 0 });
+  panel.style.display = "none";
+  beep(660, .1); setTimeout(() => beep(880, .12), 110);
+}
+
+function showPanel(title, text, btn) {
+  panel.querySelector("h1").textContent = title;
+  msgEl.innerHTML = text;
+  startBtn.textContent = btn;
+  panel.style.display = "flex";
+}
+
+// ================== 碰撞 ==================
+function aabb(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+function solidsNear(x) {
+  return level.filter(s => (s.kind === "G" || (s.kind === "B" && s.alive)) &&
+    s.x < x + 120 && s.x + s.w > x - 120);
+}
+
+// ================== 更新 ==================
+const GRAV = 0.62, MOVE = 3.4, JUMP_V = -13.2;
+function update(dt) {
+  if (!state.running) return;
+  if (tank.dead) { respawnTick(); return; }
+  state.time += dt / 1000;
+
+  tank.vx = 0;
+  if (keys.left)  { tank.vx = -MOVE; tank.facing = -1; }
+  if (keys.right) { tank.vx =  MOVE; tank.facing =  1; }
+  tank.x += tank.vx;
+  if (tank.x < 0) tank.x = 0;
+  if (tank.x > WORLD_W - tank.w) tank.x = WORLD_W - tank.w;
+
+  tank.vy += GRAV;
+  if (tank.vy > 16) tank.vy = 16;
+  const prevBottom = tank.y + tank.h;
+  tank.y += tank.vy;
+  tank.onGround = false;
+
+  for (const s of solidsNear(tank.x + tank.w / 2)) {
+    if (!aabb(tank, s)) continue;
+    if (tank.vy >= 0 && prevBottom <= s.y + 4) {
+      tank.y = s.y - tank.h; tank.vy = 0; tank.onGround = true;
+    } else if (tank.vy < 0) {
+      tank.y = s.y + s.h; tank.vy = 0;
+      if (s.kind === "B") smash(s);
+    }
+  }
+  if (keys.jump && tank.onGround) {
+    tank.vy = JUMP_V; tank.onGround = false; beep(420, .09, "triangle");
+  }
+  if (tank.vx !== 0 && tank.onGround) tank.track += Math.abs(tank.vx);
+
+  if (keys.fire && state.bullets.length < 3 &&
+      (!tank._cool || performance.now() - tank._cool > 260)) {
+    tank._cool = performance.now();
+    state.bullets.push({ x: tank.x + tank.w / 2 + tank.facing * 30,
+      y: tank.y + 8, vx: tank.facing * 11, life: 90 });
+    beep(180, .08, "sawtooth", .08);
+  }
+
+  for (const s of level) {
+    if (s.kind === "O" && s.alive && aabb(tank, s)) {
+      s.alive = false; state.score += 100;
+      beep(880, .07); setTimeout(() => beep(1320, .07), 70);
+      burst(s.x + 13, s.y + 15, "#ffd75e", 8);
+    }
+  }
+
+  for (const b of state.bullets) {
+    b.x += b.vx; b.life--;
+    for (const s of level) {
+      if (s.kind === "B" && s.alive &&
+          b.x > s.x && b.x < s.x + s.w && b.y > s.y && b.y < s.y + s.h) {
+        smash(s); b.life = 0; break;
+      }
+      if (s.kind === "G" && b.x > s.x && b.x < s.x + s.w && b.y > s.y && b.y < s.y + s.h) b.life = 0;
+    }
+  }
+  state.bullets = state.bullets.filter(b => b.life > 0 && b.x > 0 && b.x < WORLD_W);
+
+  for (const p of state.particles) { p.x += p.vx; p.y += p.vy; p.vy += .25; p.life--; }
+  state.particles = state.particles.filter(p => p.life > 0);
+
+  if (tank.y > H + 60) {
+    state.lives--;
+    beep(140, .3, "sawtooth", .1);
+    if (state.lives <= 0) return endGame(false);
+    tank.dead = true; tank.respawnT = 40;
+  }
+
+  if (tank.onGround && tank.x > state.checkpoint + 100) {
+    const g = level.find(s => s.kind === "G" &&
+      tank.x + tank.w / 2 >= s.x && tank.x + tank.w / 2 < s.x + s.w);
+    if (g) state.checkpoint = tank.x;
+  }
+
+  if (tank.x + tank.w >= FINISH_X) return endGame(true);
+
+  const target = tank.x - W * 0.38;
+  state.camX += (target - state.camX) * 0.12;
+  if (state.camX < 0) state.camX = 0;
+  if (state.camX > WORLD_W - W) state.camX = WORLD_W - W;
+
+  hudLives.textContent = "❤".repeat(Math.max(0, state.lives)) +
+    "🖤".repeat(Math.max(0, 3 - state.lives));
+  hudScore.textContent = "得分 " + state.score;
+  hudDist.textContent = "进度 " + Math.min(100, Math.floor(tank.x / FINISH_X * 100)) + "%";
+  hudTime.textContent = "⏱ " + state.time.toFixed(1) + "s";
+}
+
+function smash(s) {
+  s.alive = false; state.score += 30;
+  beep(240, .1, "square", .08);
+  burst(s.x + 20, s.y + 20, "#b5651d", 12);
+}
+function burst(x, y, color, n) {
+  for (let i = 0; i < n; i++)
+    state.particles.push({ x, y, vx: (Math.random() - .5) * 5,
+      vy: -Math.random() * 4, life: 20 + Math.random() * 20, color });
+}
+function respawnTick() {
+  tank.respawnT--;
+  if (tank.respawnT <= 0) {
+    tank.dead = false;
+    tank.x = state.checkpoint; tank.y = GROUND_Y - 200; tank.vx = 0; tank.vy = 0;
+  }
+}
+function endGame(win) {
+  state.running = false;
+  if (win) {
+    const bonus = Math.max(0, 1500 - Math.floor(state.time * 10));
+    state.score += bonus;
+    showPanel("🏆 通关！", `用时 ${state.time.toFixed(1)} 秒 · 得分 ${state.score}<br>时间奖励 +${bonus}`, "再玩一次");
+    beep(660, .12); setTimeout(() => beep(880, .12), 130); setTimeout(() => beep(1100, .2), 260);
+  } else {
+    showPanel("💥 游戏结束",
+      `得分 ${state.score} · 进度 ${Math.floor(tank.x / FINISH_X * 100)}%`, "重新挑战");
+  }
+}
+
+// ================== 渲染 ==================
+function draw() {
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, "#5fb8e8"); sky.addColorStop(1, "#cfeaff");
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(-(state.camX * 0.3) % 600, 0);
+  ctx.fillStyle = "#8fbfa0";
+  for (let i = -1; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * 600, GROUND_Y);
+    ctx.lineTo(i * 600 + 180, GROUND_Y - 170);
+    ctx.lineTo(i * 600 + 360, GROUND_Y);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(-state.camX, 0);
+
+  for (const s of level) {
+    if (s.x + s.w < state.camX - 40 || s.x > state.camX + W + 40) continue;
+    if (s.kind === "G") {
+      ctx.fillStyle = "#7a4a21"; ctx.fillRect(s.x, s.y, s.w, s.h);
+      ctx.fillStyle = "#4caf50"; ctx.fillRect(s.x, s.y, s.w, 10);
+    } else if (s.kind === "B" && s.alive) {
+      ctx.fillStyle = "#c1693b"; ctx.fillRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2);
+      ctx.strokeStyle = "#7a3b1d"; ctx.lineWidth = 2;
+      ctx.strokeRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2);
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y + 20); ctx.lineTo(s.x + s.w, s.y + 20);
+      ctx.moveTo(s.x + 20, s.y); ctx.lineTo(s.x + 20, s.y + 20);
+      ctx.stroke();
+    } else if (s.kind === "O" && s.alive) {
+      ctx.fillStyle = "#e53935"; ctx.fillRect(s.x, s.y, s.w, s.h);
+      ctx.fillStyle = "#ffcdd2"; ctx.fillRect(s.x, s.y + 4, s.w, 6);
+      ctx.fillStyle = "#b71c1c"; ctx.fillRect(s.x, s.y + 22, s.w, 4);
+      ctx.fillStyle = "#fff"; ctx.font = "9px monospace";
+      ctx.fillText("FUEL", s.x + 2, s.y + 18);
+    } else if (s.kind === "P") {
+      ctx.fillStyle = "#0d0f14"; ctx.fillRect(s.x, GROUND_Y, s.w, H - GROUND_Y);
+      ctx.fillStyle = "#ff5252";
+      for (let i = 0; i < s.w; i += 16) ctx.fillRect(s.x + i, GROUND_Y + 4, 8, 4);
+    }
+  }
+
+  ctx.fillStyle = "#333"; ctx.fillRect(FINISH_X, GROUND_Y - 130, 6, 130);
+  const wave = Math.sin(performance.now() / 200) * 4;
+  ctx.fillStyle = "#ffd75e";
+  ctx.beginPath();
+  ctx.moveTo(FINISH_X + 6, GROUND_Y - 130);
+  ctx.lineTo(FINISH_X + 70, GROUND_Y - 115 + wave);
+  ctx.lineTo(FINISH_X + 6, GROUND_Y - 95);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffe082";
+  for (const b of state.bullets) { ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill(); }
+
+  for (const p of state.particles) {
+    ctx.globalAlpha = Math.max(0, p.life / 40);
+    ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 5, 5);
+  }
+  ctx.globalAlpha = 1;
+
+  if (!tank.dead) drawTank();
+  ctx.restore();
+
+  if (tank.dead) {
+    ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(W / 2 - 130, H / 2 - 34, 260, 68);
+    ctx.fillStyle = "#ff8a80"; ctx.font = "bold 22px monospace"; ctx.textAlign = "center";
+    ctx.fillText("坑吃坦克了！", W / 2, H / 2 - 4);
+    ctx.fillStyle = "#fff"; ctx.font = "14px monospace";
+    ctx.fillText("剩余生命 " + state.lives, W / 2, H / 2 + 22);
+    ctx.textAlign = "left";
+  }
+}
+
+function drawTank() {
+  const x = tank.x, y = tank.y;
+  ctx.save();
+  ctx.fillStyle = "#2f3b2f";
+  roundRect(x - 2, y + 20, tank.w + 4, 14, 7); ctx.fill();
+  ctx.fillStyle = "#1b211b";
+  const off = Math.floor(tank.track / 4) % 12;
+  for (let i = -1; i < 5; i++) ctx.fillRect(x + i * 12 - off + 2, y + 22, 4, 10);
+  ctx.fillStyle = "#5d7a3f";
+  roundRect(x + 3, y + 10, tank.w - 6, 12, 3); ctx.fill();
+  ctx.fillStyle = "#6f8f4d"; ctx.fillRect(x + 8, y + 12, 40, 4);
+  ctx.fillStyle = "#4a6333";
+  ctx.beginPath(); ctx.arc(x + tank.w / 2, y + 10, 11, Math.PI, 0); ctx.fill();
+  ctx.save();
+  ctx.translate(x + tank.w / 2, y + 8);
+  ctx.scale(tank.facing, 1);
+  ctx.fillStyle = "#333"; ctx.fillRect(0, -3, 34, 6);
+  ctx.restore();
+  ctx.fillStyle = "#2b3a1f";
+  ctx.beginPath(); ctx.arc(x + tank.w / 2, y + 6, 5, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// ================== 主循环 ==================
+let last = performance.now();
+function loop(t) {
+  const dt = Math.min(50, t - last); last = t;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+buildLevel();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
