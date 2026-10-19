@@ -3,50 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>坦克跳坑 · Tank Jump</title>
+<title>坦克跳坑 Tank Jump</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="stage">
-  <div id="hud">
-    <span>❤ <b id="lives">3</b></span>
-    <span>得分 <b id="score">0</b></span>
-    <span>关卡 <b id="level">1</b>/3</span>
-    <span>弹药 <b id="ammo">∞</b></span>
-    <span id="pauseHint">[空格]射击 [P]暂停</span>
+<div class="frame">
+  <h1>坦克跳坑</h1>
+  <div class="hud">
+    <span>分数: <b id="score">0</b></span>
+    <span>最高: <b id="best">0</b></span>
   </div>
-  <canvas id="game" width="960" height="540"></canvas>
-
-  <div id="screen-title" class="overlay">
-    <h1>坦克跳坑</h1>
-    <p class="sub">经典横版坦克闯关</p>
-    <p class="keys">← → / A D 移动 &nbsp;·&nbsp; ↑ / W 起跳 &nbsp;·&nbsp; Space 射击 &nbsp;·&nbsp; P 暂停</p>
-    <p class="tip">冲过断崖！掉坑扣一条命。3 关通关即胜利。</p>
-    <button id="btn-start">开始游戏</button>
-    <p class="mobile">触屏：左侧虚拟键移动/跳跃，右侧按钮射击</p>
-  </div>
-
-  <div id="screen-pause" class="overlay hidden">
-    <h1>已暂停</h1>
-    <button id="btn-resume">继续</button>
-  </div>
-
-  <div id="screen-over" class="overlay hidden">
-    <h1 id="over-title">游戏结束</h1>
-    <p>最终得分：<b id="final-score">0</b></p>
-    <button id="btn-restart">再来一局</button>
-  </div>
-
-  <div id="touch">
-    <div class="pad">
-      <button data-k="left">◀</button>
-      <div class="col">
-        <button data-k="up">▲</button>
-        <button data-k="right">▶</button>
-      </div>
+  <canvas id="game" width="640" height="360"></canvas>
+  <div id="overlay" class="overlay">
+    <div class="panel">
+      <h2 id="ovTitle">坦克跳坑</h2>
+      <p id="ovText">← → 移动 · 空格 / ↑ 跳跃<br>别掉进坑里！</p>
+      <button id="btnStart">开始游戏</button>
     </div>
-    <button class="fire" data-k="fire">FIRE</button>
   </div>
+  <p class="tip">操作: ← → 移动，空格/↑ 跳跃（空中可二段跳）</p>
 </div>
 <script src="game.js"></script>
 </body>
