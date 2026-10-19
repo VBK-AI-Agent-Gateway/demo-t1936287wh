@@ -1,0 +1,106 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  height: 100%;
+  background: #0d0f14;
+  color: #e8e6d8;
+  font-family: "Courier New", "Microsoft YaHei", monospace;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  touch-action: none;
+}
+#stage {
+  position: relative;
+  width: min(96vw, 960px);
+  user-select: none;
+}
+#hud {
+  display: flex;
+  gap: 18px;
+  padding: 8px 12px;
+  background: #1a1e28;
+  border: 2px solid #3a4258;
+  border-bottom: none;
+  font-size: 15px;
+  flex-wrap: wrap;
+}
+#hud b { color: #ffd75e; }
+#pauseHint { margin-left: auto; opacity: .6; font-size: 13px; }
+canvas {
+  display: block;
+  width: 100%;
+  background: #7ec8f0;
+  border: 2px solid #3a4258;
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  top: 34px;
+  background: rgba(8, 10, 16, .88);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  z-index: 5;
+  padding: 20px;
+}
+.overlay.hidden { display: none; }
+.overlay h1 {
+  font-size: clamp(32px, 7vw, 64px);
+  color: #ffd75e;
+  text-shadow: 4px 4px 0 #b8481f;
+  letter-spacing: 6px;
+}
+.overlay .sub { color: #7ec8f0; font-size: 18px; }
+.overlay .keys { font-size: 14px; opacity: .85; line-height: 1.8; }
+.overlay .tip { font-size: 13px; color: #9adf6a; }
+.overlay .mobile { font-size: 12px; opacity: .5; }
+.overlay button {
+  font: inherit;
+  font-size: 22px;
+  padding: 12px 46px;
+  background: #b8481f;
+  color: #fff;
+  border: 3px solid #ff9d5c;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #7a2d10;
+}
+.overlay button:hover { background: #d85a28; }
+.overlay button:active { transform: translateY(3px); box-shadow: 0 2px 0 #7a2d10; }
+#touch {
+  display: none;
+  position: absolute;
+  inset: 0;
+  top: 34px;
+  pointer-events: none;
+  z-index: 4;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px;
+}
+#touch .pad { display: flex; gap: 8px; align-items: flex-end; }
+#touch .col { display: flex; flex-direction: column; gap: 8px; }
+#touch button {
+  pointer-events: auto;
+  width: 64px;
+  height: 64px;
+  font-size: 22px;
+  font-weight: bold;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.5);
+  background: rgba(255,255,255,.18);
+  color: #fff;
+}
+#touch .fire {
+  width: 84px;
+  height: 84px;
+  background: rgba(255, 80, 40, .55);
+  font-size: 16px;
+}
+@media (hover: none), (max-width: 700px) {
+  #touch { display: flex; }
+}
