@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>坦克跳坑 · Tank Dive</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; background:#1a1c2c; overflow:hidden;
+    font-family:"Courier New",monospace; color:#f4f4f4; user-select:none; }
+  #wrap { position:relative; width:100%; height:100%; display:flex;
+    align-items:center; justify-content:center; }
+  canvas { display:block; image-rendering:pixelated;
+    box-shadow:0 0 0 4px #0d0e17, 0 0 40px rgba(0,0,0,.6);
+    border-radius:4px; touch-action:none; }
+  .overlay { position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    background:rgba(13,14,23,.82); z-index:10; gap:14px; padding:20px; }
+  .hidden { display:none; }
+  h1 { font-size:clamp(26px,6vw,54px); letter-spacing:4px;
+    color:#ffcd75; text-shadow:3px 3px 0 #b13e53, 6px 6px 0 #0d0e17; }
+  .sub { font-size:clamp(13px,2.5vw,18px); color:#94b0c2; line-height:1.7; }
+  .score { font-size:clamp(20px,5vw,40px); color:#a7f070;
+    text-shadow:2px 2px 0 #0d0e17; }
+  .btn { margin-top:8px; padding:14px 40px; font-size:20px; font-family:inherit;
+    font-weight:bold; letter-spacing:3px; color:#0d0e17; background:#ffcd75;
+    border:none; border-bottom:5px solid #e2963f; border-radius:6px;
+    cursor:pointer; transition:transform .05s; }
+  .btn:active { transform:translateY(3px); border-bottom-width:2px; }
+  .hi { color:#566c86; font-size:14px; }
+  .flash { animation:fl .5s ease infinite alternate; }
+  @keyframes fl { from{opacity:.5} to{opacity:1} }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv" width="360" height="540"></canvas>
+
+  <div id="menu" class="overlay">
+    <h1>坦克跳坑</h1>
+    <div class="sub">TANK&nbsp;DIVE<br>点击屏幕 / 按空格 给坦克一个向上推力<br>穿过深坑管道，别撞墙、别掉坑！</div>
+    <button class="btn" id="startBtn">开 始</button>
+    <div class="hi" id="menuHi"></div>
+    <div class="sub flash" style="font-size:13px">—— 经典版 ——</div>
+  </div>
+
+  <div id="over" class="overlay hidden">
+    <h1 style="color:#b13e53;text-shadow:3px 3px 0 #0d0e17">坠 毁</h1>
+    <div class="score" id="finalScore">0</div>
+    <div class="hi" id="overHi"></div>
+    <div class="hi" id="newHi" style="color:#ffcd75;font-size:17px"></div>
+    <button class="btn" id="againBtn">重 开</button>
+    <div class="sub" style="font-size:13px">按 R 或 点击按钮 重新开始</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= 基础 ================= */
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const menu = document.getElementById('menu');
+const over = document.getElementById('over');
+
+const KEY = 'tank-dive-best';
+let best = +(localStorage.getItem(KEY) || 0);
+
+const GRAV = 1500;      // 重力 px/s^2
+const FLAP = -430;      // 跳跃冲量
+const PIPE_W = 62;      // 坑道宽
+const GAP = 175;        // 坑洞间距（随分数收紧，最低140）
+const SPEED0 = 130;     // 起始速度
+const SPAWN = 210;      // 管道间距（水平）
+
+let state = 'menu';      // menu | play | over
+let score = 0, pipes = [], particles = [];
+let speed = SPEED0, spawnX = 0, t = 0;
+
+const tank = { x: W*0.28, y: H/2, vy: 0, r: 14, tilt: 0 };
+
+/* ================= 绘制辅助 ================= */
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill();
+}
+function gapSize(){ return Math.max(140, GAP - Math.floor(score/5)*8); }
+
+function reset(){
+  score = 0; speed = SPEED0; pipes = []; particles = [];
+  spawnX = W + 60; t = 0;
+  tank.y = H/2; tank.vy = 0; tank.tilt = 0;
+}
+
+function spawnPipe(){
+  const g = gapSize();
+  const margin = 70;
+  const gy = margin + g/2 + Math.random()*(H - 2*margin - g);
+  pipes.push({ x: spawnX, gy: gy, g: g, passed:false });
+  spawnX = W + 80 + Math.random()*70;
+}
+
+function flap(){
+  if(state !== 'play') return;
+  tank.vy = FLAP;
+  for(let i=0;i<6;i++) particles.push({
+    x: tank.x-10, y: tank.y+10,
+    vx: -60-Math.random()*80, vy: 40+Math.random()*60,
+    life:.5, c:'#ffcd75'
+  });
+}
+
+function die(){
+  state = 'over';
+  if(score > best){ best = score; localStorage.setItem(KEY, best); }
+  document.getElementById('finalScore').textContent = '得分  ' + score;
+  document.getElementById('overHi').textContent  = '最高分  ' + best;
+  document.getElementById('newHi').textContent =
+      (score >= best && score > 0) ? '★ 新纪录！ ★' : '';
+  over.classList.remove('hidden');
+}
+
+/* ================= 更新 ================= */
+function update(dt){
+  t += dt;
+  if(state === 'play'){
+    tank.vy += GRAV*dt;
+    tank.y  += tank.vy*dt;
+    tank.tilt = Math.max(-0.5, Math.min(0.9, tank.vy/600));
+
+    speed = SPEED0 + Math.min(90, score*3);
+
+    let rightMost = pipes.length
+      ? pipes.reduce((m,p)=>Math.max(m,p.x), -999) : -999;
+    if(rightMost < W - 40) spawnPipe();
+
+    for(const p of pipes) p.x -= speed*dt;
+    pipes = pipes.filter(p => p.x + PIPE_W > -10);
+
+    for(const p of pipes){
+      if(!p.passed && p.x + PIPE_W < tank.x){
+        p.passed = true; score++;
+      }
+    }
+
+    const r = tank.r;
+    if(tank.y - r <= 0 || tank.y + r >= H){
+      die();
+    } else {
+      for(const p of pipes){
+        if(tank.x + r > p.x && tank.x - r < p.x + PIPE_W){
+          const topH = p.gy - p.g/2, botY = p.gy + p.g/2;
+          if(tank.y - r < topH || tank.y + r > botY){ die(); break; }
+        }
+      }
+    }
+  }
+
+  for(const q of particles){ q.x+=q.vx*dt; q.y+=q.vy*dt; q.life-=dt; }
+  particles = particles.filter(q=>q.life>0);
+
+  if(state !== 'play'){
+    tank.y = H/2 + Math.sin(t*2)*10;
+    tank.tilt = Math.sin(t*2)*0.15;
+  }
+}
+
+/* ================= 绘制 ================= */
+function drawBg(){
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#29366f'); g.addColorStop(.6,'#3b5dc9'); g.addColorStop(1,'#41a6f6');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#2b3a67';
+  const off = (t*speed*0.15)%120;
+  for(let x=-120;x<W+120;x+=120){
+    ctx.beginPath();
+    ctx.moveTo(x-off, H-60); ctx.lineTo(x-off+60, H-140);
+    ctx.lineTo(x-off+120, H-60); ctx.closePath(); ctx.fill();
+  }
+}
+
+function drawPipes(){
+  for(const p of pipes){
+    const topH = p.gy - p.g/2, botY = p.gy + p.g/2;
+    seg(p.x, 0, PIPE_W, topH, true);
+    seg(p.x, botY, PIPE_W, H - botY, false);
+  }
+  function seg(x,y,w,h,isTop){
+    ctx.fillStyle = '#12141f'; ctx.fillRect(x,y,w,h);
+    ctx.fillStyle = '#3d5278';
+    for(let yy=y+6; yy<y+h-6; yy+=14)
+      for(let xx=x+4; xx<x+w-6; xx+=18)
+        if(((xx/18|0)+(yy/14|0))%2===0) ctx.fillRect(xx,yy,14,10);
+    ctx.fillStyle = '#94b0c2'; ctx.fillRect(x,y,4,h);
+    ctx.fillStyle = '#0d0e17'; ctx.fillRect(x+w-4,y,4,h);
+    const lipY = isTop ? y+h-10 : y;
+    ctx.fillStyle = '#b13e53'; ctx.fillRect(x-6, lipY, w+12, 10);
+    ctx.fillStyle = '#e2963f'; ctx.fillRect(x-6, isTop?lipY+6:lipY, w+12, 4);
+  }
+}
+
+function drawTank(){
+  ctx.save();
+  ctx.translate(tank.x, tank.y);
+  ctx.rotate(tank.tilt);
+  ctx.fillStyle = '#0d0e17';
+  roundRect(-18, 6, 34, 12, 5);
+  ctx.fillStyle = '#3d5278';
+  for(let i=0;i<5;i++) ctx.fillRect(-16+i*7, 8, 4, 8);
+  ctx.fillStyle = '#56cfe1';
+  roundRect(-16, -4, 30, 12, 3);
+  ctx.fillStyle = '#a7f070';
+  roundRect(-14, -4, 26, 5, 2);
+  ctx.fillStyle = '#3b8ea5';
+  roundRect(-6, -11, 14, 9, 3);
+  ctx.fillStyle = '#0d0e17';
+  ctx.fillRect(6, -9, 16, 4);
+  ctx.fillRect(20, -10, 4, 6);
+  ctx.fillStyle = '#ffcd75';
+  ctx.beginPath(); ctx.moveTo(-18,2); ctx.lineTo(-26-Math.random()*4,6);
+  ctx.lineTo(-18,10); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawHud(){
+  ctx.font = 'bold 34px "Courier New",monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#0d0e17'; ctx.fillText(score, W/2+3, 47);
+  ctx.fillStyle = '#f4f4f4'; ctx.fillText(score, W/2, 44);
+  ctx.font = 'bold 13px monospace';
+  ctx.fillStyle = 'rgba(244,244,244,.7)';
+  ctx.fillText('BEST ' + best, W/2, 66);
+  ctx.textAlign = 'left';
+}
+
+function render(){
+  drawBg();
+  drawPipes();
+  for(const q of particles){
+    ctx.globalAlpha = Math.max(0,q.life*2);
+    ctx.fillStyle = q.c; ctx.fillRect(q.x-2,q.y-2,4,4);
+    ctx.globalAlpha = 1;
+  }
+  drawTank();
+  drawHud();
+}
+
+/* ================= 主循环 ================= */
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now-last)/1000);
+  last = now;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ================= 交互 ================= */
+function startGame(){
+  reset(); state = 'play';
+  menu.classList.add('hidden');
+  over.classList.add('hidden');
+  spawnPipe();
+  flap();
+}
+function flapOrStart(e){
+  if(e) e.preventDefault();
+  if(state === 'menu') startGame();
+  else if(state === 'play') flap();
+  else startGame();
+}
+cv.addEventListener('pointerdown', flapOrStart);
+document.getElementById('startBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
+document.getElementById('againBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
+window.addEventListener('keydown', e=>{
+  if(e.code==='Space'||e.code==='ArrowUp'){ e.preventDefault();
+    if(state==='play') flap(); else startGame(); }
+  if(e.code==='KeyR') startGame();
+});
+
+function fit(){
+  const s = Math.min(window.innerWidth/W, window.innerHeight/H) * 0.94;
+  cv.style.width  = (W*s)+'px';
+  cv.style.height = (H*s)+'px';
+}
+window.addEventListener('resize', fit); fit();
+
+document.getElementById('menuHi').textContent = best ? ('最高分  ' + best) : '';
+reset();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
