@@ -1,349 +1,282 @@
-// 坦克跳坑 - Tank Jump (经典版)
-(() => {
-  const cvs = document.getElementById('game');
-  const ctx = cvs.getContext('2d');
-  const scoreEl = document.getElementById('score');
-  const bestEl = document.getElementById('best');
-  const overlay = document.getElementById('overlay');
-  const ovTitle = document.getElementById('ovTitle');
-  const ovText = document.getElementById('ovText');
-  const btnStart = document.getElementById('btnStart');
+(function(){
+"use strict";
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
 
-  const W = cvs.width, H = cvs.height;
-  const GROUND_Y = H - 60;
-  const GRAVITY = 0.55;
-  const JUMP_V = -11.5;
-  const MOVE_V = 3.4;
+const UI = {
+  score: document.getElementById('score'),
+  best: document.getElementById('best'),
+  state: document.getElementById('state'),
+  overlay: document.getElementById('overlay'),
+  ovTitle: document.getElementById('ovTitle'),
+  ovDesc: document.getElementById('ovDesc'),
+  btnStart: document.getElementById('btnStart')
+};
 
-  // 背景图（cover 绘制，未加载时回退纯色天空）
-  const bg = new Image();
-  let bgReady = false;
-  bg.onload = () => { bgReady = true; };
-  bg.src = 'background.jpg';
+// ---- 常量 ----
+const TILE = 48;                 // 地面砖块尺寸
+const GROUND_Y = H - TILE*2;      // 地面基准线
+const GRAV = 0.7, MOVE_ACC = 0.9, MAX_VX = 7.5, FRICTION = 0.86;
+const JUMP_V = -13.5;
 
-  let best = +(localStorage.getItem('tankJumpBest') || 0);
-  bestEl.textContent = best;
+let tiles = [];       // {x,w} 有地面的段，其余为坑
+let segX = 0;         // 下一段生成位置
+let tank, camX, score, best, running, dead, particles;
 
-  const state = { mode: 'ready', score: 0, speed: 3.2, dist: 0, lives: 3 };
+best = +(localStorage.getItem('tankjump_best') || 0);
+UI.best.textContent = best;
 
-  let holes = [];
-  let nextHoleAt = 700;
-  let enemies = [];   // 敌方坦克 {worldX, dir, alive}
-  let shots = [];     // 子弹 {x,y,vx,from}
+function reset(){
+  tiles = [];
+  camX = 0; score = 0; dead = false;
+  particles = [];
+  // 起始平台
+  pushSegment(0, TILE*6, 0);
+  segX = TILE*6;
+  genAhead();
+  tank = { x: TILE*1.5, y: GROUND_Y-34, w: 44, h: 34, vx: 0, vy: 0, onGround: true, track: 0 };
+  running = true;
+  UI.state.textContent = 'RUN';
+}
 
-  const tank = { x: 90, y: GROUND_Y - 34, w: 52, h: 34, vy: 0, onGround: true, jumps: 0, tread: 0, fireCd: 0, inv: 0 };
+// 生成一段地面（有随机宽度的坑）
+function pushSegment(x, w, lvl){
+  tiles.push({ x:x, w:w });
+}
+function genAhead(){
+  while(segX < camX + W*2){
+    const progress = segX / TILE;            // 越远越难
+    // 坑宽：随进度变宽
+    const gap = TILE * (1 + Math.random() * (1 + Math.min(3, progress/40)));
+    const land = TILE * (2 + Math.random()*3);
+    segX += gap;                             // 跳过坑
+    pushSegment(segX, land, 0);
+    segX += land;
+  }
+  // 清理屏外数据
+  tiles = tiles.filter(t => t.x + t.w > camX - TILE*4);
+}
 
-  const keys = {};
-  addEventListener('keydown', e => {
-    if (['ArrowLeft','ArrowRight','ArrowUp',' '].includes(e.key)) e.preventDefault();
-    keys[e.key] = true;
-    if (state.mode === 'playing') {
-      if (e.key === ' ' || e.key === 'ArrowUp') jump();
-      if (e.key === 'j' || e.key === 'J') fire();
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      reset();
-    }
-  });
-  addEventListener('keyup', e => keys[e.key] = false);
-  btnStart.addEventListener('click', reset);
+function groundAt(x){
+  for(let i=0;i<tiles.length;i++){
+    const t = tiles[i];
+    if(x >= t.x && x < t.x + t.w) return GROUND_Y;
+  }
+  return null;
+}
 
-  function jump() {
-    if (tank.jumps < 2) {
-      tank.vy = JUMP_V * (tank.jumps === 1 ? 0.92 : 1);
-      tank.onGround = false;
-      tank.jumps++;
-    }
+// ---- 输入 ----
+const keys = { left:false, right:false, jump:false };
+const KEYMAP = {
+  ArrowLeft:'left', KeyA:'left',
+  ArrowRight:'right', KeyD:'right',
+  ArrowUp:'jump', KeyW:'jump', Space:'jump'
+};
+addEventListener('keydown', e=>{
+  const k = KEYMAP[e.code]; if(!k) return;
+  e.preventDefault();
+  if(k==='jump' && !keys.jump) tryJump();
+  keys[k]=true;
+  if(!running && (e.code==='Enter'||e.code==='Space')) UI.btnStart.click();
+});
+addEventListener('keyup', e=>{ const k=KEYMAP[e.code]; if(k) keys[k]=false; });
+
+// 触屏按钮
+document.querySelectorAll('.tbtn').forEach(b=>{
+  const k = b.dataset.k;
+  const on = ev=>{ ev.preventDefault(); if(k==='jump'){ tryJump(); } keys[k]=true; };
+  const off = ev=>{ ev.preventDefault(); keys[k]=false; };
+  b.addEventListener('touchstart', on, {passive:false});
+  b.addEventListener('touchend', off, {passive:false});
+  b.addEventListener('mousedown', on);
+  b.addEventListener('mouseup', off);
+  b.addEventListener('mouseleave', off);
+});
+
+let jumpHeld = false;
+function tryJump(){
+  if(running && tank && tank.onGround){
+    tank.vy = JUMP_V; tank.onGround = false;
+    for(let i=0;i<8;i++) spawnParticle(tank.x+tank.w/2, tank.y+tank.h, '#9aa7c0');
+  }
+}
+
+// ---- 粒子 ----
+function spawnParticle(x,y,c){
+  particles.push({x,y,vx:(Math.random()-.5)*4, vy:-Math.random()*3, life:30, c});
+}
+
+// ---- 更新 ----
+function update(){
+  if(!running) return;
+  // 水平
+  if(keys.left)  tank.vx -= MOVE_ACC;
+  if(keys.right) tank.vx += MOVE_ACC;
+  tank.vx *= FRICTION;
+  if(Math.abs(tank.vx) > MAX_VX) tank.vx = Math.sign(tank.vx)*MAX_VX;
+  tank.x += tank.vx;
+  if(tank.x < camX + TILE*0.6){ tank.x = camX + TILE*0.6; tank.vx = 0; }
+
+  // 垂直
+  tank.vy += GRAV;
+  tank.y += tank.vy;
+
+  const footX1 = tank.x + 6, footX2 = tank.x + tank.w - 6;
+  const g1 = groundAt(footX1), g2 = groundAt(footX2);
+  const gy = (g1!==null || g2!==null) ? GROUND_Y : null;
+
+  if(gy !== null && tank.y + tank.h >= gy && tank.vy >= 0){
+    tank.y = gy - tank.h; tank.vy = 0; tank.onGround = true;
+  } else {
+    tank.onGround = false;
   }
 
-  function fire() {
-    if (tank.fireCd > 0 || state.mode !== 'playing') return;
-    shots.push({ x: tank.x + tank.w + 6, y: tank.y + 8, vx: 9, from: 'p' });
-    tank.fireCd = 20;
+  // 摄像机跟随
+  const target = tank.x - W*0.35;
+  if(target > camX) camX = target;
+
+  // 掉坑
+  if(tank.y > H + 100){ gameOver(); }
+
+  // 分数 = 前进距离
+  score = Math.max(score, Math.floor((tank.x - TILE*1.5)/TILE*10)/10 | 0);
+  score = Math.max(0, Math.floor((tank.x - TILE*1.5)/10));
+  UI.score.textContent = score;
+
+  genAhead();
+
+  // 履带痕迹
+  tank.track += Math.abs(tank.vx);
+  if(tank.onGround && tank.track > 18 && Math.abs(tank.vx)>1){
+    tank.track = 0;
+    spawnParticle(tank.x+tank.w/2, tank.y+tank.h, '#6b7590');
   }
 
-  function reset() {
-    state.mode = 'playing';
-    state.score = 0;
-    state.speed = 3.2;
-    state.dist = 0;
-    state.lives = 3;
-    holes = [];
-    enemies = [];
-    shots = [];
-    nextHoleAt = 600;
-    Object.assign(tank, { x: 90, y: GROUND_Y - 34, vy: 0, onGround: true, jumps: 0, tread: 0, fireCd: 0, inv: 60 });
-    overlay.classList.add('hidden');
+  // 粒子
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.2; p.life--;
+    if(p.life<=0) particles.splice(i,1);
   }
+}
 
-  function gameOver() {
-    state.mode = 'over';
-    if (state.score > best) {
-      best = state.score;
-      localStorage.setItem('tankJumpBest', best);
-      bestEl.textContent = best;
-    }
-    ovTitle.textContent = '游戏结束';
-    ovText.innerHTML = `本局分数: <b style="color:#a7f070">${state.score}</b><br>最高分: ${best}`;
-    btnStart.textContent = '再来一局';
-    overlay.classList.remove('hidden');
+function gameOver(){
+  running = false; dead = true;
+  UI.state.textContent = 'OVER';
+  if(score > best){ best = score; localStorage.setItem('tankjump_best', best); UI.best.textContent = best; }
+  UI.ovTitle.textContent = '💥 游戏结束';
+  UI.ovDesc.innerHTML = '本次前进 <b style="color:#5cf08a">'+score+'</b> 米<br>最佳纪录 '+best+' 米';
+  UI.btnStart.textContent = '再来一局';
+  UI.overlay.classList.add('show');
+}
+
+// ---- 渲染 ----
+function drawTank(x,y){
+  ctx.save();
+  ctx.translate(x, y);
+  // 履带
+  ctx.fillStyle = '#2b3242';
+  roundRect(0, 20, 44, 14, 6); ctx.fill();
+  ctx.fillStyle = '#4a5570';
+  for(let i=0;i<5;i++){ ctx.fillRect(4+i*8, 23, 5, 8); }
+  // 车身
+  ctx.fillStyle = '#3f7a4a';
+  roundRect(3, 8, 38, 14, 3); ctx.fill();
+  ctx.fillStyle = '#57a86a';
+  ctx.fillRect(6, 10, 32, 5);
+  // 炮塔
+  ctx.fillStyle = '#356b41';
+  roundRect(14, 2, 16, 10, 3); ctx.fill();
+  // 炮管
+  ctx.fillStyle = '#2b3242';
+  ctx.fillRect(28, 5, 16, 4);
+  ctx.restore();
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function drawBG(){
+  // 天空渐变
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0a0f1e'); g.addColorStop(1,'#16233a');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // 星星
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  for(let i=0;i<40;i++){
+    const sx = (i*137 - camX*0.2) % W; const x = (sx+W)%W;
+    const y = (i*53) % (H*0.5);
+    ctx.fillRect(x, y, 2, 2);
   }
-
-  function holeAt(x) {
-    for (const h of holes) if (x > h.x && x < h.x + h.w) return h;
-    return null;
+  // 远山
+  ctx.fillStyle = '#101a2c';
+  for(let i=0;i<12;i++){
+    const bx = ((i*260) - camX*0.4) % (W+260) - 130;
+    ctx.beginPath();
+    ctx.moveTo(bx, GROUND_Y);
+    ctx.lineTo(bx+130, GROUND_Y-120);
+    ctx.lineTo(bx+260, GROUND_Y);
+    ctx.fill();
   }
+}
 
-  function spawnEnemy(worldX) {
-    // 不要生成在坑里
-    if (holeAt(worldX)) return;
-    enemies.push({ worldX, dir: -1, alive: true, cool: 80 + Math.random() * 80 });
+function drawGround(){
+  for(const t of tiles){
+    const sx = t.x - camX;
+    if(sx + t.w < -10 || sx > W+10) continue;
+    // 土层
+    ctx.fillStyle = '#5a4632';
+    ctx.fillRect(sx, GROUND_Y, t.w, H-GROUND_Y);
+    // 草皮
+    ctx.fillStyle = '#4f8a3d';
+    ctx.fillRect(sx, GROUND_Y, t.w, 10);
+    ctx.fillStyle = '#6bb550';
+    for(let i=0;i<t.w;i+=16) ctx.fillRect(sx+i, GROUND_Y, 10, 5);
+    // 砖纹
+    ctx.strokeStyle = 'rgba(0,0,0,.25)';
+    ctx.strokeRect(sx, GROUND_Y, t.w, H-GROUND_Y);
   }
+}
 
-  function update() {
-    if (state.mode !== 'playing') return;
-    state.dist += state.speed;
-    state.score = Math.floor(state.dist / 10);
-    scoreEl.textContent = state.score;
-    state.speed = 3.2 + Math.min(4, state.score / 120);
-    tank.tread += state.speed;
-    if (tank.fireCd > 0) tank.fireCd--;
-    if (tank.inv > 0) tank.inv--;
-
-    // 生成坑
-    while (nextHoleAt < state.dist + W + 200) {
-      const w = 70 + Math.random() * 70;
-      holes.push({ x: nextHoleAt, w });
-      const gap = 220 + Math.random() * 260 - Math.min(80, state.score / 4);
-      nextHoleAt += w + Math.max(140, gap);
-      // 随机在前方生成敌方坦克
-      if (Math.random() < 0.65) spawnEnemy(nextHoleAt + 160 + Math.random() * 140);
-    }
-    holes = holes.filter(h => h.x + h.w > state.dist - 100);
-    enemies = enemies.filter(e => e.alive && e.worldX > state.dist - 200);
-
-    // 水平移动
-    if (keys['ArrowLeft']) tank.x = Math.max(10, tank.x - MOVE_V);
-    if (keys['ArrowRight']) tank.x = Math.min(W - tank.w - 10, tank.x + MOVE_V);
-
-    // 垂直
-    tank.vy += GRAVITY;
-    tank.y += tank.vy;
-
-    const footX = tank.x + tank.w / 2;
-    const worldFoot = footX + state.dist;
-    const inHole = holeAt(worldFoot);
-
-    if (tank.y >= GROUND_Y - tank.h && !inHole) {
-      tank.y = GROUND_Y - tank.h;
-      tank.vy = 0;
-      tank.onGround = true;
-      tank.jumps = 0;
-    } else if (tank.y < GROUND_Y - tank.h) {
-      tank.onGround = false;
-    }
-
-    if (inHole && tank.y > GROUND_Y + 10) { loseLife(); }
-    if (tank.y > H + 50) { loseLife(); }
-
-    // 敌方坦克 AI：朝玩家靠近并开火
-    const playerWorldX = tank.x + state.dist;
-    for (const e of enemies) {
-      if (!e.alive) continue;
-      const dx = playerWorldX - e.worldX;
-      e.dir = dx < 0 ? -1 : 1;
-      if (Math.abs(dx) > 60) {
-        const nx = e.worldX + e.dir * 1.0;
-        if (!holeAt(nx)) e.worldX = nx;
-        else e.dir *= -1;
-      }
-      if (e.cool > 0) e.cool--;
-      if (e.cool === 0 && Math.abs(dx) < 320) {
-        shots.push({ x: e.worldX - state.dist + (e.dir < 0 ? -20 : 52), y: GROUND_Y - 46, vx: e.dir * 6, from: 'e' });
-        e.cool = 90 + Math.random() * 60;
-      }
-    }
-
-    // 子弹
-    for (const s of shots) s.x += s.vx;
-    shots = shots.filter(s => {
-      if (s.x < -60 || s.x > W + 60) return false;
-      if (s.from === 'p') {
-        for (const e of enemies) {
-          if (e.alive && Math.abs((e.worldX - state.dist) + 26 - s.x) < 30 &&
-              s.y > GROUND_Y - 50 && s.y < GROUND_Y - 10) {
-            e.alive = false;
-            state.score += 20;
-            scoreEl.textContent = state.score;
-            return false;
-          }
-        }
-      } else {
-        if (tank.inv <= 0 &&
-            s.x > tank.x && s.x < tank.x + tank.w &&
-            s.y > tank.y && s.y < tank.y + tank.h) {
-          loseLife();
-          return false;
-        }
-      }
-      return true;
-    });
-
-    // 坦克撞敌车
-    for (const e of enemies) {
-      if (!e.alive || tank.inv > 0) continue;
-      const ex = e.worldX - state.dist;
-      if (tank.x + tank.w > ex && tank.x < ex + 52 && tank.y + tank.h > GROUND_Y - 34) {
-        e.alive = false;
-        loseLife();
-      }
-    }
+function drawParticles(){
+  for(const p of particles){
+    ctx.globalAlpha = Math.max(0, p.life/30);
+    ctx.fillStyle = p.c;
+    ctx.fillRect(p.x-camX, p.y, 4, 4);
   }
+  ctx.globalAlpha = 1;
+}
 
-  function loseLife() {
-    if (tank.inv > 0) return;
-    state.lives--;
-    if (state.lives <= 0) { gameOver(); return; }
-    tank.inv = 90;
-    tank.y = GROUND_Y - tank.h - 40;
-    tank.vy = -4;
-    tank.jumps = 1;
-  }
+function render(){
+  drawBG();
+  drawGround();
+  drawParticles();
+  if(tank) drawTank(tank.x-camX, tank.y);
+  // 深渊提示
+  ctx.fillStyle = 'rgba(0,0,0,.45)';
+}
 
-  function drawBackground() {
-    if (bgReady) {
-      // cover 裁剪
-      const scale = Math.max(W / bg.width, H / bg.height);
-      const dw = bg.width * scale, dh = bg.height * scale;
-      const off = (state.dist * 0.15) % dw;
-      for (let x = -off; x < W; x += dw) {
-        ctx.drawImage(bg, x, (H - dh) / 2, dw, dh);
-      }
-      ctx.fillStyle = 'rgba(26,28,44,.15)';
-      ctx.fillRect(0, 0, W, H);
-    } else {
-      ctx.fillStyle = '#86b6f0';
-      ctx.fillRect(0, 0, W, H);
-    }
-    // 云（轻微视差叠加）
-    ctx.fillStyle = 'rgba(255,255,255,.6)';
-    const cloudOff = (state.dist * 0.3) % (W + 160);
-    for (let i = -1; i < 3; i++) {
-      const cx = i * 260 - cloudOff + 120;
-      ctx.fillRect(cx, 40, 70, 16);
-      ctx.fillRect(cx + 12, 30, 44, 12);
-    }
-  }
+// ---- 主循环 ----
+function loop(){
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
 
-  function drawTankAt(x, y, isPlayer) {
-    const roll = Math.floor(tank.tread / 6) % 2;
-    // 履带
-    ctx.fillStyle = '#1c2431';
-    ctx.fillRect(x, y + 22, 52, 12);
-    ctx.fillStyle = '#3b4a63';
-    for (let i = 0; i < 6; i++) {
-      const tx = x + 3 + i * 8 + (roll ? 4 : 0);
-      if (tx < x + 49) ctx.fillRect(tx, y + 24, 4, 8);
-    }
-    // 车体
-    ctx.fillStyle = isPlayer ? '#37946e' : '#b13e53';
-    ctx.fillRect(x + 4, y + 10, 44, 14);
-    ctx.fillStyle = isPlayer ? '#2a6e53' : '#7a2b3a';
-    ctx.fillRect(x + 4, y + 20, 44, 4);
-    // 炮塔
-    ctx.fillStyle = isPlayer ? '#4ecb8f' : '#e05a6f';
-    ctx.fillRect(x + 16, y + 2, 20, 10);
-    // 炮管（玩家朝右，敌方按 dir）
-    ctx.fillStyle = '#1c2431';
-    const dir = isPlayer ? 1 : (window.__lastEnemyDir || -1);
-    if (dir > 0) ctx.fillRect(x + 34, y + 5, 18, 4);
-    else ctx.fillRect(x, y + 5, 18, 4);
-    // 高光
-    ctx.fillStyle = isPlayer ? '#a7f070' : '#ff9aa8';
-    ctx.fillRect(x + 18, y + 3, 5, 3);
-  }
+UI.btnStart.addEventListener('click', ()=>{
+  UI.overlay.classList.remove('show');
+  reset();
+});
 
-  function draw() {
-    drawBackground();
-
-    // 远景小山
-    ctx.fillStyle = 'rgba(90,127,181,.55)';
-    const hillOff = (state.dist * 0.5) % 200;
-    for (let i = -1; i < 5; i++) {
-      const hx = i * 200 - hillOff;
-      ctx.beginPath();
-      ctx.moveTo(hx, GROUND_Y);
-      ctx.lineTo(hx + 60, GROUND_Y - 50);
-      ctx.lineTo(hx + 120, GROUND_Y);
-      ctx.fill();
-    }
-
-    // 地面（草皮 + 土层），坑留空
-    const segs = [];
-    let cursor = state.dist - 100;
-    const sorted = holes.slice().sort((a, b) => a.x - b.x);
-    for (const h of sorted) {
-      if (h.x > cursor) segs.push([cursor, h.x]);
-      cursor = Math.max(cursor, h.x + h.w);
-    }
-    segs.push([cursor, state.dist + W + 100]);
-
-    for (const [s, e] of segs) {
-      const sx = s - state.dist, ex = e - state.dist;
-      ctx.fillStyle = '#37946e';
-      ctx.fillRect(sx, GROUND_Y, ex - sx, 10);
-      ctx.fillStyle = '#8a5a3c';
-      ctx.fillRect(sx, GROUND_Y + 10, ex - sx, H - GROUND_Y - 10);
-      ctx.fillStyle = '#6e452c';
-      for (let tx = Math.floor(s / 40) * 40; tx < e; tx += 40) {
-        const px = tx - state.dist;
-        ctx.fillRect(px + 6, GROUND_Y + 20, 8, 4);
-        ctx.fillRect(px + 24, GROUND_Y + 34, 6, 4);
-      }
-      ctx.fillStyle = '#120d0a';
-      if (s > state.dist - 90) ctx.fillRect(sx - 3, GROUND_Y, 3, H - GROUND_Y);
-      if (e < state.dist + W + 90) ctx.fillRect(ex, GROUND_Y, 3, H - GROUND_Y);
-    }
-
-    // 坑内深渊
-    ctx.fillStyle = '#0d0a08';
-    for (const h of sorted) {
-      const hx = h.x - state.dist;
-      if (hx > -50 && hx < W + 50) ctx.fillRect(hx, GROUND_Y, h.w, H - GROUND_Y);
-    }
-
-    // 敌方坦克
-    for (const e of enemies) {
-      if (!e.alive) continue;
-      const ex = e.worldX - state.dist;
-      if (ex > -60 && ex < W + 60) {
-        window.__lastEnemyDir = e.dir;
-        drawTankAt(ex, GROUND_Y - 34, false);
-      }
-    }
-
-    // 子弹
-    for (const s of shots) {
-      ctx.fillStyle = s.from === 'p' ? '#ffcd75' : '#ff6b6b';
-      ctx.fillRect(s.x, s.y, 8, 4);
-    }
-
-    // 玩家（受击闪烁）
-    if (tank.inv === 0 || Math.floor(tank.inv / 5) % 2 === 0) {
-      drawTankAt(tank.x, tank.y, true);
-    }
-
-    // HUD：生命 + 坑数
-    ctx.fillStyle = 'rgba(0,0,0,.35)';
-    ctx.fillRect(W - 150, 8, 142, 24);
-    ctx.fillStyle = '#ffcd75';
-    ctx.font = 'bold 14px "Courier New", monospace';
-    ctx.fillText('生命 ' + '❤'.repeat(Math.max(0, state.lives)) + ' · 坑 ' + holes.length, W - 142, 25);
-  }
-
-  function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-  }
-  loop();
+// 初始渲染一帧背景
+camX = 0; tank = null; particles = [];
+reset(); running = false; UI.state.textContent='READY';
+UI.overlay.classList.add('show');
+loop();
 })();

@@ -1,54 +1,43 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; }
 body {
-  min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
-  background: #1a1c2c;
-  color: #f4f4f4;
-  font-family: "Courier New", monospace;
+  font-family: "Courier New", ui-monospace, monospace;
+  background:#12141c url('background.jpg') center/cover fixed no-repeat;
+  color:#e8f0ff; display:flex; justify-content:center; align-items:flex-start;
+  min-height:100%;
 }
-.frame {
-  background: #23253d;
-  border: 4px solid #4a4e69;
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
-  box-shadow: 0 8px 30px rgba(0,0,0,.5);
+body::before { content:""; position:fixed; inset:0; background:rgba(8,10,16,.72); z-index:0; }
+#wrap { position:relative; z-index:1; width:100%; max-width:980px; padding:16px; }
+
+header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+h1 { font-size:26px; letter-spacing:2px; text-shadow:0 0 8px #38f; }
+h1 span { color:#ffb020; font-size:16px; letter-spacing:4px; }
+#hud { display:flex; gap:14px; }
+.stat { background:#1b2030; border:2px solid #2e3a55; padding:6px 10px; border-radius:6px; font-size:13px; }
+.stat b { color:#5cf08a; font-size:16px; }
+
+#stage { position:relative; border:4px solid #2e3a55; border-radius:8px; overflow:hidden; box-shadow:0 0 30px rgba(0,0,0,.6); background:#0a0d14; }
+canvas { display:block; width:100%; height:auto; image-rendering:pixelated; }
+
+#overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(6,8,14,.85); }
+#overlay.show { display:flex; }
+.panel { text-align:center; padding:24px; max-width:90%; }
+.panel h2 { font-size:32px; color:#ffb020; margin-bottom:14px; text-shadow:0 0 10px #f80; }
+.panel p { line-height:1.9; font-size:15px; color:#cfe0ff; margin-bottom:20px; }
+button { font-family:inherit; cursor:pointer; }
+#btnStart { background:#5cf08a; color:#06210f; border:none; padding:14px 34px; font-size:20px; font-weight:bold; border-radius:8px; letter-spacing:3px; box-shadow:0 4px 0 #2e9e56; transition:.1s; }
+#btnStart:active { transform:translateY(3px); box-shadow:0 1px 0 #2e9e56; }
+
+#touch { display:none; justify-content:space-between; gap:12px; margin-top:14px; }
+.tbtn { flex:1; height:64px; font-size:22px; font-weight:bold; background:#1b2030; color:#e8f0ff; border:3px solid #2e3a55; border-radius:10px; }
+.tbtn.jump { background:#ffb020; color:#241200; border-color:#c47f00; }
+.tbtn:active { transform:scale(.96); }
+
+footer { margin-top:14px; text-align:center; font-size:12px; color:#8ba0c8; }
+
+@media (max-width:720px){
+  h1 { font-size:20px; }
+  #hud { width:100%; justify-content:space-between; gap:6px; }
+  #touch { display:flex; }
+  footer { font-size:11px; }
 }
-h1 {
-  font-size: 28px; letter-spacing: 6px;
-  color: #ffcd75; text-shadow: 3px 3px 0 #b13e53;
-  margin-bottom: 8px;
-}
-.hud { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 16px; }
-.hud b { color: #a7f070; }
-canvas {
-  display: block;
-  background: #86b6f0 url('background.jpg') center/cover no-repeat;
-  border: 3px solid #000;
-  image-rendering: pixelated;
-  max-width: 100%;
-}
-.overlay {
-  position: relative; margin-top: -230px; height: 170px;
-  display: flex; align-items: center; justify-content: center;
-  pointer-events: none;
-}
-.panel {
-  background: rgba(15,16,28,.92);
-  border: 3px solid #ffcd75;
-  border-radius: 6px;
-  padding: 14px 24px;
-  pointer-events: auto;
-}
-.panel h2 { color: #ffcd75; margin-bottom: 8px; font-size: 22px; }
-.panel p { font-size: 13px; line-height: 1.6; color: #c7c7d4; margin-bottom: 10px; }
-button {
-  font-family: inherit; font-size: 16px; font-weight: bold;
-  padding: 8px 26px; cursor: pointer;
-  background: #37946e; color: #fff;
-  border: 3px solid #1a3a2f; border-radius: 4px;
-}
-button:hover { background: #4ecb8f; }
-button:active { transform: translateY(2px); }
-.tip { margin-top: 8px; font-size: 12px; color: #8b8fa8; }
-.hidden { display: none !important; }
