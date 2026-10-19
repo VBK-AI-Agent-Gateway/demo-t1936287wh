@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>三档断点 · 无障碍演示工具</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f36; --fg:#e8eaf6; --accent:#6ea8fe; --ok:#3ddc97; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--fg); line-height:1.6; }
+  header { padding:1.5rem; background:linear-gradient(90deg,#1a1f36,#252b4d); }
+  h1 { margin:0 0 .3rem; font-size:1.6rem; }
+  p.sub { margin:0; opacity:.75; }
+  main { max-width:960px; margin:0 auto; padding:1.5rem; }
+  .grid { display:grid; gap:1rem; grid-template-columns: 1fr; }
+  @media (min-width:640px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width:960px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+  .card { background:var(--card); border-radius:12px; padding:1.2rem; border:1px solid #2a3155; }
+  .card h2 { margin-top:0; font-size:1.1rem; color:var(--accent); }
+  button { cursor:pointer; border:none; border-radius:8px; padding:.6rem 1.1rem; font-size:1rem; background:var(--accent); color:#0b1020; font-weight:600; }
+  button:hover { filter:brightness(1.1); }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline:3px solid var(--ok); outline-offset:2px; }
+  input[type=text] { width:100%; padding:.55rem .7rem; border-radius:8px; border:1px solid #3a4270; background:#12162a; color:var(--fg); font-size:1rem; }
+  #counter { font-size:2.4rem; font-weight:700; text-align:center; color:var(--ok); }
+  #log { list-style:none; padding:0; margin:.6rem 0 0; font-size:.92rem; }
+  #log li { padding:.35rem 0; border-bottom:1px dashed #2a3155; }
+  footer { text-align:center; padding:1.5rem; opacity:.6; font-size:.9rem; }
+  .badge { display:inline-block; background:#252b4d; border-radius:999px; padding:.15rem .6rem; font-size:.8rem; margin-left:.4rem; }
+</style>
+</head>
+<body>
+<header role="banner">
+  <h1>三档断点 · 无障碍演示工具</h1>
+  <p class="sub">纯静态单页 · 零依赖 · 响应式三档断点 · axe 无障碍通过</p>
+</header>
+<main id="content">
+  <section class="grid" aria-label="功能卡片">
+    <article class="card">
+      <h2>计数器</h2>
+      <div id="counter" aria-live="polite">0</div>
+      <p style="text-align:center">
+        <button id="btnAdd" type="button">+1</button>
+        <button id="btnReset" type="button" style="background:#8892b0">重置</button>
+      </p>
+    </article>
+    <article class="card">
+      <h2>待办速记</h2>
+      <form id="todoForm">
+        <label for="todoInput">输入一条待办</label>
+        <input type="text" id="todoInput" placeholder="例如：检查断点截图" autocomplete="off" />
+        <button type="submit" style="margin-top:.6rem">添加</button>
+      </form>
+      <ul id="log" aria-live="polite"></ul>
+    </article>
+    <article class="card">
+      <h2>当前断点</h2>
+      <p>视口宽度：<strong id="vw">—</strong> px</p>
+      <p>档位：<span class="badge" id="bp">—</span></p>
+      <p style="opacity:.7">断点定义：&lt;640 窄屏 / 640–959 中屏 / ≥960 宽屏</p>
+    </article>
+  </section>
+</main>
+<footer role="contentinfo">SDD 演示产物 · GitHub Pages 托管</footer>
+<script>
+(function(){
+  var count = 0;
+  var el = document.getElementById('counter');
+  document.getElementById('btnAdd').addEventListener('click', function(){ count++; el.textContent = count; });
+  document.getElementById('btnReset').addEventListener('click', function(){ count = 0; el.textContent = count; });
+
+  var form = document.getElementById('todoForm');
+  var input = document.getElementById('todoInput');
+  var log = document.getElementById('log');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var v = input.value.trim();
+    if(!v) return;
+    var li = document.createElement('li');
+    li.textContent = v;
+    log.insertBefore(li, log.firstChild);
+    input.value = '';
+  });
+
+  function updateVp(){
+    var w = window.innerWidth;
+    document.getElementById('vw').textContent = w;
+    document.getElementById('bp').textContent = w < 640 ? '窄屏' : (w < 960 ? '中屏' : '宽屏');
+  }
+  window.addEventListener('resize', updateVp);
+  updateVp();
+})();
+</script>
+</body>
+</html>
