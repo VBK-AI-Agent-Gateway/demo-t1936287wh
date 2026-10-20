@@ -3,497 +3,438 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>打地鼠 · Whack-a-Mole</title>
-<meta name="description" content="经典打地鼠游戏：60 秒限时，眼疾手快，连击加倍！">
+<title>霓虹贪吃蛇 · Neon Snake</title>
 <style>
   :root{
-    --bg1:#1b2a4a; --bg2:#0e1730;
-    --card:#24365f; --card2:#1c2b50;
-    --grass1:#6cc24a; --grass2:#4b9a31;
-    --gold:#ffd166; --red:#ef476f; --cyan:#06d6a0;
-    --text:#f2f6ff; --muted:#9fb0d8;
-    --hole:#141021;
-    --radius:18px;
-    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --bg:#0a0e1a;
+    --panel:rgba(17,24,44,.72);
+    --line:rgba(94,234,212,.25);
+    --accent:#5eead4;
+    --accent2:#f472b6;
+    --food:#fb7185;
+    --text:#e2e8f0;
+    --muted:#94a3b8;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
   body{
-    font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    color:var(--text); display:flex; flex-direction:column; align-items:center;
-    min-height:100%; padding:16px; overflow-x:hidden;
-    background:#0e1730 url("bg.jpg") center/cover no-repeat fixed;
+    font-family:"SF Pro Display","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(94,234,212,.10), transparent 60%),
+      radial-gradient(900px 500px at 90% 110%, rgba(244,114,182,.10), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;overflow:hidden;
+    user-select:none;
   }
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;
-    background:linear-gradient(180deg, rgba(10,16,34,.72) 0%, rgba(14,23,48,.55) 45%, rgba(10,16,34,.78) 100%);
+  .app{
+    width:min(520px,100%);
+    display:flex;flex-direction:column;gap:14px;
   }
-  body > *{position:relative;z-index:1}
-  .stars{position:fixed;inset:0;pointer-events:none;opacity:.5;
-    background-image:radial-gradient(1.5px 1.5px at 20% 30%,#fff,transparent),
-      radial-gradient(1.5px 1.5px at 70% 20%,#fff,transparent),
-      radial-gradient(1px 1px at 40% 70%,#fff,transparent),
-      radial-gradient(1.5px 1.5px at 85% 65%,#fff,transparent),
-      radial-gradient(1px 1px at 10% 80%,#fff,transparent);
-  }
-  header{width:100%;max-width:560px;text-align:center;margin-bottom:14px;position:relative;z-index:2}
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
   h1{
-    font-size:clamp(28px,6vw,42px);letter-spacing:4px;font-weight:900;
-    background:linear-gradient(180deg,#fff 20%,var(--gold) 90%);
+    font-size:26px;letter-spacing:2px;font-weight:800;
+    background:linear-gradient(90deg,var(--accent),#818cf8,var(--accent2));
     -webkit-background-clip:text;background-clip:text;color:transparent;
-    text-shadow:0 4px 0 rgba(0,0,0,.18);
   }
-  .sub{color:var(--muted);font-size:13px;margin-top:4px;letter-spacing:2px}
+  h1 small{font-size:12px;letter-spacing:4px;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:500;margin-left:8px}
+  .scores{display:flex;gap:10px}
+  .score-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:6px 14px;text-align:center;min-width:78px;backdrop-filter:blur(8px);
+    transition:border-color .2s;
+  }
+  .score-card .label{font-size:11px;color:var(--muted);letter-spacing:2px}
+  .score-card .value{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent)}
+  .score-card.best .value{color:var(--accent2)}
+  .score-card.pop{animation:pop .25s ease}
+  @keyframes pop{40%{transform:scale(1.12)}}
 
-  .panel{
-    width:100%;max-width:560px;background:linear-gradient(180deg,var(--card),var(--card2));
-    border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);
-    box-shadow:var(--shadow); padding:14px; position:relative; z-index:2;
+  .board-wrap{
+    position:relative;border-radius:18px;overflow:hidden;
+    border:1px solid var(--line);
+    background:rgba(9,13,26,.9);
+    box-shadow:0 0 0 1px rgba(0,0,0,.4),0 24px 60px -20px rgba(0,0,0,.8),0 0 40px -12px rgba(94,234,212,.25);
   }
-  .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-  .stat{
-    background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06);
-    border-radius:12px;padding:8px 6px;text-align:center;
-  }
-  .stat .k{font-size:11px;color:var(--muted);letter-spacing:1px}
-  .stat .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}
-  .stat .v.gold{color:var(--gold)} .stat .v.cyan{color:var(--cyan)} .stat .v.red{color:var(--red)}
-  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
-  .v.bump{animation:pop .28s ease}
-
-  .controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-  button{
-    font:inherit;cursor:pointer;border:none;border-radius:12px;
-    padding:10px 16px;font-weight:700;letter-spacing:1px;color:#16213e;
-    background:linear-gradient(180deg,#ffe29a,#ffc94d);box-shadow:0 4px 0 #c99a26, 0 8px 18px rgba(0,0,0,.3);
-    transition:transform .12s ease, box-shadow .12s ease, filter .12s;
-  }
-  button:hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 6px 0 #c99a26,0 12px 22px rgba(0,0,0,.35)}
-  button:active{transform:translateY(3px);box-shadow:0 1px 0 #c99a26,0 4px 10px rgba(0,0,0,.3)}
-  button.ghost{
-    background:rgba(255,255,255,.08);color:var(--text);border:1px solid rgba(255,255,255,.15);
-    box-shadow:0 4px 0 rgba(0,0,0,.25);
-  }
-  button.ghost:hover{background:rgba(255,255,255,.14)}
-  button:disabled{opacity:.45;cursor:not-allowed;transform:none}
-  .grow{flex:1}
-
-  .timebar{height:10px;border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden;margin-bottom:14px;border:1px solid rgba(255,255,255,.06)}
-  .timebar>i{
-    display:block;height:100%;width:100%;border-radius:99px;
-    background:linear-gradient(90deg,var(--cyan),#ffd166 70%,var(--red));
-    transition:width .3s linear;
-  }
-
-  .board{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,2.5vw,14px);
-    background:linear-gradient(180deg,var(--grass1),var(--grass2));
-    padding:clamp(10px,3vw,16px);border-radius:16px;
-    border:3px solid #3a7a25; box-shadow:inset 0 -8px 20px rgba(0,0,0,.25);
-    touch-action:manipulation;
-  }
-  .hole{
-    position:relative;aspect-ratio:1/1;border-radius:50%;
-    background:radial-gradient(ellipse at 50% 70%, #0b0813 0%, var(--hole) 55%, #2a1d33 100%);
-    box-shadow:inset 0 10px 18px rgba(0,0,0,.85), inset 0 -6px 10px rgba(255,255,255,.05), 0 4px 0 #2f6b1e;
-    overflow:hidden;cursor:pointer;user-select:none;
-    transition:transform .1s ease;
-  }
-  .hole:hover{transform:translateY(-2px)}
-  .hole:active{transform:scale(.97)}
-  .hole::after{
-    content:"";position:absolute;left:8%;right:8%;top:6%;height:22%;border-radius:50%;
-    background:linear-gradient(180deg,rgba(255,255,255,.10),transparent);pointer-events:none;
-  }
-
-  .mole{
-    position:absolute;left:50%;bottom:-8%;
-    width:78%;height:78%;transform:translate(-50%,110%);
-    transition:transform .18s cubic-bezier(.34,1.56,.64,1);
-    pointer-events:none; z-index:2;
-  }
-  .hole.up .mole{transform:translate(-50%,6%)}
-  .hole.hit .mole{animation:whack .3s ease forwards}
-  @keyframes whack{
-    0%{transform:translate(-50%,6%) rotate(0)}
-    35%{transform:translate(-50%,22%) rotate(-8deg) scale(.92)}
-    100%{transform:translate(-50%,110%) rotate(4deg)}
-  }
-  .mole .body{
-    position:absolute;inset:14% 8% 0 8%;border-radius:50% 50% 46% 46%;
-    background:radial-gradient(circle at 35% 25%, #d99a5b, #b06f38 60%, #8a5226);
-    box-shadow:inset -6px -8px 14px rgba(0,0,0,.3);
-  }
-  .mole .belly{
-    position:absolute;left:26%;right:26%;bottom:4%;height:44%;border-radius:50%;
-    background:radial-gradient(circle at 50% 30%, #f6d7ac, #eabf8d);
-    opacity:.9;
-  }
-  .mole .eye{
-    position:absolute;top:34%;width:13%;height:16%;border-radius:50%;
-    background:#1c130b;box-shadow:inset 2px 2px 0 rgba(255,255,255,.55);
-  }
-  .mole .eye.l{left:27%} .mole .eye.r{right:27%}
-  .mole .nose{
-    position:absolute;top:47%;left:50%;transform:translateX(-50%);
-    width:20%;height:13%;border-radius:50%;background:#5b3018;
-  }
-  .mole .tooth{
-    position:absolute;top:60%;left:50%;transform:translateX(-50%);
-    width:16%;height:11%;background:#fffefa;border-radius:3px;
-    box-shadow:inset 0 -2px 0 #ddd;
-  }
-  .mole .ear{
-    position:absolute;top:8%;width:20%;height:20%;border-radius:50%;
-    background:#96602f;border:3px solid #7a4c22;
-  }
-  .mole .ear.l{left:10%} .mole .ear.r{right:10%}
-  .mole .whackmark{
-    position:absolute;top:14%;left:50%;transform:translateX(-50%) scale(0);
-    font-size:26px;font-weight:900;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.6);
-  }
-  .hole.hit .whackmark{animation:mark .45s ease forwards}
-  @keyframes mark{0%{transform:translateX(-50%) scale(0)}40%{transform:translateX(-50%) scale(1.4)}100%{transform:translateX(-50%) scale(1);opacity:0}}
-
-  .mole.gold .body{background:radial-gradient(circle at 35% 25%, #ffe9a8, #f5c542 55%, #c99a1a)}
-  .mole.gold .belly{background:radial-gradient(circle at 50% 30%, #fff6d8, #ffe8a3)}
-  .mole.gold .nose{background:#a5730f}
-
-  .float{
-    position:absolute;left:50%;top:18%;transform:translateX(-50%);
-    font-weight:900;font-size:clamp(16px,4vw,24px);pointer-events:none;z-index:5;
-    text-shadow:0 2px 6px rgba(0,0,0,.6);animation:rise .7s ease forwards;white-space:nowrap;
-  }
-  @keyframes rise{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}25%{opacity:1;transform:translate(-50%,-6px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-46px) scale(1)}}
-
-  .ripple{
-    position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;
-    border:3px solid rgba(255,255,255,.85);transform:translate(-50%,-50%);
-    animation:rip .4s ease-out forwards;pointer-events:none;z-index:4;
-  }
-  @keyframes rip{to{width:90%;height:90%;opacity:0;border-width:1px}}
-
-  .flash{animation:flash .2s ease}
-  @keyframes flash{50%{filter:brightness(1.6) saturate(1.4)}}
+  canvas{display:block;width:100%;height:auto;touch-action:none}
 
   .overlay{
-    position:absolute;inset:0;border-radius:16px;z-index:10;
-    background:rgba(10,16,34,.82);backdrop-filter:blur(6px);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:20px;gap:10px;opacity:0;visibility:hidden;
-    transition:opacity .25s ease;
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;text-align:center;
+    background:rgba(7,10,20,.78);backdrop-filter:blur(6px);
+    transition:opacity .25s;padding:24px;
   }
-  .overlay.show{opacity:1;visibility:visible}
-  .overlay h2{font-size:clamp(24px,5vw,34px);letter-spacing:3px;
-    background:linear-gradient(180deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .overlay p{color:var(--muted);font-size:14px;line-height:1.8;max-width:380px}
-  .finalscore{font-size:52px;font-weight:900;color:var(--gold);text-shadow:0 6px 0 rgba(0,0,0,.3);line-height:1}
-  .best{color:var(--cyan);font-weight:700}
-  .medal{font-size:44px}
-  .boardwrap{position:relative}
-  .legend{display:flex;gap:14px;justify-content:center;color:var(--muted);font-size:12px;margin-top:10px;flex-wrap:wrap}
-  .legend b{color:var(--text)}
-  .combo{
-    position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:12px;font-weight:800;
-    padding:4px 10px;border-radius:99px;box-shadow:0 4px 12px rgba(239,71,111,.5);
-    transform:scale(0);transition:transform .2s cubic-bezier(.34,1.56,.64,1);z-index:6;
-  }
-  .combo.on{transform:scale(1)}
-  footer{margin-top:14px;color:#6f81ad;font-size:12px;letter-spacing:1px;text-align:center;z-index:2}
+  .overlay.hidden{opacity:0;pointer-events:none}
+  .overlay h2{font-size:34px;font-weight:900;letter-spacing:6px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .overlay p{color:var(--muted);font-size:14px;line-height:1.9}
+  .overlay .final{font-size:15px;color:var(--text)}
+  .overlay .final b{color:var(--accent);font-size:26px}
+  .new-record{color:var(--accent2);font-weight:700;letter-spacing:2px;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.4}}
 
-  @media (max-width:420px){
-    .hud{grid-template-columns:repeat(2,1fr)}
-    .stat .v{font-size:20px}
-    body{padding:10px}
-    button{padding:9px 12px;font-size:14px}
+  .btn{
+    cursor:pointer;border:none;border-radius:999px;
+    padding:12px 34px;font-size:15px;font-weight:700;letter-spacing:3px;
+    color:#04121a;background:linear-gradient(135deg,var(--accent),#38bdf8);
+    box-shadow:0 8px 24px -8px rgba(94,234,212,.7);
+    transition:transform .15s,box-shadow .15s,filter .15s;
+  }
+  .btn:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 12px 28px -8px rgba(94,234,212,.8)}
+  .btn:active{transform:translateY(0) scale(.97)}
+  .btn.ghost{
+    background:transparent;color:var(--accent);
+    border:1px solid var(--line);box-shadow:none;
+  }
+  .btn.ghost:hover{background:rgba(94,234,212,.1);box-shadow:none}
+
+  footer{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+  .keys{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  kbd{
+    background:#151c30;border:1px solid #2a3554;border-bottom-width:3px;
+    border-radius:6px;padding:2px 7px;font-size:11px;color:#cbd5e1;font-family:inherit;
+  }
+  .dpad{display:none;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(2,56px);gap:8px;justify-content:center}
+  .dpad button{
+    border:1px solid var(--line);background:var(--panel);color:var(--accent);
+    border-radius:14px;font-size:20px;cursor:pointer;transition:background .15s,transform .1s;
+    backdrop-filter:blur(6px);
+  }
+  .dpad button:active{background:rgba(94,234,212,.22);transform:scale(.94)}
+  .dpad .up{grid-column:2;grid-row:1}
+  .dpad .left{grid-column:1;grid-row:2}
+  .dpad .down{grid-column:2;grid-row:2}
+  .dpad .right{grid-column:3;grid-row:2}
+  .controls-row{display:flex;justify-content:center}
+  @media (pointer:coarse),(max-width:640px){
+    .dpad{display:grid}
+    .keys{display:none}
+    h1{font-size:21px} h1 small{display:none}
+    .score-card{min-width:64px;padding:5px 10px}
+    .score-card .value{font-size:18px}
   }
 </style>
 </head>
 <body>
-<div class="stars"></div>
-
-<header>
-  <h1>🔨 打地鼠</h1>
-  <div class="sub">WHACK-A-MOLE · 60 秒挑战</div>
-</header>
-
-<div class="panel">
-  <div class="hud">
-    <div class="stat"><div class="k">得分</div><div class="v gold" id="score">0</div></div>
-    <div class="stat"><div class="k">连击</div><div class="v cyan" id="combo">x1</div></div>
-    <div class="stat"><div class="k">时间</div><div class="v" id="time">60</div></div>
-    <div class="stat"><div class="k">最高分</div><div class="v red" id="best">0</div></div>
-  </div>
-
-  <div class="controls">
-    <button id="btnStart" class="grow">▶ 开始游戏</button>
-    <button id="btnPause" class="ghost" disabled>⏸ 暂停</button>
-    <button id="btnSound" class="ghost">🔊 音效</button>
-  </div>
-
-  <div class="timebar"><i id="timeFill"></i></div>
-
-  <div class="boardwrap">
-    <div class="board" id="board"></div>
-    <div class="combo" id="comboBadge">🔥 连击 x2</div>
-
-    <div class="overlay show" id="ovStart">
-      <div class="medal">🐹</div>
-      <h2>准备好了吗？</h2>
-      <p>地鼠会从 9 个洞里随机冒头，<br>在 <b>60 秒</b> 内尽可能多打！<br>连续命中可叠加 <b>连击倍率</b>，<br>金色地鼠分值更高、跑得更快。</p>
-      <button id="btnGo">🔨 开始</button>
+<div class="app">
+  <header>
+    <h1>霓虹贪吃蛇<small>NEON SNAKE</small></h1>
+    <div class="scores">
+      <div class="score-card" id="scoreCard"><div class="label">得分</div><div class="value" id="score">0</div></div>
+      <div class="score-card best"><div class="label">最高</div><div class="value" id="best">0</div></div>
     </div>
+  </header>
 
-    <div class="overlay" id="ovPause">
-      <div class="medal">⏸️</div>
-      <h2>已暂停</h2>
-      <p>休息一下，地鼠也在休息~</p>
-      <button id="btnResume">▶ 继续</button>
-    </div>
-
-    <div class="overlay" id="ovOver">
-      <div class="medal" id="medalIcon">🏆</div>
-      <h2>时间到！</h2>
-      <div class="finalscore" id="finalScore">0</div>
-      <p id="rankText">干得不错！</p>
-      <p>命中 <b id="hitCount">0</b> 只 · 最长连击 <b id="maxCombo">0</b><br>
-        最高分 <span class="best" id="bestFinal">0</span></p>
-      <button id="btnAgain">🔄 再来一局</button>
+  <div class="board-wrap">
+    <canvas id="game" width="480" height="480" aria-label="贪吃蛇游戏区域"></canvas>
+    <div class="overlay" id="overlay">
+      <h2 id="ovTitle">贪吃蛇</h2>
+      <div class="final" id="ovFinal" hidden></div>
+      <div class="new-record" id="ovRecord" hidden>★ 新纪录 ★</div>
+      <p id="ovHelp">吃掉红色能量球成长，别撞墙也别咬到自己<br>方向键 / WASD / 滑动 控制 · 空格暂停</p>
+      <button class="btn" id="startBtn">开始游戏</button>
     </div>
   </div>
 
-  <div class="legend">
-    <span>🐹 普通地鼠 <b>+10</b></span>
-    <span>🌟 金色地鼠 <b>+30</b></span>
-    <span>💥 连击每层 <b>+2</b></span>
-    <span>❌ 空挥 <b>-5 连击</b></span>
+  <div class="controls-row">
+    <div class="dpad" aria-label="方向控制">
+      <button class="up" data-dir="up" aria-label="上">▲</button>
+      <button class="left" data-dir="left" aria-label="左">◀</button>
+      <button class="down" data-dir="down" aria-label="下">▼</button>
+      <button class="right" data-dir="right" aria-label="右">▶</button>
+    </div>
   </div>
+
+  <footer>
+    <div class="keys">
+      <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd><span>或</span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>移动</span><kbd>Space</kbd><span>暂停</span>
+    </div>
+    <button class="btn ghost" id="resetBtn" style="padding:7px 18px;font-size:12px;letter-spacing:2px">重新开始</button>
+  </footer>
 </div>
-
-<footer>纯前端实现 · 数据本地保存 · 适配手机/桌面</footer>
 
 <script>
 (() => {
-  "use strict";
-  const HOLES = 9;
-  const ROUND = 60;
-  const $ = id => document.getElementById(id);
-  const board = $("board");
+  'use strict';
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const COLS = 24, ROWS = 24;
+  const CELL = canvas.width / COLS;
 
-  let audioCtx = null, soundOn = true;
-  function ac(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return audioCtx; }
-  function beep(freq, dur=.08, type="square", gain=.14, slideTo=null){
-    if(!soundOn) return; const ctx=ac(); if(!ctx) return;
-    if(ctx.state==="suspended") ctx.resume();
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type=type; o.frequency.setValueAtTime(freq, ctx.currentTime);
-    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, ctx.currentTime+dur);
-    g.gain.setValueAtTime(gain, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+dur);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(); o.stop(ctx.currentTime+dur+.02);
-  }
-  const sfx = {
-    hit(){ beep(180,.07,"square",.18,90); beep(760,.05,"sine",.10,500); },
-    gold(){ beep(660,.07,"square",.12,990); setTimeout(()=>beep(880,.09,"square",.12,1320),60); },
-    miss(){ beep(140,.12,"sawtooth",.08,70); },
-    start(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.1,"triangle",.12),i*90)); },
-    over(){ [880,660,440,330].forEach((f,i)=>setTimeout(()=>beep(f,.16,"triangle",.12),i*140)); },
-    combo(){ beep(980,.06,"sine",.1,1400); },
-  };
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const scoreCard = document.getElementById('scoreCard');
+  const overlay = document.getElementById('overlay');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovFinal = document.getElementById('ovFinal');
+  const ovRecord = document.getElementById('ovRecord');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
 
-  const S = {
-    playing:false, paused:false, over:false,
-    score:0, time:ROUND, combo:1, maxCombo:0, hits:0,
-    best:+(localStorage.getItem("wam_best")||0),
-    spawnT:null, tickT:null, level:1,
-    mole:{hole:-1, gold:false, alive:false, t:null},
-  };
+  const BEST_KEY = 'neon-snake-best';
+  let best = 0;
+  try { best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch (e) {}
+  bestEl.textContent = best;
 
-  const holes = [];
-  for(let i=0;i<HOLES;i++){
-    const el = document.createElement("div");
-    el.className="hole";
-    el.dataset.i=i;
-    el.innerHTML = `
-      <div class="mole">
-        <div class="body"></div>
-        <div class="belly"></div>
-        <div class="ear l"></div><div class="ear r"></div>
-        <div class="eye l"></div><div class="eye r"></div>
-        <div class="nose"></div><div class="tooth"></div>
-        <div class="whackmark">💥</div>
-      </div>`;
-    board.appendChild(el);
-    holes.push(el);
-    el.addEventListener("pointerdown", e => { e.preventDefault(); onHit(i, e); });
+  let snake, dir, nextDir, food, score, speed, timer, state, particles, shake = 0;
+
+  function reset() {
+    snake = [{x:8,y:12},{x:7,y:12},{x:6,y:12}];
+    dir = {x:1,y:0};
+    nextDir = {x:1,y:0};
+    score = 0;
+    speed = 150;
+    particles = [];
+    scoreEl.textContent = '0';
+    placeFood();
   }
 
-  $("best").textContent = S.best;
-
-  function setStat(el, v){ el.textContent=v; el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
-  function renderScore(){ setStat($("score"), S.score); $("combo").textContent="x"+S.combo;
-    const b=$("comboBadge"); b.textContent="🔥 连击 x"+S.combo;
-    b.classList.toggle("on", S.combo>=2 && S.playing && !S.over); }
-
-  function floatText(i, txt, color){
-    const f=document.createElement("div");
-    f.className="float"; f.textContent=txt; f.style.color=color;
-    holes[i].appendChild(f); setTimeout(()=>f.remove(),700);
-  }
-  function ripple(i, x, y){
-    const r=document.createElement("div"); r.className="ripple";
-    const rect=holes[i].getBoundingClientRect();
-    r.style.left=((x-rect.left)/rect.width*100)+"%";
-    r.style.top=((y-rect.top)/rect.height*100)+"%";
-    holes[i].appendChild(r); setTimeout(()=>r.remove(),400);
-    holes[i].classList.remove("flash"); void holes[i].offsetWidth; holes[i].classList.add("flash");
+  function placeFood() {
+    const occupied = new Set(snake.map(s => s.x + ',' + s.y));
+    let p;
+    do {
+      p = {x:(Math.random()*COLS)|0, y:(Math.random()*ROWS)|0};
+    } while (occupied.has(p.x + ',' + p.y));
+    food = p;
   }
 
-  function pickHole(){
-    let i; do{ i = Math.floor(Math.random()*HOLES); }while(i===S.mole.hole && HOLES>1);
-    return i;
+  function setDir(x, y) {
+    if (state !== 'running') return;
+    if (x === -dir.x && y === -dir.y) return;
+    nextDir = {x, y};
   }
-  function spawnMole(){
-    if(!S.playing || S.paused) return;
-    const i = pickHole();
-    const goldChance = .12 + S.level*.02;
-    const gold = Math.random() < goldChance;
-    S.mole = {hole:i, gold, alive:true, t:null};
-    const m = holes[i].querySelector(".mole");
-    m.classList.toggle("gold", gold);
-    holes[i].classList.remove("up","hit");
-    void holes[i].offsetWidth;
-    holes[i].classList.add("up");
 
-    const life = Math.max(430, 1000 - S.level*70 - (gold?180:0));
-    S.mole.t = setTimeout(()=>{ hideMole(true); }, life);
+  function updateScore() {
+    scoreEl.textContent = score;
+    scoreCard.classList.remove('pop');
+    void scoreCard.offsetWidth;
+    scoreCard.classList.add('pop');
+    if (score > best) {
+      best = score;
+      bestEl.textContent = best;
+      try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {}
+      return true;
+    }
+    return false;
+  }
 
-    if(S.level>=4 && Math.random()<.35){
-      const j = pickHole();
-      if(!holes[j].classList.contains("up")){
-        const m2 = holes[j].querySelector(".mole");
-        m2.classList.remove("gold");
-        holes[j].classList.add("up");
-        setTimeout(()=>holes[j].classList.remove("up"), life);
+  function spawnParticles(x, y) {
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = 40 + Math.random() * 90;
+      particles.push({
+        x: (x + .5) * CELL, y: (y + .5) * CELL,
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+        life: .5, r: 2 + Math.random() * 3
+      });
+    }
+  }
+
+  function tick() {
+    dir = nextDir;
+    const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+    if (head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS) return gameOver();
+    const willGrow = head.x === food.x && head.y === food.y;
+    const body = willGrow ? snake : snake.slice(0, -1);
+    if (body.some(s => s.x === head.x && s.y === head.y)) return gameOver();
+
+    snake.unshift(head);
+    if (willGrow) {
+      spawnParticles(food.x, food.y);
+      score += 10;
+      if (updateScore()) ovRecord.hidden = false;
+      placeFood();
+      if (score % 50 === 0 && speed > 60) {
+        speed -= 8;
+        restartTimer();
+      }
+    } else {
+      snake.pop();
+    }
+  }
+
+  function gameOver() {
+    state = 'over';
+    clearInterval(timer);
+    ovTitle.textContent = '游戏结束';
+    ovFinal.innerHTML = '本局得分 <b>' + score + '</b>　最高 ' + best;
+    ovFinal.hidden = false;
+    startBtn.textContent = '再来一局';
+    overlay.classList.remove('hidden');
+    shake = .45;
+  }
+
+  function start() {
+    reset();
+    state = 'running';
+    ovRecord.hidden = true;
+    ovFinal.hidden = true;
+    ovTitle.textContent = '贪吃蛇';
+    startBtn.textContent = '开始游戏';
+    overlay.classList.add('hidden');
+    restartTimer();
+  }
+
+  function restartTimer() {
+    clearInterval(timer);
+    timer = setInterval(() => { if (state === 'running') tick(); }, speed);
+  }
+
+  function togglePause() {
+    if (state === 'running') {
+      state = 'paused';
+      ovTitle.textContent = '已暂停';
+      ovFinal.hidden = true;
+      startBtn.textContent = '继续';
+      overlay.classList.remove('hidden');
+    } else if (state === 'paused') {
+      state = 'running';
+      overlay.classList.add('hidden');
+    }
+  }
+
+  let lastT = 0, pulse = 0;
+
+  function draw(t) {
+    const dt = Math.min((t - lastT) / 1000, .05);
+    lastT = t;
+    pulse += dt;
+
+    ctx.save();
+    if (shake > 0) {
+      shake -= dt;
+      ctx.translate((Math.random() - .5) * 8 * shake, (Math.random() - .5) * 8 * shake);
+    }
+
+    ctx.fillStyle = '#090d19';
+    ctx.fillRect(-10, -10, canvas.width + 20, canvas.height + 20);
+
+    ctx.strokeStyle = 'rgba(94,234,212,.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 1; i < COLS; i++) {
+      ctx.moveTo(i * CELL + .5, 0); ctx.lineTo(i * CELL + .5, canvas.height);
+      ctx.moveTo(0, i * CELL + .5); ctx.lineTo(canvas.width, i * CELL + .5);
+    }
+    ctx.stroke();
+
+    const fx = (food.x + .5) * CELL, fy = (food.y + .5) * CELL;
+    const pr = CELL * (0.34 + Math.sin(pulse * 5) * 0.05);
+    const glow = ctx.createRadialGradient(fx, fy, 1, fx, fy, CELL * 1.4);
+    glow.addColorStop(0, 'rgba(251,113,133,.55)');
+    glow.addColorStop(1, 'rgba(251,113,133,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(fx - CELL * 1.4, fy - CELL * 1.4, CELL * 2.8, CELL * 2.8);
+    ctx.fillStyle = '#fb7185';
+    ctx.beginPath(); ctx.arc(fx, fy, pr, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(fx - pr * .3, fy - pr * .3, pr * .3, 0, Math.PI * 2); ctx.fill();
+
+    const n = snake.length;
+    for (let i = n - 1; i >= 0; i--) {
+      const s = snake[i];
+      const k = i / Math.max(n - 1, 1);
+      const x = s.x * CELL, y = s.y * CELL;
+      const r = CELL / 2;
+      const hue = 165 + k * 90;
+      const pad = i === 0 ? 1.5 : 2.5;
+      ctx.shadowColor = 'hsla(' + hue + ',85%,60%,.9)';
+      ctx.shadowBlur = i === 0 ? 18 : 10;
+      ctx.fillStyle = 'hsl(' + hue + ',80%,' + (i === 0 ? 70 : 62 - k * 18) + '%)';
+      roundRect(x + pad, y + pad, CELL - pad * 2, CELL - pad * 2, i === 0 ? 8 : 6);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      if (i === 0) {
+        const ex = x + r + dir.x * r * .3;
+        const ey = y + r + dir.y * r * .3;
+        const off = CELL * .2;
+        const px = dir.y !== 0 ? off : 0;
+        const py = dir.x !== 0 ? off : 0;
+        ctx.fillStyle = '#0a0e1a';
+        for (const sgn of [-1, 1]) {
+          ctx.beginPath();
+          ctx.arc(ex + px * sgn, ey + py * sgn, CELL * .1, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
-    scheduleNext();
-  }
-  function hideMole(missed){
-    const i = S.mole.hole;
-    if(i>=0){ holes[i].classList.remove("up","hit"); }
-    if(missed && S.mole.alive){ comboDown(1); }
-    S.mole.alive=false;
-  }
-  function scheduleNext(){
-    clearTimeout(S.mole.t);
-    const gap = Math.max(160, 520 - S.level*45);
-    S.spawnT = setTimeout(spawnMole, gap + Math.random()*260);
-  }
 
-  function onHit(i, e){
-    ripple(i, e.clientX, e.clientY);
-    if(!S.playing || S.paused) return;
-    if(S.mole.alive && S.mole.hole===i){
-      const gold = S.mole.gold;
-      clearTimeout(S.mole.t);
-      S.mole.alive=false;
-      holes[i].classList.add("hit");
-      setTimeout(()=>holes[i].classList.remove("up","hit"), 320);
-      S.hits++;
-      S.combo++; S.maxCombo=Math.max(S.maxCombo,S.combo);
-      const base = gold?30:10;
-      const gain = base + (S.combo-1)*2;
-      S.score += gain;
-      floatText(i, "+"+gain, gold?"#ffd166":"#fff");
-      gold ? sfx.gold() : sfx.hit();
-      if(S.combo>1 && S.combo%3===0) sfx.combo();
-      renderScore();
-      scheduleNext();
-    }else{
-      sfx.miss();
-      floatText(i, "miss", "#ff8fa3");
-      comboDown(5);
+    ctx.globalCompositeOperation = 'lighter';
+    particles = particles.filter(p => (p.life -= dt) > 0);
+    for (const p of particles) {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .95; p.vy *= .95;
+      ctx.fillStyle = 'rgba(251,113,133,' + (p.life * 1.6) + ')';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life + .5, 0, Math.PI * 2); ctx.fill();
     }
-  }
-  function comboDown(n){
-    S.combo = Math.max(1, S.combo - (n>=5?Math.ceil(S.combo*.5):1));
-    renderScore();
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.restore();
+    requestAnimationFrame(draw);
   }
 
-  function tick(){
-    if(S.paused) return;
-    S.time--;
-    $("time").textContent = S.time;
-    $("timeFill").style.width = (S.time/ROUND*100)+"%";
-    S.level = Math.max(1, Math.floor((ROUND-S.time)/10)+1);
-    if(S.time<=0) endGame();
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
-  function startGame(){
-    S.playing=true; S.paused=false; S.over=false;
-    S.score=0; S.time=ROUND; S.combo=1; S.maxCombo=0; S.hits=0; S.level=1;
-    $("time").textContent=ROUND;
-    $("timeFill").style.width="100%";
-    renderScore();
-    hideOv();
-    $("btnStart").disabled=true; $("btnPause").disabled=false;
-    $("btnStart").textContent="🎮 进行中";
-    sfx.start();
-    clearInterval(S.tickT); S.tickT=setInterval(tick,1000);
-    clearTimeout(S.spawnT); spawnMole();
-  }
-  function pauseGame(){
-    if(!S.playing||S.over) return;
-    S.paused=true; showOv("ovPause");
-    $("btnPause").textContent="▶ 继续"; $("btnPause").classList.remove("ghost");
-  }
-  function resumeGame(){
-    if(!S.playing||S.over) return;
-    S.paused=false; hideOv();
-    $("btnPause").textContent="⏸ 暂停"; $("btnPause").classList.add("ghost");
-    scheduleNext();
-  }
-  function endGame(){
-    S.playing=false; S.over=true;
-    clearInterval(S.tickT); clearTimeout(S.spawnT); clearTimeout(S.mole.t);
-    holes.forEach(h=>h.classList.remove("up","hit"));
-    sfx.over();
-    if(S.score>S.best){ S.best=S.score; localStorage.setItem("wam_best", S.best); $("best").textContent=S.best; }
-    $("finalScore").textContent=S.score;
-    $("hitCount").textContent=S.hits;
-    $("maxCombo").textContent=S.maxCombo;
-    $("bestFinal").textContent=S.best;
-    $("medalIcon").textContent = S.score>=600?"🏆":S.score>=350?"🥇":S.score>=180?"🥈":S.score>=80?"🥉":"🐹";
-    $("rankText").textContent = S.score>=600?"地鼠克星！史诗级表现！":S.score>=350?"高手风范，再来一把？"
-      :S.score>=180?"身手不错，继续加油！":S.score>=80?"有点感觉了，再练练~":"别灰心，熟能生巧！";
-    showOv("ovOver");
-    $("btnStart").disabled=false; $("btnPause").disabled=true;
-    $("btnStart").textContent="▶ 开始游戏";
-    $("btnPause").textContent="⏸ 暂停"; $("btnPause").classList.add("ghost");
-    renderScore();
-  }
-
-  function showOv(id){ hideOv(); $(id).classList.add("show"); }
-  function hideOv(){ document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("show")); }
-
-  $("btnStart").addEventListener("click", startGame);
-  $("btnGo").addEventListener("click", startGame);
-  $("btnAgain").addEventListener("click", startGame);
-  $("btnPause").addEventListener("click", ()=> S.paused?resumeGame():pauseGame());
-  $("btnResume").addEventListener("click", resumeGame);
-  $("btnSound").addEventListener("click", ()=>{
-    soundOn=!soundOn;
-    $("btnSound").textContent = soundOn?"🔊 音效":"🔇 静音";
-    if(soundOn) beep(660,.06,"sine",.1,880);
+  const KEYS = {
+    ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0],
+    w:[0,-1], s:[0,1], a:[-1,0], d:[1,0],
+    W:[0,-1], S:[0,1], A:[-1,0], D:[1,0]
+  };
+  document.addEventListener('keydown', e => {
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      if (state === 'over' || state === 'idle') start(); else togglePause();
+      return;
+    }
+    if (e.key === 'Enter' && state !== 'running') { start(); return; }
+    const k = KEYS[e.key];
+    if (k) { e.preventDefault(); setDir(k[0], k[1]); }
   });
-  document.addEventListener("keydown", e=>{
-    if(e.code==="Space"){ e.preventDefault(); S.playing?(S.paused?resumeGame():pauseGame()):startGame(); }
-    if(e.code==="Escape" && S.playing && !S.paused) pauseGame();
+
+  let touchStart = null;
+  canvas.addEventListener('touchstart', e => {
+    const t = e.changedTouches[0];
+    touchStart = {x:t.clientX, y:t.clientY};
+  }, {passive:true});
+  canvas.addEventListener('touchend', e => {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+    if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
+    else setDir(0, dy > 0 ? 1 : -1);
+  }, {passive:true});
+
+  document.querySelectorAll('.dpad button').forEach(btn => {
+    const map = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const d = map[btn.dataset.dir];
+      setDir(d[0], d[1]);
+    });
   });
-  document.addEventListener("visibilitychange", ()=>{ if(document.hidden && S.playing && !S.paused) pauseGame(); });
-  renderScore();
+
+  startBtn.addEventListener('click', () => {
+    if (state === 'paused') { state = 'running'; overlay.classList.add('hidden'); }
+    else start();
+  });
+  resetBtn.addEventListener('click', start);
+  window.addEventListener('blur', () => { if (state === 'running') togglePause(); });
+
+  state = 'idle';
+  reset();
+  requestAnimationFrame(draw);
 })();
 </script>
 </body>
