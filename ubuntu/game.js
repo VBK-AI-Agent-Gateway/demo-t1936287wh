@@ -16,6 +16,10 @@
   const tank = { x: 150, y: GROUND_Y, vy: 0, w: 78, h: 46, onGround: true, jumps: 0, tilt: 0, wheel: 0, hurt: 0 };
   let pits = [], rocks = [], coinsArr = [], parts = [], clouds = [];
 
+  // ---------- 用户提供的背景图片 ----------
+  const bgImg = new Image();
+  bgImg.src = 'assets/bg.jpg';
+
   // ---------- 天空星星(背景 canvas) ----------
   const sc = document.getElementById('stars'), sx = sc.getContext('2d');
   function resizeStars() { sc.width = innerWidth; sc.height = innerHeight; drawStars(); }
@@ -241,15 +245,28 @@
   }
 
   function drawBackground() {
-    // 天空渐变
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#6ec6f5'); g.addColorStop(.55, '#a8dcfa'); g.addColorStop(1, '#e8f6ff');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    // 太阳
-    ctx.fillStyle = '#ffe680'; ctx.beginPath(); ctx.arc(W - 110, 70, 34, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(255,230,128,.3)'; ctx.beginPath(); ctx.arc(W - 110, 70, 50, 0, 7); ctx.fill();
-    // 远山
-    ctx.fillStyle = '#8fbf87';
+    if (bgImg.complete && bgImg.naturalWidth) {
+      // 用户背景图：cover 铺满 + 缓慢横向视差 + 轻压暗保证前景可读
+      const sc0 = Math.max(W / bgImg.naturalWidth, H / bgImg.naturalHeight);
+      const dw = bgImg.naturalWidth * sc0, dh = bgImg.naturalHeight * sc0;
+      const px = -((S.dist * 0.6) % dw);
+      ctx.drawImage(bgImg, px, (H - dh) / 2, dw, dh);
+      ctx.drawImage(bgImg, px + dw, (H - dh) / 2, dw, dh);
+      ctx.fillStyle = 'rgba(10,20,45,.38)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(120,180,240,.14)'; ctx.fillRect(0, 0, W, H);
+    } else {
+      // 图片未加载时的兜底天空
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#6ec6f5'); g.addColorStop(.55, '#a8dcfa'); g.addColorStop(1, '#e8f6ff');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+    // 太阳（仅兜底天空时绘制）
+    if (!(bgImg.complete && bgImg.naturalWidth)) {
+      ctx.fillStyle = '#ffe680'; ctx.beginPath(); ctx.arc(W - 110, 70, 34, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,230,128,.3)'; ctx.beginPath(); ctx.arc(W - 110, 70, 50, 0, 7); ctx.fill();
+    }
+    // 远山（半透明融入背景图）
+    ctx.fillStyle = 'rgba(143,191,135,.75)';
     const off = (S.dist * .3) % 400;
     for (let i = -1; i < 4; i++) {
       const x = i * 400 - off;
