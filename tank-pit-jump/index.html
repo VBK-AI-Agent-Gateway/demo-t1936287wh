@@ -2,38 +2,528 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>坦克跳坑 Tank Pit Jump</title>
-<link rel="stylesheet" href="style.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #eaeaea;
+    font-family: "Courier New", monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  h1 {
+    color: #ffd700;
+    text-shadow: 3px 3px 0 #b8860b;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    font-size: 28px;
+  }
+  #hud {
+    display: flex;
+    gap: 32px;
+    font-size: 16px;
+    margin-bottom: 8px;
+    background: #16213e;
+    padding: 8px 24px;
+    border: 2px solid #0f3460;
+    border-radius: 4px;
+  }
+  #hud span b { color: #ffd700; }
+  #hud .lives { color: #ff4757; letter-spacing: 2px; }
+  #gameWrap { position: relative; }
+  canvas {
+    display: block;
+    background: #87ceeb;
+    border: 4px solid #0f3460;
+    border-radius: 4px;
+    image-rendering: pixelated;
+    max-width: 100%;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 10, 30, 0.82);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 14px;
+    border-radius: 4px;
+  }
+  #overlay.hidden { display: none; }
+  #overlayTitle { font-size: 34px; color: #ffd700; text-shadow: 2px 2px 0 #b8860b; }
+  #overlayMsg { font-size: 15px; line-height: 1.7; color: #cfd8e3; white-space: pre-line; }
+  .btn {
+    font-family: inherit;
+    font-size: 18px;
+    padding: 10px 34px;
+    background: #ffd700;
+    color: #1a1a2e;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 4px 0 #b8860b;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #b8860b; }
+  #help {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #8899aa;
+    background: #16213e;
+    padding: 8px 18px;
+    border-radius: 4px;
+    line-height: 1.8;
+  }
+  #help kbd {
+    background: #0f3460;
+    color: #ffd700;
+    padding: 1px 7px;
+    border-radius: 3px;
+    border: 1px solid #33415c;
+    font-family: inherit;
+  }
+</style>
 </head>
 <body>
-<div id="wrap">
-  <header>
-    <h1>坦克跳坑</h1>
-    <div id="hud">
-      <span>距离: <b id="dist">0</b> m</span>
-      <span>最高: <b id="best">0</b> m</span>
-      <span id="lives">♥♥♥</span>
-    </div>
-  </header>
-
-  <div id="stage">
-    <canvas id="game" width="480" height="270"></canvas>
-
-    <div id="overlay" class="show">
-      <div class="panel">
-        <h2 id="ovTitle">坦克跳坑</h2>
-        <p id="ovDesc">越过所有深坑，能跑多远跑多远！<br>空格 / ↑ / 点击屏幕 = 跳跃</p>
-        <button id="startBtn">开始游戏</button>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    <p>操作: 空格 / ↑ / 点击 / 触屏 = 跳跃，空中可再跳一次（二段跳）</p>
-    <button id="jumpBtn" aria-label="跳跃">JUMP</button>
-  </footer>
+<h1>⚡ 坦克跳坑 ⚡</h1>
+<div id="hud">
+  <span>关卡 <b id="hudLevel">1</b></span>
+  <span>分数 <b id="hudScore">0</b></span>
+  <span>生命 <span class="lives" id="hudLives">♥♥♥</span></span>
+  <span>最高 <b id="hudBest">0</b></span>
 </div>
-<script src="game.js"></script>
+<div id="gameWrap">
+  <canvas id="game" width="960" height="540"></canvas>
+  <div id="overlay">
+    <div id="overlayTitle">坦克跳坑</div>
+    <div id="overlayMsg">跨越坑洞，收集星星，活到最后！
+方向键 ← → 移动，↑ / 空格 跳跃（空中可二段跳）</div>
+    <button class="btn" id="btnStart">开始游戏</button>
+  </div>
+</div>
+<div id="help">
+  <kbd>←</kbd> <kbd>→</kbd> 移动 &nbsp;·&nbsp; <kbd>↑</kbd>/<kbd>空格</kbd> 跳跃（二段跳） &nbsp;·&nbsp; <kbd>P</kbd> 暂停 &nbsp;·&nbsp; <kbd>R</kbd> 重开<br>
+  掉进坑洞损失 1 条命（共 3 条）；越过右边界进入下一关；星星 +100 分
+</div>
+<script>
+/* ===== 坦克跳坑 Tank Pit Jump - 单文件经典版 ===== */
+(function () {
+  "use strict";
+  var canvas = document.getElementById("game");
+  var ctx = canvas.getContext("2d");
+  var W = canvas.width, H = canvas.height;
+
+  // --- HUD / overlay 元素 ---
+  var elOverlay = document.getElementById("overlay");
+  var elTitle = document.getElementById("overlayTitle");
+  var elMsg = document.getElementById("overlayMsg");
+  var elBtn = document.getElementById("btnStart");
+  var hudLevel = document.getElementById("hudLevel");
+  var hudScore = document.getElementById("hudScore");
+  var hudLives = document.getElementById("hudLives");
+  var hudBest = document.getElementById("hudBest");
+
+  // --- 常量 ---
+  var GRAVITY = 0.62;
+  var MOVE_ACC = 0.7;
+  var MAX_SPEED = 5.2;
+  var FRICTION = 0.86;
+  var JUMP_V = -12.2;
+  var GROUND_Y = H - 70;          // 地面顶面 y
+  var SEG_W = 40;                  // 地形分段宽度
+
+  // --- 键盘 ---
+  var keys = {};
+  window.addEventListener("keydown", function (e) {
+    if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," ","Spacebar"].indexOf(e.key) >= 0) e.preventDefault();
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === " " || e.key === "Spacebar" || e.key === "ArrowUp") tryJump();
+    if (e.key.toLowerCase() === "p") togglePause();
+    if (e.key.toLowerCase() === "r") restart();
+  });
+  window.addEventListener("keyup", function (e) { keys[e.key.toLowerCase()] = false; });
+
+  // --- 游戏状态 ---
+  var state = "menu";   // menu | play | pause | over
+  var score = 0, lives = 3, level = 1;
+  var best = 0;
+  try { best = parseInt(localStorage.getItem("tankpit_best") || "0", 10) || 0; } catch (e) {}
+
+  var tank, terrain, stars, clouds, offsetX, goalX;
+
+  function makeTank() {
+    return { x: 80, y: GROUND_Y - 34, w: 56, h: 34, vx: 0, vy: 0,
+             onGround: false, jumpsLeft: 2, facing: 1, trackT: 0 };
+  }
+
+  /* ===== 关卡地形生成：平台 + 坑洞 ===== */
+  function genLevel(lv) {
+    var segs = [];   // {x, w, top} 实心地面段
+    var pits = [];   // {x, w} 空洞区间
+    var starList = [];
+    var total = W * 2 + 600;      // 关卡总长（约两屏半）
+    var x = 0;
+    var safe = 340;
+    segs.push({ x: 0, w: safe, top: GROUND_Y });
+    x = safe;
+    var pitCount = 3 + Math.min(lv, 6);
+    var gapBudget = total - 500;
+    var eachPit = Math.floor(gapBudget / pitCount);
+    for (var i = 0; i < pitCount; i++) {
+      var pw = Math.min(60 + lv * 14 + Math.floor(Math.random() * 50), eachPit - 60);
+      if (pw < 60) pw = 60;
+      var px = x + 90 + Math.floor(Math.random() * 60);
+      pits.push({ x: px, w: pw });
+      var landW = 130 + Math.floor(Math.random() * 140);
+      var segTop = GROUND_Y;
+      if (lv >= 2 && Math.random() < 0.4) {
+        segTop = GROUND_Y - (30 + Math.floor(Math.random() * 40));
+      }
+      segs.push({ x: px + pw, w: landW, top: segTop });
+      starList.push({ x: px + pw / 2, y: GROUND_Y - 90, got: false, t: Math.random() * 6 });
+      if (Math.random() < 0.8) starList.push({ x: px + pw + landW / 2, y: segTop - 60, got: false, t: Math.random() * 6 });
+      x = px + pw + landW;
+    }
+    segs.push({ x: x + 60, w: 700, top: GROUND_Y });
+    goalX = x + 60 + 500;
+    starList.push({ x: goalX, y: GROUND_Y - 70, got: false, t: 0 });
+
+    var cl = [];
+    for (var c = 0; c < 8; c++) {
+      cl.push({ x: Math.random() * total, y: 30 + Math.random() * 140, s: 0.5 + Math.random() * 0.9 });
+    }
+    return { segs: segs, pits: pits, stars: starList, clouds: cl, total: total };
+  }
+
+  function loadLevel(lv) {
+    var t = genLevel(lv);
+    terrain = t; stars = t.stars; clouds = t.clouds;
+    tank = makeTank();
+    offsetX = 0;
+  }
+
+  /* ===== 跳跃（含二段跳） ===== */
+  function tryJump() {
+    if (state !== "play") return;
+    if (tank.jumpsLeft > 0) {
+      tank.vy = JUMP_V;
+      tank.jumpsLeft--;
+      tank.onGround = false;
+    }
+  }
+
+  function groundTopAt(px) {
+    for (var i = 0; i < terrain.segs.length; i++) {
+      var s = terrain.segs[i];
+      if (px >= s.x && px < s.x + s.w) return s.top;
+    }
+    return Infinity;
+  }
+
+  function physics() {
+    if (keys["arrowleft"]) { tank.vx -= MOVE_ACC; tank.facing = -1; }
+    if (keys["arrowright"]) { tank.vx += MOVE_ACC; tank.facing = 1; }
+    if (!keys["arrowleft"] && !keys["arrowright"]) tank.vx *= FRICTION;
+    if (tank.vx > MAX_SPEED) tank.vx = MAX_SPEED;
+    if (tank.vx < -MAX_SPEED) tank.vx = -MAX_SPEED;
+    if (Math.abs(tank.vx) < 0.05) tank.vx = 0;
+
+    tank.x += tank.vx;
+    if (tank.x < 0) { tank.x = 0; tank.vx = 0; }
+
+    tank.vy += GRAVITY;
+    tank.y += tank.vy;
+
+    var footL = tank.x + 6, footR = tank.x + tank.w - 6;
+    var top = Math.min(groundTopAt(footL), groundTopAt(footR));
+    var feet = tank.y + tank.h;
+    if (tank.vy >= 0 && top !== Infinity && feet >= top && feet <= top + Math.max(34, tank.vy + 6)) {
+      tank.y = top - tank.h;
+      tank.vy = 0;
+      if (!tank.onGround) { tank.onGround = true; tank.jumpsLeft = 2; }
+    } else {
+      tank.onGround = false;
+    }
+    var midTop = groundTopAt(tank.x + tank.w / 2);
+    if (midTop !== Infinity && tank.y + tank.h > midTop && tank.y + tank.h < midTop + 40 && tank.vy >= 0) {
+      tank.y = midTop - tank.h; tank.vy = 0; tank.onGround = true; tank.jumpsLeft = 2;
+    }
+
+    if (Math.abs(tank.vx) > 0.2 && tank.onGround) tank.trackT += Math.abs(tank.vx) * 0.06;
+
+    if (tank.y > H + 60) loseLife();
+
+    for (var i = 0; i < stars.length; i++) {
+      var st = stars[i];
+      if (st.got) continue;
+      var dx = (tank.x + tank.w / 2) - st.x, dy = (tank.y + tank.h / 2) - st.y;
+      if (dx * dx + dy * dy < 34 * 34) { st.got = true; score += 100; syncHud(); }
+    }
+
+    if (tank.x > goalX) nextLevel();
+
+    var target = tank.x - W * 0.35;
+    if (target < 0) target = 0;
+    if (target > terrain.total - W) target = terrain.total - W;
+    offsetX += (target - offsetX) * 0.12;
+  }
+
+  function loseLife() {
+    lives--;
+    syncHud();
+    if (lives <= 0) { gameOver(); return; }
+    var respawnX = Math.max(40, offsetX + 60);
+    var gt = groundTopAt(respawnX + 30);
+    if (gt === Infinity) { respawnX = 40; gt = groundTopAt(70); }
+    tank.x = respawnX; tank.y = gt - tank.h - 2;
+    tank.vx = 0; tank.vy = 0; tank.jumpsLeft = 2;
+  }
+
+  function nextLevel() {
+    score += 500;
+    level++;
+    loadLevel(level);
+    syncHud();
+  }
+
+  function gameOver() {
+    state = "over";
+    saveBest();
+    showOverlay("游戏结束", "最终分数：" + score + "\n到达关卡：" + level, "再来一次");
+  }
+
+  function saveBest() {
+    if (score > best) {
+      best = score;
+      try { localStorage.setItem("tankpit_best", String(best)); } catch (e) {}
+    }
+    syncHud();
+  }
+
+  function syncHud() {
+    hudLevel.textContent = level;
+    hudScore.textContent = score;
+    hudLives.textContent = lives > 0 ? new Array(lives + 1).join("♥") : "—";
+    hudBest.textContent = best;
+  }
+
+  function showOverlay(title, msg, btn) {
+    elTitle.textContent = title;
+    elMsg.textContent = msg;
+    elBtn.textContent = btn;
+    elOverlay.classList.remove("hidden");
+  }
+  function hideOverlay() { elOverlay.classList.add("hidden"); }
+
+  function startGame() {
+    score = 0; lives = 3; level = 1;
+    loadLevel(1);
+    state = "play";
+    syncHud();
+    hideOverlay();
+  }
+  function restart() { startGame(); }
+  function togglePause() {
+    if (state === "play") {
+      state = "pause";
+      showOverlay("暂停", "按 P 或点击按钮继续", "继续");
+    } else if (state === "pause") {
+      state = "play";
+      hideOverlay();
+    }
+  }
+  elBtn.addEventListener("click", function () {
+    if (state === "pause") { state = "play"; hideOverlay(); }
+    else startGame();
+  });
+
+  /* ===== 绘制 ===== */
+  function drawCloud(c) {
+    var x = c.x - offsetX * 0.4, y = c.y;
+    if (x < -120 || x > W + 120) return;
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.beginPath();
+    ctx.arc(x, y, 22 * c.s, 0, 7);
+    ctx.arc(x + 26 * c.s, y - 8 * c.s, 18 * c.s, 0, 7);
+    ctx.arc(x + 52 * c.s, y, 20 * c.s, 0, 7);
+    ctx.fill();
+  }
+
+  function drawStar(st) {
+    if (st.got) return;
+    var x = st.x - offsetX, y = st.y + Math.sin(st.t) * 5;
+    if (x < -30 || x > W + 30) { st.t += 0.05; return; }
+    st.t += 0.05;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(st.t * 0.5);
+    ctx.fillStyle = "#ffd700";
+    ctx.strokeStyle = "#b8860b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var i = 0; i < 5; i++) {
+      var a = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+      ctx.lineTo(Math.cos(a) * 13, Math.sin(a) * 13);
+      ctx.lineTo(Math.cos(a + Math.PI / 5) * 5.5, Math.sin(a + Math.PI / 5) * 5.5);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawTerrain() {
+    for (var i = 0; i < terrain.segs.length; i++) {
+      var s = terrain.segs[i];
+      var x = s.x - offsetX;
+      if (x + s.w < 0 || x > W) continue;
+      ctx.fillStyle = "#3aa03a";
+      ctx.fillRect(x, s.top, s.w, 12);
+      ctx.fillStyle = "#7a4a1e";
+      ctx.fillRect(x, s.top + 12, s.w, H - s.top - 12);
+      ctx.fillStyle = "#6a3d17";
+      for (var tx = 0; tx < s.w; tx += SEG_W) {
+        ctx.fillRect(x + tx + 6, s.top + 24, 8, 8);
+        ctx.fillRect(x + tx + 22, s.top + 44, 6, 6);
+      }
+      ctx.fillStyle = "#5a3212";
+      ctx.fillRect(x, s.top + 12, 2, H - s.top - 12);
+    }
+    for (var p = 0; p < terrain.pits.length; p++) {
+      var pit = terrain.pits[p];
+      var px = pit.x - offsetX;
+      if (px + pit.w < 0 || px > W) continue;
+      ctx.fillStyle = "#2a0a0a";
+      ctx.fillRect(px, H - 14, pit.w, 14);
+      ctx.fillStyle = "#ff4757";
+      for (var sx = 0; sx < pit.w; sx += 14) {
+        ctx.fillRect(px + sx, H - 14, 7, 4);
+      }
+    }
+  }
+
+  function drawFlag() {
+    var x = goalX - offsetX;
+    if (x < -40 || x > W + 40) return;
+    ctx.fillStyle = "#dddddd";
+    ctx.fillRect(x, GROUND_Y - 130, 6, 130);
+    ctx.fillStyle = "#ff4757";
+    ctx.beginPath();
+    ctx.moveTo(x + 6, GROUND_Y - 130);
+    ctx.lineTo(x + 6, GROUND_Y - 100);
+    ctx.lineTo(x + 50, GROUND_Y - 115);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "bold 14px Courier New";
+    ctx.fillText("GOAL", x - 8, GROUND_Y - 140);
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawTank() {
+    var x = tank.x - offsetX, y = tank.y;
+    ctx.save();
+    ctx.translate(x + tank.w / 2, y + tank.h / 2);
+    if (tank.facing < 0) ctx.scale(-1, 1);
+    ctx.translate(-tank.w / 2, -tank.h / 2);
+
+    ctx.fillStyle = "#2f3b2f";
+    roundRect(0, tank.h - 12, tank.w, 12, 6);
+    ctx.fill();
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = 2;
+    for (var i = 0; i < 5; i++) {
+      var tx = ((i * 12 + tank.trackT * 10) % tank.w);
+      ctx.beginPath();
+      ctx.moveTo(tx, tank.h - 11);
+      ctx.lineTo(tx, tank.h - 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#4e7a3a";
+    roundRect(4, 12, tank.w - 8, tank.h - 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = "#2f4d22";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#5d8f46";
+    ctx.beginPath();
+    ctx.arc(tank.w / 2 + 4, 14, 11, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "#3a5c2a";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(tank.w / 2 + 4, 12);
+    ctx.lineTo(tank.w - 4, 4);
+    ctx.stroke();
+    ctx.fillStyle = "#ffd700";
+    ctx.fillRect(tank.w / 2 - 4, 4, 8, 5);
+    ctx.restore();
+  }
+
+  function drawBackground() {
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#7ec8e3");
+    g.addColorStop(1, "#cfeff9");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#9bc4a8";
+    for (var i = 0; i < 6; i++) {
+      var mx = ((i * 260 - offsetX * 0.25) % (W + 400)) - 200;
+      if (mx < -300) mx += W + 400;
+      ctx.beginPath();
+      ctx.moveTo(mx, GROUND_Y);
+      ctx.lineTo(mx + 130, GROUND_Y - 130);
+      ctx.lineTo(mx + 260, GROUND_Y);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function render() {
+    drawBackground();
+    for (var i = 0; i < clouds.length; i++) drawCloud(clouds[i]);
+    drawTerrain();
+    drawFlag();
+    for (var j = 0; j < stars.length; j++) drawStar(stars[j]);
+    drawTank();
+    if (state === "play") {
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(W / 2 - 90, 12, 180, 30);
+      ctx.fillStyle = "#ffd700";
+      ctx.font = "bold 16px Courier New";
+      ctx.textAlign = "center";
+      ctx.fillText("LEVEL " + level, W / 2, 33);
+      ctx.textAlign = "left";
+    }
+  }
+
+  function loop() {
+    if (state === "play") physics();
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  loadLevel(1);
+  syncHud();
+  loop();
+})();
+</script>
 </body>
 </html>
