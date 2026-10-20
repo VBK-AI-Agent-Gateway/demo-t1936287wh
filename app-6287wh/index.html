@@ -3,271 +3,410 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>贪吃蛇 - 手机适配版</title>
+<title>五子棋</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    background: #1a1a2e;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    touch-action: none;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  #gameContainer {
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 8px;
-    gap: 8px;
-  }
-  #hud {
-    width: 100%;
-    max-width: 600px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #fff;
-    font-size: clamp(14px, 3.5vw, 20px);
-    padding: 4px 8px;
-  }
-  #hud span { font-weight: bold; }
-  #score { color: #4ecca3; }
-  #canvasWrap {
-    position: relative;
-    flex: 0 1 auto;
-    max-width: 100%;
-    max-height: 70vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  canvas {
-    display: block;
-    background: #16213e;
-    border: 3px solid #4ecca3;
-    border-radius: 8px;
-    max-width: 100%;
-    max-height: 70vh;
-    width: auto;
-    height: auto;
-  }
-  #controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding-top: 4px;
-  }
-  .ctrlRow { display: flex; gap: 6px; }
-  .btn {
-    width: clamp(52px, 16vw, 72px);
-    height: clamp(52px, 16vw, 72px);
-    border: none;
-    border-radius: 12px;
-    background: #4ecca3;
-    color: #1a1a2e;
-    font-size: clamp(22px, 6vw, 30px);
-    font-weight: bold;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: transform 0.05s;
-  }
-  .btn:active { transform: scale(0.92); background: #3db891; }
-  .btn.placeholder { visibility: hidden; }
-  #overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(26,26,46,0.88);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    color: #fff;
-    border-radius: 8px;
-    text-align: center;
+    color: #eee;
     padding: 16px;
   }
-  #overlay h1 { font-size: clamp(24px, 7vw, 40px); color: #4ecca3; }
-  #overlay p { font-size: clamp(14px, 4vw, 18px); line-height: 1.6; }
-  #startBtn {
-    padding: 14px 36px;
-    font-size: clamp(16px, 5vw, 22px);
-    font-weight: bold;
-    border: none;
-    border-radius: 30px;
-    background: #4ecca3;
-    color: #1a1a2e;
-    cursor: pointer;
+  h1 { font-size: 24px; margin-bottom: 12px; letter-spacing: 6px; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  .status {
+    font-size: 17px;
+    margin-bottom: 12px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  #startBtn:active { transform: scale(0.95); }
+  .dot { width: 16px; height: 16px; border-radius: 50%; display: inline-block; box-shadow: 0 0 6px rgba(0,0,0,.4); }
+  .dot.black { background: radial-gradient(circle at 35% 30%, #666, #000); }
+  .dot.white { background: radial-gradient(circle at 35% 30%, #fff, #bbb); border: 1px solid #999; }
+  .board-wrap {
+    position: relative;
+    padding: 14px;
+    background: linear-gradient(145deg, #e0b070, #c8945a);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  canvas { display: block; background: #ecd3a0; border-radius: 3px; touch-action: manipulation; }
+  .toolbar { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+  button {
+    padding: 9px 20px;
+    font-size: 15px;
+    border: none;
+    border-radius: 20px;
+    background: rgba(255,255,255,.12);
+    color: #eee;
+    cursor: pointer;
+    transition: .2s;
+    border: 1px solid rgba(255,255,255,.2);
+  }
+  button:hover { background: rgba(255,255,255,.25); transform: translateY(-1px); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .score { display: flex; gap: 24px; margin-top: 12px; font-size: 14px; opacity: .85; }
+  .score span b { font-size: 18px; margin-left: 4px; }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.65);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    backdrop-filter: blur(3px);
+  }
+  .overlay.show { display: flex; }
+  .overlay .msg { font-size: 30px; font-weight: bold; margin-bottom: 6px; text-shadow: 0 2px 10px rgba(0,0,0,.8); }
+  .overlay .sub { font-size: 14px; opacity: .8; margin-bottom: 18px; }
 </style>
 </head>
 <body>
-<div id="gameContainer">
-  <div id="hud">
-    <span>得分: <span id="score">0</span></span>
-    <span>最高: <span id="best">0</span></span>
+<h1>五子棋</h1>
+<div class="status" id="status"><span class="dot black"></span>黑棋落子</div>
+<div class="board-wrap">
+  <canvas id="board"></canvas>
+  <div class="overlay" id="overlay">
+    <div class="msg" id="winMsg"></div>
+    <div class="sub">五子连珠，胜负已分</div>
+    <button onclick="reset()">再来一局</button>
   </div>
-  <div id="canvasWrap">
-    <canvas id="gameCanvas"></canvas>
-    <div id="overlay">
-      <h1>贪吃蛇</h1>
-      <p>滑动屏幕或按方向键控制<br>吃到食物得分，别撞墙或撞自己！</p>
-      <button id="startBtn">开始游戏</button>
-    </div>
-  </div>
-  <div id="controls">
-    <div class="ctrlRow"><button class="btn placeholder">·</button><button class="btn" data-dir="up">▲</button><button class="btn placeholder">·</button></div>
-    <div class="ctrlRow"><button class="btn" data-dir="left">◀</button><button class="btn" data-dir="down">▼</button><button class="btn" data-dir="right">▶</button></div>
-  </div>
+</div>
+<div class="toolbar">
+  <button id="undoBtn" onclick="undo()">悔棋</button>
+  <button onclick="reset()">重新开始</button>
+  <button id="modeBtn" onclick="switchMode()">模式：双人</button>
+</div>
+<div class="score">
+  <span>黑棋胜 <b id="sb">0</b></span>
+  <span>白棋胜 <b id="sw">0</b></span>
+  <span>和棋 <b id="sd">0</b></span>
 </div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
+const N = 15;
+const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
-const scoreEl = document.getElementById('score');
-const bestEl = document.getElementById('best');
-const overlay = document.getElementById('overlay');
-const startBtn = document.getElementById('startBtn');
+const GAP = 40;           // 首条线距边
+let cell, size, dpr;
 
-const GRID = 20;
-let cell, cols = 24, rows = 24;
-let snake, dir, nextDir, food, score, best = 0, gameLoop, speed, running = false;
+let board, history, current, gameOver, winLine;
+let mode = 'pvp';         // pvp | pve
+let scores = { b: 0, w: 0, d: 0 };
 
-best = parseInt(localStorage.getItem('snake_best') || '0');
-bestEl.textContent = best;
-
-function resize() {
-  const wrap = document.getElementById('canvasWrap');
-  const maxW = Math.min(window.innerWidth - 16, 600);
-  const maxH = window.innerHeight * 0.68;
-  cell = Math.floor(Math.min(maxW / cols, maxH / rows));
-  if (cell < 8) cell = 8;
-  canvas.width = cols * cell;
-  canvas.height = rows * cell;
-  canvas.style.width = canvas.width + 'px';
-  canvas.style.height = canvas.height + 'px';
-}
-window.addEventListener('resize', resize);
-resize();
-
-function init() {
-  snake = [{x: 12, y: 12}, {x: 11, y: 12}, {x: 10, y: 12}];
-  dir = {x: 1, y: 0};
-  nextDir = dir;
-  score = 0;
-  speed = 140;
-  scoreEl.textContent = '0';
-  placeFood();
+function setupCanvas() {
+  dpr = window.devicePixelRatio || 1;
+  const maxW = Math.min(window.innerWidth - 60, 480);
+  size = maxW;
+  cell = (size - GAP * 2) / (N - 1);
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-function placeFood() {
-  do {
-    food = {x: Math.floor(Math.random()*cols), y: Math.floor(Math.random()*rows)};
-  } while (snake.some(s => s.x === food.x && s.y === food.y));
-}
-
-function tick() {
-  dir = nextDir;
-  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
-  if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows ||
-      snake.some(s => s.x === head.x && s.y === head.y)) {
-    return gameOver();
-  }
-  snake.unshift(head);
-  if (head.x === food.x && head.y === food.y) {
-    score += 10;
-    scoreEl.textContent = score;
-    placeFood();
-    if (speed > 60) { speed -= 2; clearInterval(gameLoop); gameLoop = setInterval(tick, speed); }
-  } else {
-    snake.pop();
-  }
+function reset() {
+  board = Array.from({ length: N }, () => Array(N).fill(0));
+  history = [];
+  current = 1;            // 1 黑 2 白
+  gameOver = false;
+  winLine = null;
+  document.getElementById('overlay').classList.remove('show');
+  updateStatus();
   draw();
+  document.getElementById('undoBtn').disabled = false;
 }
 
+function updateStatus() {
+  const s = document.getElementById('status');
+  if (gameOver) { s.innerHTML = '对局结束'; return; }
+  const name = current === 1 ? '黑棋' : '白棋';
+  const ai = (mode === 'pve' && current === 2) ? '（电脑思考中…）' : '落子';
+  s.innerHTML = `<span class="dot ${current === 1 ? 'black' : 'white'}"></span>${name}${ai}`;
+}
+
+// ---------- 绘制 ----------
 function draw() {
-  ctx.fillStyle = '#16213e';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#e94560';
-  ctx.beginPath();
-  ctx.arc((food.x+0.5)*cell, (food.y+0.5)*cell, cell*0.4, 0, Math.PI*2);
-  ctx.fill();
-  snake.forEach((s, i) => {
-    ctx.fillStyle = i === 0 ? '#4ecca3' : '#3db891';
-    ctx.fillRect(s.x*cell+1, s.y*cell+1, cell-2, cell-2);
-  });
-}
+  ctx.clearRect(0, 0, size, size);
+  // 棋盘底纹
+  ctx.fillStyle = '#ecd3a0';
+  ctx.fillRect(0, 0, size, size);
 
-function setDir(x, y) {
-  if (dir.x === -x && dir.y === -y) return;
-  nextDir = {x, y};
-}
-
-function start() {
-  init();
-  overlay.style.display = 'none';
-  running = true;
-  clearInterval(gameLoop);
-  gameLoop = setInterval(tick, speed);
-  draw();
-}
-
-function gameOver() {
-  clearInterval(gameLoop);
-  running = false;
-  if (score > best) {
-    best = score;
-    localStorage.setItem('snake_best', best);
-    bestEl.textContent = best;
+  // 网格
+  ctx.strokeStyle = '#5a4020';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < N; i++) {
+    const p = GAP + i * cell;
+    ctx.beginPath(); ctx.moveTo(GAP, p); ctx.lineTo(size - GAP, p); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p, GAP); ctx.lineTo(p, size - GAP); ctx.stroke();
   }
-  overlay.querySelector('h1').textContent = '游戏结束';
-  overlay.querySelector('p').innerHTML = `得分: ${score}<br>最高分: ${best}`;
-  startBtn.textContent = '再来一局';
-  overlay.style.display = 'flex';
+  // 星位
+  const stars = [3, 7, 11];
+  ctx.fillStyle = '#5a4020';
+  for (const r of stars) for (const c of stars) {
+    ctx.beginPath();
+    ctx.arc(GAP + c * cell, GAP + r * cell, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 棋子
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (board[r][c]) drawStone(r, c, board[r][c]);
+  }
+
+  // 最后一手标记
+  if (history.length) {
+    const [lr, lc] = history[history.length - 1];
+    const x = GAP + lc * cell, y = GAP + r0(lr);
+    ctx.strokeStyle = board[lr][lc] === 1 ? '#ff4d4f' : '#ff4d4f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, cell * 0.22, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 胜利连线
+  if (winLine) {
+    ctx.strokeStyle = 'rgba(255,60,60,.9)';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(GAP + winLine[0][1] * cell, GAP + winLine[0][0] * cell);
+    ctx.lineTo(GAP + winLine[4][1] * cell, GAP + winLine[4][0] * cell);
+    ctx.stroke();
+  }
+}
+function r0(r) { return GAP + r * cell; }
+
+function drawStone(r, c, color) {
+  const x = GAP + c * cell, y = GAP + r * cell, rad = cell * 0.44;
+  const g = ctx.createRadialGradient(x - rad * .3, y - rad * .35, rad * .1, x, y, rad);
+  if (color === 1) { g.addColorStop(0, '#555'); g.addColorStop(1, '#000'); }
+  else { g.addColorStop(0, '#fff'); g.addColorStop(1, '#c9c9c9'); }
+  ctx.beginPath();
+  ctx.arc(x, y, rad, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 }
 
-startBtn.addEventListener('click', start);
+// ---------- 落子 ----------
+function place(r, c) {
+  if (gameOver || board[r][c]) return false;
+  board[r][c] = current;
+  history.push([r, c]);
+  if (checkWin(r, c, current)) {
+    gameOver = true;
+    winLine = winCells;
+    scores[current === 1 ? 'b' : 'w']++;
+    showWin(current === 1 ? '黑棋胜利！' : (mode === 'pve' ? '电脑胜利' : '白棋胜利！'));
+  } else if (history.length === N * N) {
+    gameOver = true;
+    scores.d++;
+    showWin('平局');
+  } else {
+    current = current === 1 ? 2 : 1;
+  }
+  updateStatus();
+  draw();
+  return true;
+}
 
-document.querySelectorAll('.btn[data-dir]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const d = btn.dataset.dir;
-    if (d === 'up') setDir(0, -1);
-    else if (d === 'down') setDir(0, 1);
-    else if (d === 'left') setDir(-1, 0);
-    else if (d === 'right') setDir(1, 0);
-  });
-});
+let winCells = null;
+function checkWin(r, c, p) {
+  const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+  for (const [dr, dc] of dirs) {
+    let cells = [[r, c]];
+    for (let s = 1; s < 5; s++) {
+      const nr = r + dr * s, nc = c + dc * s;
+      if (nr < 0 || nr >= N || nc < 0 || nc >= N || board[nr][nc] !== p) break;
+      cells.push([nr, nc]);
+    }
+    for (let s = 1; s < 5; s++) {
+      const nr = r - dr * s, nc = c - dc * s;
+      if (nr < 0 || nr >= N || nc < 0 || nc >= N || board[nr][nc] !== p) break;
+      cells.unshift([nr, nc]);
+    }
+    if (cells.length >= 5) { winCells = cells.slice(0, 5); return true; }
+  }
+  return false;
+}
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowUp') setDir(0, -1);
-  else if (e.key === 'ArrowDown') setDir(0, 1);
-  else if (e.key === 'ArrowLeft') setDir(-1, 0);
-  else if (e.key === 'ArrowRight') setDir(1, 0);
-});
+function showWin(msg) {
+  document.getElementById('winMsg').textContent = msg;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('sb').textContent = scores.b;
+  document.getElementById('sw').textContent = scores.w;
+  document.getElementById('sd').textContent = scores.d;
+  document.getElementById('undoBtn').disabled = true;
+}
 
-let touchStart = null;
-canvas.addEventListener('touchstart', e => {
-  touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
-}, {passive: true});
-canvas.addEventListener('touchend', e => {
-  if (!touchStart) return;
-  const dx = e.changedTouches[0].clientX - touchStart.x;
-  const dy = e.changedTouches[0].clientY - touchStart.y;
-  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
-  if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
-  else setDir(0, dy > 0 ? 1 : -1);
-  touchStart = null;
-}, {passive: true});
+// ---------- 悔棋 ----------
+function undo() {
+  if (!history.length) return;
+  if (mode === 'pve') {
+    // 电脑模式一次悔两手
+    const n = (history.length >= 2 && current === 1) ? 2 : 1;
+    for (let i = 0; i < n && history.length; i++) {
+      const [r, c] = history.pop();
+      board[r][c] = 0;
+    }
+    current = 1;
+  } else {
+    const [r, c] = history.pop();
+    board[r][c] = 0;
+    current = current === 1 ? 2 : 1;
+  }
+  gameOver = false;
+  winLine = null;
+  document.getElementById('overlay').classList.remove('show');
+  updateStatus();
+  draw();
+  if (!history.length) document.getElementById('undoBtn').disabled = true;
+}
 
-draw();
+// ---------- 交互 ----------
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  const c = Math.round((cx - GAP) / cell);
+  const r = Math.round((cy - GAP) / cell);
+  if (r < 0 || r >= N || c < 0 || c >= N) return null;
+  // 距离判定
+  const dx = Math.abs(cx - (GAP + c * cell));
+  const dy = Math.abs(cy - (GAP + r * cell));
+  if (dx > cell / 2 || dy > cell / 2) return null;
+  return [r, c];
+}
+
+function handle(e) {
+  if (gameOver) return;
+  if (mode === 'pve' && current === 2) return;
+  const pos = getPos(e);
+  if (!pos) return;
+  e.preventDefault();
+  if (place(pos[0], pos[1]) && mode === 'pve' && !gameOver) {
+    setTimeout(aiMove, 300);
+  }
+}
+canvas.addEventListener('click', handle);
+canvas.addEventListener('touchstart', handle, { passive: false });
+
+// ---------- 电脑 AI ----------
+function aiMove() {
+  if (gameOver) return;
+  const move = bestMove(2);
+  if (move) place(move[0], move[1]);
+}
+
+function bestMove(p) {
+  // 1. 能赢就赢
+  const win = findSpot(p);
+  if (win) return win;
+  // 2. 挡对方的赢点
+  const block = findSpot(p === 1 ? 2 : 1);
+  if (block) return block;
+  // 3. 评分选点
+  let best = null, bestScore = -1;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (board[r][c]) continue;
+    if (!hasNeighbor(r, c, 2)) continue;
+    const s = evalPoint(r, c, 2) * 1.1 + evalPoint(r, c, 1);
+    if (s > bestScore) { bestScore = s; best = [r, c]; }
+  }
+  return best || [7, 7];
+}
+
+function hasNeighbor(r, c, dist) {
+  for (let dr = -dist; dr <= dist; dr++) for (let dc = -dist; dc <= dist; dc++) {
+    if (!dr && !dc) continue;
+    const nr = r + dr, nc = c + dc;
+    if (nr >= 0 && nr < N && nc >= 0 && nc < N && board[nr][nc]) return true;
+  }
+  return false;
+}
+
+// 找到可以形成五连的点
+function findSpot(p) {
+  const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (board[r][c]) continue;
+    for (const [dr, dc] of dirs) {
+      let cnt = 0;
+      for (let s = 1; s <= 4; s++) {
+        const nr = r + dr * s, nc = c + dc * s;
+        if (nr < 0 || nr >= N || nc < 0 || nc >= N || board[nr][nc] !== p) break;
+        cnt++;
+      }
+      for (let s = 1; s <= 4; s++) {
+        const nr = r - dr * s, nc = c - dc * s;
+        if (nr < 0 || nr >= N || nc < 0 || nc >= N || board[nr][nc] !== p) break;
+        cnt++;
+      }
+      if (cnt >= 4) return [r, c];
+    }
+  }
+  return null;
+}
+
+// 评估某点价值
+function evalPoint(r, c, p) {
+  if (board[r][c]) return -1;
+  let total = 0;
+  const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+  for (const [dr, dc] of dirs) {
+    let count = 1, open = 0;
+    // 正向
+    for (let s = 1; s <= 4; s++) {
+      const nr = r + dr * s, nc = c + dc * s;
+      if (nr < 0 || nr >= N || nc < 0 || nc >= N || board[nr][nc] === 0) { if (board[nr] && board[nr][nc] === 0) open++; break; }
+      if (board[nr][nc] !== p) break;
+      count++;
+    }
+    // 反向
+    for (let s = 1; s <= 4; s++) {
+      const nr = r - dr * s, nc = c - dc * s;
+      if (nr < 0 || nr >= N || nc < 0 || nc >= N || board[nr][nc] === 0) { if (board[nr] && board[nr][nc] === 0) open++; break; }
+      if (board[nr][nc] !== p) break;
+      count++;
+    }
+    if (count >= 5) total += 100000;
+    else if (count === 4) total += open > 0 ? 1500 : 400;
+    else if (count === 3) total += open > 0 ? 200 : 60;
+    else if (count === 2) total += open > 0 ? 40 : 12;
+    else total += 4 + open * 2;
+  }
+  return total;
+}
+
+// ---------- 模式切换 / 初始化 ----------
+function switchMode() {
+  mode = mode === 'pvp' ? 'pve' : 'pvp';
+  document.getElementById('modeBtn').textContent = mode === 'pvp' ? '模式：双人' : '模式：人机';
+  scores = { b: 0, w: 0, d: 0 };
+  document.getElementById('sb').textContent = 0;
+  document.getElementById('sw').textContent = 0;
+  document.getElementById('sd').textContent = 0;
+  reset();
+}
+
+window.addEventListener('resize', () => { setupCanvas(); reset(); });
+
+setupCanvas();
+reset();
 </script>
 </body>
 </html>
