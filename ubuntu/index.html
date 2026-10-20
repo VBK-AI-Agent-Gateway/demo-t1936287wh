@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>坦克跳坑 · 经典卡通小游戏</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    font-family: "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background: linear-gradient(180deg,#1b2a4a 0%,#2c4470 60%,#3d5a8a 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; padding:16px; color:#fff; overflow:hidden;
+  }
+  #stars { position:fixed; inset:0; pointer-events:none; opacity:.5; }
+  .panel {
+    position:relative; z-index:2;
+    background:rgba(10,18,38,.55); border:1px solid rgba(255,255,255,.14);
+    border-radius:20px; padding:18px 22px; box-shadow:0 18px 50px rgba(0,0,0,.45);
+    backdrop-filter: blur(6px);
+  }
+  h1 {
+    font-size: clamp(22px,4vw,34px); text-align:center; letter-spacing:4px;
+    background:linear-gradient(180deg,#ffe9a8,#ffb347 60%,#ff8c42);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    margin-bottom:6px;
+  }
+  .sub { text-align:center; font-size:13px; color:#a9c4e8; margin-bottom:12px; letter-spacing:2px; }
+  .hud { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:10px; font-size:14px; }
+  .hud span { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); padding:5px 12px; border-radius:999px; }
+  .hud b { color:#ffd166; }
+  #wrap { position:relative; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.5), inset 0 0 0 3px rgba(255,255,255,.08); }
+  canvas { display:block; background:#7ec8f2; touch-action:manipulation; width:100%; height:auto; }
+  .btns { display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
+  button.g {
+    font:inherit; font-weight:700; letter-spacing:2px; cursor:pointer;
+    padding:10px 26px; border-radius:12px; border:none; color:#3a2410;
+    background:linear-gradient(180deg,#ffe08a,#ffb703);
+    box-shadow:0 4px 0 #c98a00, 0 8px 16px rgba(0,0,0,.35);
+    transition:transform .08s, box-shadow .08s, filter .15s;
+  }
+  button.g:hover { filter:brightness(1.07); }
+  button.g:active { transform:translateY(4px); box-shadow:0 0 0 #c98a00, 0 4px 10px rgba(0,0,0,.3); }
+  button.ghost {
+    background:rgba(255,255,255,.12); color:#dce9ff; border:1px solid rgba(255,255,255,.25);
+    box-shadow:0 4px 0 rgba(0,0,0,.25); font:inherit; font-weight:700; letter-spacing:1px;
+    padding:9px 20px; border-radius:12px; cursor:pointer; transition:background .15s, transform .08s;
+  }
+  button.ghost:hover { background:rgba(255,255,255,.2); }
+  button.ghost:active { transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.25); }
+  .pad { display:flex; gap:12px; justify-content:center; margin-top:12px; }
+  .pad button {
+    width:74px; height:58px; font-size:22px; border-radius:14px; border:none; cursor:pointer;
+    background:linear-gradient(180deg,#4fa3ff,#2b6fd6); color:#fff;
+    box-shadow:0 5px 0 #1d4f9e, 0 8px 14px rgba(0,0,0,.35);
+    transition:transform .06s, box-shadow .06s; user-select:none;
+  }
+  .pad button:active { transform:translateY(4px); box-shadow:0 1px 0 #1d4f9e; }
+  .hint { text-align:center; font-size:12px; color:#8fb0da; margin-top:10px; letter-spacing:1px; }
+  #overlay {
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(8,14,30,.78); backdrop-filter:blur(3px); text-align:center; gap:14px; z-index:5;
+    transition:opacity .3s; border-radius:14px;
+  }
+  #overlay.hide { opacity:0; pointer-events:none; }
+  #ovTitle { font-size:clamp(26px,5vw,44px); font-weight:900; letter-spacing:6px;
+    background:linear-gradient(180deg,#fff3c4,#ffb703); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  #ovMsg { font-size:15px; color:#bcd4f5; line-height:1.8; max-width:340px; }
+  .badge { display:inline-block; background:#ff5964; color:#fff; font-weight:800; padding:4px 14px; border-radius:999px; font-size:13px; letter-spacing:2px; box-shadow:0 4px 10px rgba(255,89,100,.4); }
+  footer { margin-top:14px; font-size:11px; color:#6f8fbc; letter-spacing:2px; z-index:2; }
+  @media (max-width:520px){ .panel{padding:12px;} .pad button{width:64px;height:54px;} }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="panel">
+  <h1>坦克跳坑</h1>
+  <div class="sub">TANK HOP · 经典卡通横版躲避</div>
+  <div class="hud">
+    <span>距离 <b id="hDist">0</b> m</span>
+    <span>金币 <b id="hCoin">0</b></span>
+    <span>生命 <b id="hLives">♥♥♥</b></span>
+    <span>速度 <b id="hSpd">1.0</b>x</span>
+  </div>
+  <div id="wrap">
+    <canvas id="game" width="900" height="380"></canvas>
+    <div id="overlay">
+      <div class="badge">经典卡通 · 即开即玩</div>
+      <div id="ovTitle">坦克跳坑</div>
+      <div id="ovMsg">驾驶卡通坦克穿越无尽的弹坑阵地！<br>空格 / ↑ / 点击屏幕 = 跳跃（空中可二段跳）<br>躲开弹坑与滚石，收集金币，活得越久分数越高。</div>
+      <div class="btns"><button class="g" id="btnStart">开始游戏</button></div>
+    </div>
+  </div>
+  <div class="pad">
+    <button id="btnL" aria-label="向左微调">◀</button>
+    <button id="btnJ" aria-label="跳跃">▲ 跳</button>
+    <button id="btnR" aria-label="向右微调">▶</button>
+  </div>
+  <div class="hint">键盘：空格 / ↑ 跳跃 · ← → 微调 · P 暂停 · M 静音</div>
+  <div class="btns">
+    <button class="ghost" id="btnPause">暂停</button>
+    <button class="ghost" id="btnMute">声音：开</button>
+    <button class="ghost" id="btnReset">重新开始</button>
+  </div>
+</div>
+<footer>© 坦克跳坑 TANK HOP · HTML5 Canvas</footer>
+<script src="game.js"></script>
+</body>
+</html>
