@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>坦克跳坑 · Tank Gap Jump</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="hud-item">分数 <b id="score">0</b></div>
+    <div class="hud-item">距离 <b id="dist">0</b>m</div>
+    <div class="hud-item">生命 <b id="lives">❤❤❤</b></div>
+    <div class="hud-item">油桶 <b id="fuel">0</b></div>
+    <button id="soundBtn" class="hud-btn" title="音效开关">🔊</button>
+  </div>
+
+  <div id="menu" class="panel">
+    <h1>坦克跳坑</h1>
+    <p class="sub">经典横版坦克闯关</p>
+    <div class="help">
+      <p><kbd>→</kbd>/<kbd>D</kbd> 加速 &nbsp; <kbd>←</kbd>/<kbd>A</kbd> 减速</p>
+      <p><kbd>Space</kbd>/<kbd>↑</kbd>/<kbd>W</kbd> 跳跃（空中可二段跳）</p>
+      <p>收集 🛢 油桶加分，掉进坑里或撞障碍扣一条命</p>
+    </div>
+    <button id="startBtn" class="btn">开始游戏</button>
+    <p class="best">最高分：<b id="bestMenu">0</b></p>
+  </div>
+
+  <div id="over" class="panel hidden">
+    <h1>游戏结束</h1>
+    <p class="sub">最终得分 <b id="finalScore">0</b></p>
+    <p class="sub">行进距离 <b id="finalDist">0</b> m</p>
+    <p class="best">最高分：<b id="bestOver">0</b></p>
+    <button id="retryBtn" class="btn">再来一局</button>
+  </div>
+
+  <div id="touch" class="hidden">
+    <button class="tbtn" id="tLeft">◀</button>
+    <button class="tbtn" id="tJump">▲ 跳</button>
+    <button class="tbtn" id="tRight">▶</button>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
