@@ -229,7 +229,7 @@ function draw() {
   const sx = shake ? (Math.random() - .5) * shake : 0;
   const sy = shake ? (Math.random() - .5) * shake : 0;
 
-  // 天空渐变兜底 + 用户背景图（视差 0.25，轻透明，保证前景可读）
+  // 用户背景图整屏铺满（不透明、视差 0.25），天空渐变仅兜底
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, "#5aa9e6"); g.addColorStop(1, "#bfe3ff");
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -300,24 +300,23 @@ function draw() {
 
 const bgImg = new Image();
 bgImg.src = "bg.jpg";
-let bgReady = false;
+let bgReady = false, bgFail = false;
 bgImg.onload = () => { bgReady = true; };
+bgImg.onerror = () => { bgFail = true; console.warn("bg.jpg load failed"); };
 
 function drawBg() {
   if (!bgReady) return;
-  // 1600x900 背景，按高度铺满，随镜头 0.25 视差滚动，轻透明
   const bh = H, bw = bgImg.width * (bh / bgImg.height);
   const maxScroll = Math.max(0, bw - W);
   const px = Math.max(0, Math.min(cam * 0.25, maxScroll));
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = 1;                       // 完全不透明，图片清晰可见
   ctx.drawImage(bgImg, -px, 0, bw, bh);
-  // 右侧不够宽时镜像补齐
   if (bw - px < W) ctx.drawImage(bgImg, bw - px, 0, bw, bh);
   ctx.globalAlpha = 1;
 }
 
 function drawClouds() {
-  ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.fillStyle = "rgba(255,255,255,.5)";   // 降低云朵不透明度，避免遮挡背景图
   for (let i = 0; i < 14; i++) {
     const x = (i * 420 + (i % 3) * 130), y = 50 + (i % 4) * 55;
     ctx.beginPath();
