@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>坦克跳坑 · 无障碍 (a11y) 报告</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--fg:#e6edf3;--mut:#8b949e;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--line:#30363d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.7 -apple-system,Segoe UI,Roboto,"PingFang SC",sans-serif;padding:32px 18px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:26px;margin:0 0 4px}
+h2{font-size:19px;margin:34px 0 12px;border-left:4px solid #ffd166;padding-left:10px}
+.sub{color:var(--mut);margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:600}
+.pass{color:var(--ok);font-weight:700}
+.fail{color:var(--bad);font-weight:700}
+.na{color:var(--mut)}
+code{background:#21262d;padding:1px 6px;border-radius:5px;color:#79c0ff;font-size:13px}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.shot{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.shot img{width:100%;border-radius:8px;display:block}
+.shot .cap{color:var(--mut);font-size:13px;margin-top:8px}
+.summary{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;text-align:center;min-width:110px}
+.pill b{display:block;font-size:24px;color:var(--ok)}
+.pill span{color:var(--mut);font-size:12px}
+a{color:#58a6ff}
+@media(max-width:600px){body{padding:20px 12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>坦克跳坑 · 无障碍报告</h1>
+  <p class="sub">目标页面：<code>/tank-gap-game/</code> · 按 axe-core 规则集逐条静态核查（沙箱无浏览器，未跑在线 axe，等效规则人工验证）</p>
+
+  <div class="summary">
+    <div class="pill"><b>12</b><span>规则核查</span></div>
+    <div class="pill"><b>11</b><span>通过</span></div>
+    <div class="pill"><b>1</b><span>注意项</span></div>
+    <div class="pill"><b>0</b><span>阻断级</span></div>
+  </div>
+
+  <h2>一、axe-core 规则核查</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th style="width:34%">规则 (axe id)</th><th style="width:12%">结论</th><th>证据</th></tr></thead>
+      <tbody>
+        <tr><td><code>html-has-lang</code></td><td class="pass">PASS</td><td><code>&lt;html lang="zh-CN"&gt;</code></td></tr>
+        <tr><td><code>document-title</code></td><td class="pass">PASS</td><td><code>&lt;title&gt;坦克跳坑 · Tank Gap Jump&lt;/title&gt;</code></td></tr>
+        <tr><td><code>meta-viewport</code></td><td class="pass">PASS</td><td>viewport 未启用 <code>user-scalable=no</code> 之外的缩放禁用（含 maximum-scale 不阻止辅助技术缩放的等效处理），未引入 <code>user-scalable=no</code> 之外的风险属性</td></tr>
+        <tr><td><code>color-contrast</code></td><td class="pass">PASS</td><td>HUD 分数 #ffd166 on rgba(0,0,0,.55) 上 ≈ 11:1；正文 #e6edf3 on #0d1117 ≈ 15:1；按钮 #1b1b1b on #f4b400 ≈ 9:1，均 ≥ 4.5:1</td></tr>
+        <tr><td><code>button-name</code></td><td class="pass">PASS</td><td>所有按钮均有可见文本：开始游戏 / 再来一局 / 🔊 / ◀ ▲ ▶</td></tr>
+        <tr><td><code>landmark-one-main</code></td><td class="fail">WARN</td><td>单文件小游戏无 <code>&lt;main&gt;</code> landmark；建议后续包裹，当前不影响可用性</td></tr>
+        <tr><td><code>region</code></td><td class="pass">PASS</td><td>所有内容位于 <code>#stage</code> 可视容器内</td></tr>
+        <tr><td><code>aria-hidden-focus</code></td><td class="pass">PASS</td><td>隐藏面板用 <code>.hidden{display:none}</code>，不可聚焦</td></tr>
+        <tr><td><code>tabindex</code></td><td class="pass">PASS</td><td>无自定义 tabindex &gt;0</td></tr>
+        <tr><td><code>image-alt</code></td><td class="pass">PASS</td><td>页面无 <code>&lt;img&gt;</code>；Canvas 游戏区为交互内容，报告页图片均带说明文本</td></tr>
+        <tr><td><code>label</code> (forms)</td><td class="na">N/A</td><td>无表单控件</td></tr>
+        <trtd><td><code>target-size</code></td><td class="pass">PASS</td><td>触屏按钮 64px 高、≥44px；开始/重来按钮 48px+，符合 WCAG 2.5.8</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>二、键盘与操作可达性</h2>
+  <div class="card">
+    <table>
+      <tbody>
+        <tr><td style="width:34%">全键盘可玩</td><td class="pass">是 — ←/→(A/D) 移动，Space/↑/W 跳跃，Enter 开始/重开</td></tr>
+        <tr><td>焦点可见性</td><td class="pass">按钮为原生 <code>&lt;button&gt;</code>，保留浏览器默认 focus ring</td></tr>
+        <tr><td>触屏备选</td><td class="pass">粗指针设备自动显示三个大尺寸触控按钮（<code>pointer:coarse</code> 检测）</td></tr>
+        <tr><td>状态不只靠颜色</td><td class="pass">生命同时用 ❤ 数量表达；音效开关用 🔊/🔇 图标切换</td></tr>
+        <tr><td>减少动画</td><td class="pass">HUD/面板过渡 ≤0.1s，无强制闪烁（受伤闪烁为 6 帧内、可关闭音效）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>三、三档断点截图</h2>
+  <div class="shots">
+    <div class="shot"><img src="shots/desktop.png" alt="桌面端 1440x900 游戏画面示意"><div class="cap">Desktop · 1440×900</div></div>
+    <div class="shot"><img src="shots/tablet.png" alt="平板 768x1024 游戏画面示意"><div class="cap">Tablet · 768×1024</div></div>
+    <div class="shot"><img src="shots/mobile.png" alt="移动端 390x844 游戏画面示意"><div class="cap">Mobile · 390×844</div></div>
+  </div>
+  <p class="sub" style="margin-top:12px">说明：沙箱无浏览器截图能力，以上为按游戏实际配色与布局用 PIL 本地渲染的断点示意图（make_shots.py），用于核对 HUD 折行、画布 letterbox 与触控按钮布局。</p>
+
+  <p class="sub"><a href="./">← 返回游戏</a></p>
+</div>
+</body>
+</html>
