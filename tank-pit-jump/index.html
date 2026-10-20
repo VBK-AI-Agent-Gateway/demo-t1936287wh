@@ -477,13 +477,39 @@
     ctx.restore();
   }
 
+  /* ===== 背景图片（bg.jpg，cover 铺满 + 轻微视差；失败回退渐变天空） ===== */
+  var bgImg = new Image();
+  var bgReady = false;
+  bgImg.onload = function () { bgReady = true; };
+  bgImg.onerror = function () { bgReady = false; };
+  bgImg.src = "bg.jpg";
+
   function drawBackground() {
+    // 1) 底层：始终先铺渐变，保证图片未加载/失败时不黑屏
     var g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, "#7ec8e3");
     g.addColorStop(1, "#cfeff9");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = "#9bc4a8";
+
+    // 2) 图片背景：cover 算法铺满画布，随镜头做慢速视差平移
+    if (bgReady && bgImg.naturalWidth > 0) {
+      var iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
+      var scale = Math.max(W / iw, H / ih);
+      var dw = iw * scale, dh = ih * scale;
+      var parallax = (offsetX * 0.15) % dw;         // 慢速视差
+      var dx0 = (W - dw) / 2 - parallax;
+      var dy0 = (H - dh) / 2;
+      ctx.globalAlpha = 0.9;
+      // 平铺两份保证视差平移后仍铺满
+      ctx.drawImage(bgImg, dx0, dy0, dw, dh);
+      ctx.drawImage(bgImg, dx0 + dw, dy0, dw, dh);
+      if (dx0 > 0) ctx.drawImage(bgImg, dx0 - dw, dy0, dw, dh);
+      ctx.globalAlpha = 1;
+    }
+
+    // 3) 远山（叠加在图片之上，保留游戏层次感）
+    ctx.fillStyle = "rgba(155, 196, 168, 0.75)";
     for (var i = 0; i < 6; i++) {
       var mx = ((i * 260 - offsetX * 0.25) % (W + 400)) - 200;
       if (mx < -300) mx += W + 400;
