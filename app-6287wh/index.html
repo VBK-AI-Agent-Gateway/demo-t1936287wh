@@ -3,444 +3,313 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no-scale">
-<title>五子棋 · Gomoku</title>
+<title>卡通五子棋 🎨</title>
 <style>
-  :root{
-    --board:#dcb065;
-    --line:#7a5a2a;
-    --bg:#2b2f36;
-    --panel:#3a4048;
-    --accent:#e8a33d;
-    --text:#f2f4f7;
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    font-family: "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background: linear-gradient(160deg,#aee7ff 0%,#fdf3b8 55%,#ffd6e7 100%);
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100%; padding:14px; overflow-x:hidden;
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0;height:100%}
-  body{
-    background:linear-gradient(160deg,#23272e,#333944);
-    color:var(--text);
-    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-    display:flex;align-items:center;justify-content:center;
-    min-height:100%;padding:16px;
+  .title {
+    font-size: clamp(26px,6vw,44px);
+    font-weight:900; letter-spacing:4px;
+    background: linear-gradient(90deg,#ff6b9d,#ffa940,#51cf66,#339af0);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 4px 0 rgba(255,255,255,.6);
+    margin-bottom:6px;
   }
-  .app{
-    display:flex;gap:20px;flex-wrap:wrap;justify-content:center;
-    align-items:flex-start;width:100%;max-width:960px;
+  .subtitle { color:#7a6f9c; font-size:13px; margin-bottom:12px; font-weight:600; }
+  .panel {
+    background:rgba(255,255,255,.75);
+    backdrop-filter: blur(6px);
+    border:3px solid #fff;
+    border-radius:24px;
+    box-shadow: 0 10px 30px rgba(120,100,180,.25);
+    padding:14px 18px;
+    display:flex; align-items:center; gap:14px;
+    flex-wrap:wrap; justify-content:center;
+    max-width:640px; width:100%;
+    margin-bottom:14px;
   }
-  .board-wrap{
+  .turn {
+    display:flex; align-items:center; gap:8px;
+    font-weight:800; font-size:17px; color:#4a4458;
+  }
+  .turn .stone {
+    width:26px; height:26px; border-radius:50%;
+    box-shadow: inset -3px -4px 6px rgba(0,0,0,.35), 0 3px 5px rgba(0,0,0,.3);
+    animation: bob 1.4s ease-in-out infinite;
+  }
+  .stone.black { background: radial-gradient(circle at 32% 28%,#6b6b7a,#14141c 60%); }
+  .stone.white { background: radial-gradient(circle at 32% 28%,#ffffff,#d9d9e6 60%); }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+  .score { display:flex; gap:10px; font-weight:800; font-size:14px; }
+  .score span {
+    background:#fff; border-radius:14px; padding:5px 12px;
+    box-shadow:0 3px 0 rgba(0,0,0,.08);
+  }
+  .score .b { color:#3b3b52; }
+  .score .w { color:#c07a1a; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  button {
+    font-family:inherit; font-weight:800; font-size:14px;
+    border:none; border-radius:16px; padding:9px 16px;
+    cursor:pointer; color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.18);
+    transition:transform .1s;
+  }
+  button:active { transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.18); }
+  .b-new   { background:linear-gradient(180deg,#ff8fab,#ff5d8f); }
+  .b-undo  { background:linear-gradient(180deg,#74c0fc,#339af0); }
+  .b-mode  { background:linear-gradient(180deg,#b197fc,#7950f2); }
+  .b-hint  { background:linear-gradient(180deg,#ffe066,#fab005); color:#6b4c00; }
+  .board-wrap {
     position:relative;
-    background:var(--board);
-    border-radius:12px;
     padding:14px;
-    box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 0 40px rgba(140,90,20,.25);
+    background: linear-gradient(145deg,#ffd8a8,#ffb26b);
+    border-radius:22px;
+    border:5px solid #fff;
+    box-shadow: 0 14px 30px rgba(150,100,60,.35), inset 0 0 20px rgba(255,255,255,.4);
   }
-  canvas{display:block;touch-action:manipulation;cursor:pointer;border-radius:6px}
-  .panel{
-    background:var(--panel);
-    border-radius:12px;
-    padding:18px;
-    width:250px;
-    box-shadow:0 12px 30px rgba(0,0,0,.35);
-    display:flex;flex-direction:column;gap:14px;
+  canvas { display:block; border-radius:10px; touch-action:manipulation; }
+  .hint-bar {
+    margin-top:14px; min-height:34px;
+    background:rgba(255,255,255,.7);
+    border-radius:18px; padding:7px 18px;
+    font-weight:700; color:#5b5470; font-size:14px;
+    box-shadow:0 4px 12px rgba(120,100,180,.15);
+    text-align:center;
   }
-  h1{font-size:22px;margin:0;letter-spacing:2px}
-  .sub{font-size:12px;opacity:.65;margin-top:-8px}
-  .status{
-    background:#2c3138;border-radius:10px;padding:12px;
-    font-size:15px;text-align:center;line-height:1.6;
+  .overlay {
+    position:fixed; inset:0; background:rgba(40,30,60,.55);
+    display:none; align-items:center; justify-content:center; z-index:50;
+    backdrop-filter:blur(3px);
   }
-  .turn-dot{
-    display:inline-block;width:14px;height:14px;border-radius:50%;
-    vertical-align:-2px;margin-right:6px;border:2px solid rgba(255,255,255,.4);
+  .overlay.show { display:flex; animation:fadeIn .3s; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal {
+    background:linear-gradient(180deg,#fff,#fff6fb);
+    border-radius:28px; padding:34px 40px; text-align:center;
+    border:5px solid #ffd43b;
+    box-shadow:0 20px 50px rgba(0,0,0,.4);
+    animation:pop .4s cubic-bezier(.2,1.6,.5,1);
+    max-width:88vw;
   }
-  .turn-dot.black{background:#111}
-  .turn-dot.white{background:#f5f5f5}
-  .scores{display:flex;gap:10px}
-  .score{
-    flex:1;background:#2c3138;border-radius:10px;padding:10px;text-align:center;
-  }
-  .score b{display:block;font-size:24px;color:var(--accent)}
-  .score span{font-size:12px;opacity:.7}
-  .opts{display:flex;flex-direction:column;gap:8px;font-size:14px}
-  .opts label{display:flex;align-items:center;gap:8px;cursor:pointer}
-  select{
-    background:#2c3138;color:var(--text);border:1px solid #4b525c;
-    border-radius:6px;padding:6px 8px;font-size:14px;width:100%;
-  }
-  .btns{display:flex;gap:10px;flex-wrap:wrap}
-  button{
-    flex:1;min-width:70px;
-    background:var(--accent);color:#241a05;border:none;
-    padding:11px 8px;border-radius:8px;font-size:14px;font-weight:600;
-    cursor:pointer;transition:.15s;
-  }
-  button:hover{filter:brightness(1.1)}
-  button.ghost{background:#4a515b;color:var(--text)}
-  .log{
-    background:#2c3138;border-radius:8px;height:96px;overflow-y:auto;
-    font-size:12px;padding:8px;line-height:1.7;opacity:.85;
-  }
-  .log div::before{content:"› ";color:var(--accent)}
-  .modal{
-    position:fixed;inset:0;background:rgba(0,0,0,.7);
-    display:none;align-items:center;justify-content:center;z-index:10;
-  }
-  .modal.show{display:flex}
-  .modal .card{
-    background:var(--panel);padding:28px 34px;border-radius:14px;text-align:center;
-    animation:pop .25s ease;
-  }
-  @keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-  .modal h2{margin:0 0 6px;font-size:26px;color:var(--accent)}
-  .modal p{margin:0 0 18px;opacity:.8}
-  @media (max-width:720px){
-    .panel{width:100%;max-width:420px}
-    .app{flex-direction:column;align-items:center}
+  @keyframes pop { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+  .modal .emoji { font-size:64px; animation:spin 2s linear infinite; display:inline-block; }
+  @keyframes spin { from{transform:rotate(-12deg)} 50%{transform:rotate(12deg)} to{transform:rotate(-12deg)} }
+  .modal h2 { font-size:30px; margin:8px 0 6px; color:#4a4458; }
+  .modal p { color:#8a82a8; font-weight:700; margin-bottom:20px; }
+  .confetti { position:fixed; top:-20px; font-size:22px; z-index:60; pointer-events:none; animation:fall linear forwards; }
+  @keyframes fall { to { transform:translateY(110vh) rotate(720deg); opacity:.9; } }
+  @media (max-width:520px){
+    .panel{ gap:8px; padding:10px; }
+    .turn{font-size:15px}
   }
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="board-wrap"><canvas id="board"></canvas></div>
 
-  <div class="panel">
-    <div>
-      <h1>五子棋</h1>
-      <div class="sub">GOMOKU · 15×15</div>
-    </div>
+<div class="title">卡通五子棋</div>
+<div class="subtitle">✨ 萌趣木纹棋盘 · 五子连珠即胜利 ✨</div>
 
-    <div class="status" id="status">黑棋落子</div>
-
-    <div class="scores">
-      <div class="score"><b id="scoreB">0</b><span>黑棋胜</span></div>
-      <div class="score"><b id="scoreW">0</b><span>白棋胜</span></div>
-    </div>
-
-    <div class="opts">
-      <label>模式
-        <select id="mode">
-          <option value="pvp">双人对战</option>
-          <option value="pve" selected>人机对战</option>
-        </select>
-      </label>
-      <label>执子
-        <select id="side">
-          <option value="black" selected>执黑（先手）</option>
-          <option value="white">执白（后手）</option>
-        </select>
-      </label>
-      <label>难度
-        <select id="level">
-          <option value="1">简单</option>
-          <option value="2" selected>中等</option>
-          <option value="3">困难</option>
-        </select>
-      </label>
-      <label><input type="checkbox" id="showCoord" checked> 显示坐标</label>
-    </div>
-
-    <div class="btns">
-      <button id="btnUndo">悔棋</button>
-      <button id="btnRestart" class="ghost">重开</button>
-    </div>
-
-    <div class="log" id="log"></div>
+<div class="panel">
+  <div class="turn"><div class="stone black" id="turnStone"></div><span id="turnText">黑棋落子</span></div>
+  <div class="score">
+    <span class="b">⚫ <b id="scoreB">0</b></span>
+    <span class="w">⚪ <b id="scoreW">0</b></span>
+  </div>
+  <div class="btns">
+    <button class="b-mode" id="btnMode">模式：双人</button>
+    <button class="b-hint" id="btnHint">💡 提示</button>
+    <button class="b-undo" id="btnUndo">↩ 悔棋</button>
+    <button class="b-new"  id="btnNew">🔄 新局</button>
   </div>
 </div>
 
-<div class="modal" id="modal">
-  <div class="card">
-    <h2 id="modalTitle">黑棋胜利</h2>
-    <p id="modalText">五子连珠！</p>
-    <div class="btns" style="width:220px">
-      <button id="btnAgain">再来一局</button>
-      <button id="btnClose" class="ghost">关闭</button>
-    </div>
+<div class="board-wrap">
+  <canvas id="board"></canvas>
+</div>
+
+<div class="hint-bar" id="hintBar">👋 欢迎！点击棋盘交叉点落子，先连成五子者获胜～</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="emoji" id="winEmoji">🎉</div>
+    <h2 id="winTitle">黑棋获胜！</h2>
+    <p id="winDesc">太棒啦，五子连珠！</p>
+    <button class="b-new" id="btnAgain">再来一局 🎮</button>
   </div>
 </div>
 
 <script>
-(()=>{
-const N=15;
-const cv=document.getElementById('board'),ctx=cv.getContext('2d');
-let cell,px,pad,dpr;
+(() => {
+  const N = 15;
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
 
-let G,turn,history,over,scores={b:0,w:0},busy=false;
+  let cell, pad, size, dpr;
+  let grid = [];            // 0 空 1 黑 2 白
+  let history = [];
+  let current = 1;          // 1 黑 2 白
+  let over = false;
+  let mode = 'pvp';         // pvp | pve
+  let winLine = null;
+  let hoverPos = null;
+  let hintPos = null;
+  let scores = {1:0, 2:0};
 
-const el=id=>document.getElementById(id);
-const modeEl=el('mode'),sideEl=el('side'),levelEl=el('level'),coordEl=el('showCoord');
+  const hintBar = document.getElementById('hintBar');
+  const turnText = document.getElementById('turnText');
+  const turnStone = document.getElementById('turnStone');
+  const overlay = document.getElementById('overlay');
 
-function newGame(){
-  G=Array.from({length:N},()=>Array(N).fill(0));
-  turn=1;history=[];over=false;busy=false;
-  el('log').innerHTML='';
-  el('modal').classList.remove('show');
-  updateStatus();
-  draw();
-  if(modeEl.value==='pve'&&sideEl.value==='white') setTimeout(aiMove,300);
-}
-function updateStatus(){
-  const s=el('status');
-  if(over){s.innerHTML='游戏结束';return;}
-  const c=turn===1?'black':'white';
-  const name=turn===1?'黑棋':'白棋';
-  if(modeEl.value==='pve'){
-    const mine=(turn===1)===(sideEl.value==='black');
-    s.innerHTML=`<span class="turn-dot ${c}"></span>${mine?'你':'电脑'}（${name}）落子${mine?'':'…'}`;
-  }else{
-    s.innerHTML=`<span class="turn-dot ${c}"></span>${name}落子`;
+  function initGrid(){
+    grid = Array.from({length:N}, () => Array(N).fill(0));
+    history = []; winLine = null; over = false; hintPos = null;
   }
-}
-function log(msg){
-  const d=document.createElement('div');d.textContent=msg;
-  el('log').appendChild(d);el('log').scrollTop=1e9;
-}
-const colName=i=>String.fromCharCode(65+i);
-const rowName=j=>N-j;
 
-function resize(){
-  dpr=window.devicePixelRatio||1;
-  const max=Math.min(window.innerWidth-40,window.innerHeight-120,560);
-  pad=Math.round(max*0.055);
-  cell=(max-pad*2)/(N-1);
-  const size=cell*(N-1)+pad*2;
-  cv.style.width=size+'px';cv.style.height=size+'px';
-  cv.width=size*dpr;cv.height=size*dpr;
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  px=i=>pad+i*cell;
-  draw();
-}
-function draw(){
-  const size=cv.width/dpr;
-  ctx.clearRect(0,0,size,size);
-  // board bg
-  const g=ctx.createLinearGradient(0,0,size,size);
-  g.addColorStop(0,'#e6bd77');g.addColorStop(1,'#d3a357');
-  ctx.fillStyle=g;ctx.fillRect(0,0,size,size);
-
-  // lines
-  ctx.strokeStyle='#6d4f26';ctx.lineWidth=1;
-  for(let i=0;i<N;i++){
-    ctx.beginPath();ctx.moveTo(px(0),px(i));ctx.lineTo(px(N-1),px(i));ctx.stroke();
-    ctx.beginPath();ctx.moveTo(px(i),px(0));ctx.lineTo(px(i),px(N-1));ctx.stroke();
+  function resize(){
+    dpr = window.devicePixelRatio || 1;
+    const maxW = Math.min(window.innerWidth - 60, 560);
+    size = Math.max(280, maxW);
+    pad = Math.round(size * 0.055);
+    cell = (size - pad*2) / (N - 1);
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
   }
-  // star points
-  ctx.fillStyle='#6d4f26';
-  [[3,3],[11,3],[3,11],[11,11],[7,7]].forEach(([i,j])=>{
-    ctx.beginPath();ctx.arc(px(i),px(j),cell*0.11,0,7);ctx.fill();
-  });
-  // coords
-  if(coordEl.checked){
-    ctx.fillStyle='rgba(80,55,20,.75)';
-    ctx.font=`${Math.max(9,cell*0.42)}px sans-serif`;
-    ctx.textAlign='center';ctx.textBaseline='middle';
+
+  const cx = i => pad + i*cell;
+  const cy = j => pad + j*cell;
+
+  /* ---------------- 绘制 ---------------- */
+  function draw(){
+    ctx.clearRect(0,0,size,size);
+
+    // 木纹底
+    const g = ctx.createLinearGradient(0,0,size,size);
+    g.addColorStop(0,'#ffe9c9'); g.addColorStop(.5,'#ffd9a0'); g.addColorStop(1,'#ffc987');
+    ctx.fillStyle = g; ctx.fillRect(0,0,size,size);
+    ctx.globalAlpha = .12;
+    for(let i=0;i<12;i++){
+      ctx.beginPath();
+      ctx.strokeStyle = '#b5651d';
+      ctx.lineWidth = 2 + (i%3);
+      const y = (size/12)*i + 8;
+      ctx.moveTo(0,y);
+      ctx.bezierCurveTo(size*.3, y+8, size*.6, y-8, size, y+5);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // 网格
+    ctx.strokeStyle = '#8a5a2b';
+    ctx.lineWidth = 1.4;
     for(let i=0;i<N;i++){
-      ctx.fillText(colName(i),px(i),pad*0.45);
-      ctx.fillText(rowName(j=i),pad*0.45,px(i));
+      ctx.beginPath(); ctx.moveTo(cx(0),cy(i)); ctx.lineTo(cx(N-1),cy(i)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx(i),cy(0)); ctx.lineTo(cx(i),cy(N-1)); ctx.stroke();
     }
-  }
-  // stones
-  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
-    if(G[j][i]) drawStone(i,j,G[j][i]);
-  }
-  // last move mark
-  if(history.length){
-    const [li,lj]=history[history.length-1];
-    ctx.strokeStyle=G[lj][li]===1?'#ff5a5a':'#ff5a5a';
-    ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(px(li),px(lj),cell*0.16,0,7);ctx.stroke();
-  }
-}
-function drawStone(i,j,v){
-  const x=px(i),y=px(j),r=cell*0.43;
-  ctx.save();
-  ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=r*0.5;ctx.shadowOffsetY=2;
-  const g=ctx.createRadialGradient(x-r*.35,y-r*.4,r*.1,x,y,r);
-  if(v===1){g.addColorStop(0,'#5a5a5a');g.addColorStop(1,'#0a0a0a');}
-  else{g.addColorStop(0,'#ffffff');g.addColorStop(1,'#d8d8d8');}
-  ctx.fillStyle=g;
-  ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
-  ctx.restore();
-}
-function place(i,j,v){
-  G[j][i]=v;history.push([i,j]);
-  log(`${v===1?'黑':'白'} ${colName(i)}${rowName(j)}`);
-  draw();
-  if(checkWin(i,j,v)){
-    over=true;
-    if(v===1)scores.b++;else scores.w++;
-    el('scoreB').textContent=scores.b;el('scoreW').textContent=scores.w;
-    updateStatus();
-    setTimeout(()=>showModal(v),350);
-    return true;
-  }
-  if(history.length===N*N){over=true;updateStatus();setTimeout(()=>showModal(0),350);return true;}
-  turn=3-v;updateStatus();
-  return false;
-}
-function showModal(v){
-  el('modalTitle').textContent=v===0?'平局':(v===1?'黑棋胜利':'白棋胜利');
-  el('modalText').textContent=v===0?'棋盘已满，握手言和。':'五子连珠，精彩！';
-  el('modal').classList.add('show');
-}
-function checkWin(i,j,v){
-  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-  for(const [dx,dy] of dirs){
-    let c=1;
-    for(let s=1;s<5;s++){
-      const x=i+dx*s,y=j+dy*s;
-      if(x<0||y<0||x>=N||y>=N||G[y][x]!==v)break;c++;
-    }
-    for(let s=1;s<5;s++){
-      const x=i-dx*s,y=j-dy*s;
-      if(x<0||y<0||x>=N||y>=N||G[y][x]!==v)break;c++;
-    }
-    if(c>=5)return true;
-  }
-  return false;
-}
+    // 星位
+    ctx.fillStyle = '#8a5a2b';
+    [[3,3],[3,11],[11,3],[11,11],[7,7]].forEach(([i,j])=>{
+      ctx.beginPath(); ctx.arc(cx(i),cy(j), cell*0.13, 0, Math.PI*2); ctx.fill();
+    });
 
-/* ---------- AI ---------- */
-function neighbors(i,j,r=2){
-  const out=[];
-  for(let y=j-r;y<=j+r;y++)for(let x=i-r;x<=i+r;x++){
-    if(x<0||y<0||x>=N||y>=N||(x===i&&y===j))continue;
-    if(G[y][x]===0)out.push([x,y]);
-  }
-  return out;
-}
-function candidates(){
-  if(history.length===0)return [[7,7]];
-  const set=new Set();
-  history.forEach(([i,j])=>neighbors(i,j,2).forEach(([x,y])=>set.add(x+','+y)));
-  return [...set].map(s=>s.split(',').map(Number));
-}
-function lineScore(i,j,v){
-  // evaluate point for player v (offense + defense)
-  let total=0;
-  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-  for(const [dx,dy] of dirs){
-    let cnt=1,block=0,empty=0;
-    // forward
-    for(let s=1;s<=4;s++){
-      const x=i+dx*s,y=j+dy*s;
-      if(x<0||y<0||x>=N||y>=N){block++;break;}
-      if(G[y][x]===v)cnt++;
-      else if(G[y][x]===0){empty++;break;}
-      else{block++;break;}
+    // 落子提示（悬停）
+    if(hoverPos && !over && grid[hoverPos.i][hoverPos.j]===0){
+      ctx.globalAlpha = .35;
+      drawStone(hoverPos.i, hoverPos.j, current, false);
+      ctx.globalAlpha = 1;
     }
-    for(let s=1;s<=4;s++){
-      const x=i-dx*s,y=j-dy*s;
-      if(x<0||y<0||x>=N||y>=N){block++;break;}
-      if(G[y][x]===v)cnt++;
-      else if(G[y][x]===0){empty++;break;}
-      else{block++;break;}
+    // AI 提示点
+    if(hintPos){
+      ctx.strokeStyle = '#ff5d8f'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx(hintPos.i), cy(hintPos.j), cell*0.55, 0, Math.PI*2); ctx.stroke();
     }
-    total+=shapeScore(cnt,block,empty);
-  }
-  return total;
-}
-function shapeScore(cnt,block,empty){
-  if(cnt>=5)return 100000;
-  if(cnt===4){ if(block===0)return 10000; if(block===1)return 1000; return 100;}
-  if(cnt===3){ if(block===0)return 800; if(block===1)return 100; return 20;}
-  if(cnt===2){ if(block===0)return 60; if(block===1)return 12; return 4;}
-  if(cnt===1){ if(block===0)return 6; return 1;}
-  return 0;
-}
-function evaluatePoint(i,j){
-  if(G[j][i]!==0)return -1;
-  const me=aiSide(),opp=3-me;
-  return lineScore(i,j,me)*1.15 + lineScore(i,j,opp);
-}
-function aiSide(){
-  // AI is opposite of human's chosen side
-  return sideEl.value==='black'?2:1;
-}
-function aiMove(){
-  if(over||busy)return;
-  busy=true;
-  setTimeout(()=>{
-    const lv=+levelEl.value;
-    const cand=candidates();
-    let best=null,bestV=-Infinity;
-    // sort by quick eval
-    const scored=cand.map(([x,y])=>[x,y,evaluatePoint(x,y)]);
-    scored.sort((a,b)=>b[2]-a[2]);
-    const pool=lv===1?scored.slice(0,8):lv===2?scored.slice(0,12):scored.slice(0,16);
 
-    for(const [x,y] of pool){
-      let v;
-      if(lv===1){
-        v=evaluatePoint(x,y)+Math.random()*80;
-      }else{
-        // attack: can I win / make threat
-        G[y][x]=aiSide();
-        const atk=lineScore(x,y,aiSide());
-        const win=checkWin(x,y,aiSide());
-        G[y][x]=0;
-        // defense: block opponent win / threat
-        G[y][x]=3-aiSide();
-        const def=lineScore(x,y,3-aiSide());
-        const oppWin=checkWin(x,y,3-aiSide());
-        G[y][x]=0;
-        v=atk*1.15+def+(win?1e7:0)+(oppWin?5e6:0);
-        if(lv===3)v+=evaluatePoint(x,y)*0.2;
-      }
-      if(v>bestV){bestV=v;best=[x,y];}
+    // 棋子
+    for(let i=0;i<N;i++) for(let j=0;j<N;j++){
+      if(grid[i][j]) drawStone(i,j,grid[i][j], true);
     }
-    if(!best&&cand.length)best=cand[0];
-    busy=false;
-    if(best&&!over)place(best[0],best[1],turn);
-  },160);
-}
 
-/* ---------- input ---------- */
-function humanMove(i,j){
-  if(over||busy)return;
-  if(G[j][i]!==0)return;
-  if(modeEl.value==='pve'&&turn!==aiSide()===false)return;
-  const ended=place(i,j,turn);
-  if(!ended&&modeEl.value==='pve')setTimeout(aiMove,220);
-}
-cv.addEventListener('click',e=>{
-  const r=cv.getBoundingClientRect();
-  const x=e.clientX-r.left,y=e.clientY-r.top;
-  const i=Math.round((x-pad)/cell),j=Math.round((y-pad)/cell);
-  if(i<0||j<0||i>=N||j>=N)return;
-  if(Math.abs(px(i)-x)>cell*0.48||Math.abs(px(j)-y)>cell*0.48)return;
-  if(modeEl.value==='pve'&&turn!==aiSide()){
-    // not human's turn
-    if(busy)return;
+    // 胜利连线
+    if(winLine){
+      const [a,b] = [winLine[0], winLine[winLine.length-1]];
+      ctx.strokeStyle = 'rgba(255,65,108,.9)';
+      ctx.lineWidth = cell*0.32; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(cx(a.i),cy(a.j)); ctx.lineTo(cx(b.i),cy(b.j)); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = cell*0.1;
+      ctx.beginPath(); ctx.moveTo(cx(a.i),cy(a.j)); ctx.lineTo(cx(b.i),cy(b.j)); ctx.stroke();
+    }
   }
-  if(G[j][i]!==0)return;
-  humanMove(i,j);
-});
 
-/* ---------- controls ---------- */
-el('btnUndo').addEventListener('click',()=>{
-  if(!history.length||busy)return;
-  const undoOnce=()=>{
-    const [i,j]=history.pop();
-    G[j][i]=0;turn=3-turn;
-    log(`悔棋 ${colName(i)}${rowName(j)}`);
-  };
-  undoOnce();
-  if(modeEl.value==='pve'&&history.length&&turn!==aiSide())undoOnce();
-  over=false;
-  el('modal').classList.remove('show');
-  updateStatus();draw();
-});
-el('btnRestart').addEventListener('click',newGame);
-el('btnAgain').addEventListener('click',newGame);
-el('btnClose').addEventListener('click',()=>el('modal').classList.remove('show'));
-modeEl.addEventListener('change',newGame);
-sideEl.addEventListener('change',newGame);
-coordEl.addEventListener('change',draw);
-window.addEventListener('resize',resize);
+  function drawStone(i,j,p,shadow){
+    const x = cx(i), y = cy(j), r = cell*0.42;
+    ctx.save();
+    if(shadow){ ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=r*.6; ctx.shadowOffsetY=r*.28; }
+    const g = ctx.createRadialGradient(x-r*.35,y-r*.4,r*.1,x,y,r);
+    if(p===1){ g.addColorStop(0,'#7a7a90'); g.addColorStop(.45,'#2c2c3c'); g.addColorStop(1,'#0b0b12'); }
+    else     { g.addColorStop(0,'#ffffff'); g.addColorStop(.6,'#f0f0f6'); g.addColorStop(1,'#c9c9d6'); }
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.beginPath(); ctx.ellipse(x-r*.32,y-r*.38,r*.22,r*.14,-.5,0,Math.PI*2); ctx.fill();
+  }
 
-resize();
-newGame();
-})();
+  /* ---------------- 交互 ---------------- */
+  function posFromEvent(e){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    const x = t.clientX - rect.left, y = t.clientY - rect.top;
+    const i = Math.round((x-pad)/cell), j = Math.round((y-pad)/cell);
+    if(i<0||j<0||i>=N||j>=N) return null;
+    if(Math.abs(x-cx(i))>cell*0.5 || Math.abs(y-cy(j))>cell*0.5) return null;
+    return {i,j};
+  }
+
+  canvas.addEventListener('mousemove', e=>{
+    const p = posFromEvent(e);
+    if((p&&p.i)!==(hoverPos&&hoverPos.i) || (p&&p.j)!==(hoverPos&&hoverPos.j)){
+      hoverPos = p; draw();
+    }
+  });
+  canvas.addEventListener('mouseleave', ()=>{ hoverPos=null; draw(); });
+  canvas.addEventListener('click', e=>{ const p=posFromEvent(e); if(p) place(p.i,p.j); });
+  canvas.addEventListener('touchstart', e=>{
+    const p = posFromEvent(e);
+    if(p){ e.preventDefault(); place(p.i,p.j); }
+  }, {passive:false});
+
+  function place(i,j,byAI=false){
+    if(over || grid[i][j]) return;
+    if(!byAI && mode==='pve' && current===2) return;
+    grid[i][j] = current;
+    history.push({i,j,p:current});
+    hintPos = null;
+
+    const line = checkWin(i,j,current);
+    if(line){
+      winLine = line; over = true;
+      scores[current]++;
+      updateScore();
+      draw();
+      setTimeout(()=>showWin(current), 450);
+      return;
+    }
+    if(history.length === N*N){
+      over = true; draw();
+      hintBar.textContent = '🤝 棋盘下满，平局！';
+      return;
+    }
 </script>
 </body>
 </html>
