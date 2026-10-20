@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>经典坦克跳坑</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; background:#1a1a1a; overflow:hidden;
+    font-family:"Courier New", monospace; color:#eee; touch-action:none; }
+  #wrap { position:relative; width:100%; height:100%; display:flex;
+    align-items:center; justify-content:center; }
+  canvas { background:#3b7d2e; image-rendering:pixelated; display:block;
+    max-width:100%; max-height:100%; border:4px solid #222;
+    box-shadow:0 0 30px rgba(0,0,0,.7); }
+  #hud { position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    width:min(94vw, 520px); display:flex; justify-content:space-between;
+    pointer-events:none; font-size:16px; font-weight:bold;
+    text-shadow:2px 2px 0 #000; }
+  #overlay { position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    background:rgba(0,0,0,.78); padding:20px; }
+  #overlay h1 { font-size:clamp(28px,7vw,54px); color:#ffd23f;
+    text-shadow:3px 3px 0 #000; margin-bottom:12px; letter-spacing:2px; }
+  #overlay p { font-size:clamp(13px,3vw,17px); line-height:1.7; color:#cfe; }
+  #overlay .go { margin-top:22px; padding:14px 40px; font-size:20px;
+    font-family:inherit; font-weight:bold; background:#ffd23f; color:#222;
+    border:3px solid #222; border-radius:6px; cursor:pointer;
+    box-shadow:0 5px 0 #a8830a; }
+  #overlay .go:active { transform:translateY(4px); box-shadow:0 1px 0 #a8830a; }
+  .hidden { display:none !important; }
+  #touch { position:absolute; bottom:12px; left:0; right:0;
+    display:flex; justify-content:space-between; padding:0 14px;
+    pointer-events:none; }
+  #touch button { pointer-events:auto; width:72px; height:72px; font-size:30px;
+    font-weight:bold; background:rgba(255,255,255,.15); color:#fff;
+    border:3px solid rgba(255,255,255,.5); border-radius:50%;
+    user-select:none; }
+  #btnJump { background:rgba(255,210,63,.25); border-color:#ffd23f; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="480" height="640"></canvas>
+  <div id="hud">
+    <span>得分 <span id="score">0</span></span>
+    <span>最高 <span id="best">0</span></span>
+    <span>速度 <span id="spd">1.0x</span></span>
+  </div>
+  <div id="touch">
+    <button id="btnLeft">◀</button>
+    <button id="btnRight">▶</button>
+    <button id="btnJump">▲</button>
+  </div>
+  <div id="overlay">
+    <h1 id="ovTitle">经典坦克跳坑</h1>
+    <p id="ovText">左右移动坦克（← → / A D），<br>
+      按 空格 / ↑ / W 跳过坑洞与障碍。<br>
+      踩扁敌方坦克 +分，掉进坑里游戏结束！</p>
+    <button class="go" id="btnStart">开始游戏</button>
+  </div>
+</div>
+<script>
+"use strict";
+const cv = document.getElementById("game");
+const ctx = cv.getContext("2d");
+const W = cv.width, H = cv.height;
+
+const scoreEl = document.getElementById("score");
+const bestEl  = document.getElementById("best");
+const spdEl   = document.getElementById("spd");
+const overlay = document.getElementById("overlay");
+const ovTitle = document.getElementById("ovTitle");
+const ovText  = document.getElementById("ovText");
+const btnStart= document.getElementById("btnStart");
+
+let best = +(localStorage.getItem("tankJumpBest") || 0);
+bestEl.textContent = best;
+
+const G = { running:false, over:false, score:0, speed:1, t:0, shake:0 };
+const player = { x:W/2, y:H-140, w:44, h:30, vx:0, vy:0,
+  onGround:true, jumpCd:0, dir:1, tread:0 };
+const keys = { left:false, right:false, jump:false };
+
+let groundY;
+let holes = [], obstacles = [], enemies = [], bullets = [], particles = [], treadMarks = [];
+let spawnTimer = 0, enemyTimer = 100;
+
+function reset(){
+  G.score = 0; G.speed = 1; G.t = 0; G.over = false;
+  groundY = H - 70;
+  holes = [ {x: W + 200, w: 70} ];
+  obstacles = []; enemies = []; bullets = []; particles = []; treadMarks = [];
+  player.x = W/2; player.y = groundY - player.h;
+  player.vx = 0; player.vy = 0; player.onGround = true;
+  player.dir = 1; player.jumpCd = 0;
+  spawnTimer = 0; enemyTimer = 100;
+}
+
+addEventListener("keydown", e=>{
+  if(["ArrowLeft","ArrowRight","ArrowUp"," ","a","d","w","A","D","W"].includes(e.key))
+    e.preventDefault();
+  if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A") keys.left=true;
+  if(e.key==="ArrowRight"||e.key==="d"||e.key==="D") keys.right=true;
+  if(e.key==="ArrowUp"||e.key===" "||e.key==="w"||e.key==="W"){
+    if(!G.running){ if(!overlay.classList.contains("hidden")) startGame(); }
+    else keys.jump = true;
+  }
+});
+addEventListener("keyup", e=>{
+  if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A") keys.left=false;
+  if(e.key==="ArrowRight"||e.key==="d"||e.key==="D") keys.right=false;
+  if(e.key==="ArrowUp"||e.key===" "||e.key==="w"||e.key==="W") keys.jump=false;
+});
+function bindHold(id, prop){
+  const el = document.getElementById(id);
+  const on = e=>{ e.preventDefault(); keys[prop]=true; if(!G.running) startGame(); };
+  const off= e=>{ e.preventDefault(); keys[prop]=false; };
+  el.addEventListener("touchstart",on,{passive:false});
+  el.addEventListener("touchend",off,{passive:false});
+  el.addEventListener("touchcancel",off,{passive:false});
+  el.addEventListener("mousedown",on);
+  el.addEventListener("mouseup",off);
+  el.addEventListener("mouseleave",off);
+}
+bindHold("btnLeft","left");
+bindHold("btnRight","right");
+bindHold("btnJump","jump");
+btnStart.addEventListener("click", startGame);
+
+function startGame(){
+  reset();
+  overlay.classList.add("hidden");
+  G.running = true;
+}
+function gameOver(){
+  G.running = false; G.over = true;
+  if(G.score > best){
+    best = G.score;
+    localStorage.setItem("tankJumpBest", best);
+    bestEl.textContent = best;
+    ovTitle.textContent = "新纪录！ " + best + " 分";
+  } else {
+    ovTitle.textContent = "游戏结束";
+  }
+  ovText.innerHTML = "本局得分 <b style='color:#ffd23f'>"+Math.floor(G.score)+
+    "</b> 分，最高分 <b style='color:#ffd23f'>"+best+"</b>。<br>掉进坑里啦，再来一局？";
+  btnStart.textContent = "再来一局";
+  overlay.classList.remove("hidden");
+}
+
+function updateSpawns(){
+  spawnTimer--;
+  if(spawnTimer <= 0){
+    spawnTimer = 90 + Math.random()*70;
+    const w = 60 + Math.random()*40 + G.speed*4;
+    const last = holes[holes.length-1];
+    const gap = 160 + Math.random()*180;
+    const x = (last ? Math.max(last.x + last.w + gap, W + 100) : W + 150);
+    holes.push({x, w});
+    if(Math.random() < .5){
+      obstacles.push({ x: x - 40 - Math.random()*60, w:26,
+        h: 24 + Math.random()*14, type:"crate" });
+    }
+    if(Math.random() < .35){
+      obstacles.push({ x: x + w + 80 + Math.random()*60, w:14,
+        h:34, type:"wire" });
+    }
+  }
+  enemyTimer--;
+  if(enemyTimer <= 0){
+    enemyTimer = Math.max(50, 130 - G.speed*10) + Math.random()*60;
+    enemies.push({ x: W + 40, y: groundY - 28, w:42, h:28,
+      vx: -(0.6 + G.speed*0.15), hp:1, shoot: 70 + Math.random()*60 });
+  }
+}
+
+function inHole(x){
+  for(const h of holes) if(x > h.x && x < h.x + h.w) return true;
+  return false;
+}
+function update(dt){
+  G.t += dt;
+  G.speed = 1 + G.score/1500;
+  spdEl.textContent = G.speed.toFixed(1) + "x";
+  const scroll = (2.2 + G.speed*0.9) * dt * 60/16.67;
+
+  for(const h of holes) h.x -= scroll;
+  for(const o of obstacles) o.x -= scroll;
+  for(const e of enemies) e.x -= scroll;
+  holes = holes.filter(h=>h.x + h.w > -60);
+  obstacles = obstacles.filter(o=>o.x + o.w > -60);
+  updateSpawns();
+
+  const ACC = 0.7*dt*60/16.67;
+  if(keys.left){ player.vx -= ACC; player.dir=-1; }
+  if(keys.right){ player.vx += ACC; player.dir=1; }
+  player.vx *= Math.pow(0.85, dt/16.67);
+  player.vx = Math.max(-6, Math.min(6, player.vx));
+  player.x += player.vx * dt/16.67;
+  player.x = Math.max(24, Math.min(W-24, player.x));
+  player.tread += Math.abs(player.vx)*0.3;
+
+  if(player.jumpCd > 0) player.jumpCd -= dt;
+  if(keys.jump && player.onGround && player.jumpCd <= 0){
+    player.vy = -11.5; player.onGround = false; player.jumpCd = 220;
+    keys.jump = false;
+  }
+  player.vy += 0.6 * dt/16.67;
+  player.y += player.vy * dt/16.67;
+
+  const footX = player.x;
+  const overHole = inHole(footX) || inHole(footX-16) || inHole(footX+16);
+  const landY = groundY - player.h;
+  if(player.vy >= 0 && player.y >= landY){
+    if(overHole){
+      player.onGround = false;
+      if(player.y > H + 40) gameOver();
+    } else {
+      player.y = landY; player.vy = 0; player.onGround = true;
+    }
+  }
+  if(player.y > H + 60) gameOver();
+  if(player.onGround && G.t % 3 < 1)
+    treadMarks.push({x:player.x-14*Math.sign(player.vx||1), y:groundY-3, a:1});
+
+  for(const e of enemies){
+    e.y = groundY - e.h;
+    e.shoot -= dt;
+    if(e.shoot <= 0 && e.x < W-40){
+      e.shoot = 90 + Math.random()*80;
+      bullets.push({x:e.x-16, y:e.y+e.h/2, vx:-4.5, fromEnemy:true});
+    }
+    if(rectHit(player, e)){
+      if(player.vy > 1 && player.y + player.h < e.y + e.h*0.7){
+        e.hp = 0; player.vy = -7; G.score += 150;
+        burst(e.x, e.y+e.h/2, "#ff6b35", 14); G.shake = 6;
+      } else {
+        player.vy = -6; player.vx = -4*player.dir; G.shake = 8;
+        G.score = Math.max(0, G.score - 80);
+        burst(player.x, player.y+14, "#f33", 8);
+      }
+    }
+    if(e.x < -50) e.hp = 0;
+  }
+  enemies = enemies.filter(e=>e.hp>0);
+
+  for(const b of bullets){
+    b.x += b.vx * dt/16.67;
+    if(b.fromEnemy && rectHit(b,{x:player.x-20,y:player.y,w:40,h:player.h})){
+      b.dead = true; G.shake = 7; G.score = Math.max(0,G.score-60);
+      burst(player.x, player.y+10, "#ff0", 8);
+      player.vy = -5;
+    }
+  }
+  bullets = bullets.filter(b=>!b.dead && b.x > -20 && b.x < W+20);
+
+  for(const o of obstacles){
+    const rect = {x:o.x, y:groundY-o.h, w:o.w, h:o.h};
+    if(rectHit(player, rect) && o.type==="crate"){
+      if(player.vy > 0 && player.y+player.h < groundY - o.h*0.4){
+        o.dead = true; player.vy = -6; G.score += 50;
+        burst(o.x+o.w/2, groundY-o.h/2, "#c96", 10);
+      } else if (player.vy >= 0){
+        player.x -= 2; player.vx *= -0.3;
+      }
+    }
+  }
+  obstacles = obstacles.filter(o=>!o.dead);
+
+  G.score += dt * 0.06 * G.speed;
+  scoreEl.textContent = Math.floor(G.score);
+
+  for(const p of particles){
+    p.x += p.vx*dt/16.67; p.y += p.vy*dt/16.67;
+    p.vy += 0.25*dt/16.67; p.a -= 0.03*dt/16.67;
+  }
+  particles = particles.filter(p=>p.a>0);
+  for(const t of treadMarks) t.a -= 0.05;
+  treadMarks = treadMarks.filter(t=>t.a>0);
+  if(G.shake>0) G.shake -= dt*0.05;
+}
+
+function rectHit(a,b){
+  const aw=a.w||40, ah=a.h||30;
+  const ax=a.x, ay=a.y, bx=b.x, by=b.y;
+  return ax-aw/2 < bx+b.w && ax+aw/2 > bx && ay < by+b.h && ay+ah > by;
+}
+function burst(x,y,color,n){
+  for(let i=0;i<n;i++)
+    particles.push({x,y, vx:(Math.random()-.5)*7, vy:(Math.random()-1)*5,
+      a:1, color, s:2+Math.random()*3});
+}
+
+function drawTank(x,y,w,h,dir,color,tread){
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = "#222";
+  ctx.fillRect(-w/2, h-8, w, 8);
+  ctx.fillStyle = "#555";
+  for(let i=0;i<4;i++){
+    const off = (tread%8);
+    ctx.fillRect(-w/2+2+i*10 - off*0.5, h-7, 5, 6);
+  }
+  ctx.fillStyle = color;
+  ctx.fillRect(-w/2+2, 6, w-4, h-10);
+  ctx.fillStyle = "rgba(255,255,255,.25)";
+  ctx.fillRect(-w/2+2, 6, w-4, 3);
+  ctx.fillStyle = "#2c2c2c";
+  ctx.fillRect(-8, 0, 16, 9);
+  ctx.fillStyle = "#222";
+  const bx = dir>0 ? 6 : -6-18;
+  ctx.fillRect(bx, 3, 18, 4);
+  ctx.restore();
+}
+
+function draw(){
+  ctx.save();
+  if(G.shake>0) ctx.translate((Math.random()-.5)*G.shake, (Math.random()-.5)*G.shake);
+  ctx.fillStyle = "#3b7d2e"; ctx.fillRect(-10,-10,W+20,H+20);
+  ctx.fillStyle = "#357428";
+  for(let i=0;i<10;i++){
+    const yy = (i*70 + (G.t*0.05*(2+G.speed))%70);
+    ctx.fillRect(0, yy, W, 18);
+  }
+  ctx.fillStyle = "#7a5a34";
+  ctx.fillRect(0, groundY, W, H-groundY);
+  ctx.fillStyle = "#6b4e2c";
+  for(let i=0;i<12;i++){
+    const xx = ((i*60 - G.t*0.1*(2+G.speed))%(W+60)+W+60)%(W+60);
+    ctx.fillRect(xx, groundY+14, 30, 6);
+    ctx.fillRect(xx+20, groundY+34, 20, 5);
+  }
+  ctx.fillStyle = "#2c5a21";
+  ctx.fillRect(0, groundY-4, W, 4);
+
+  ctx.fillStyle = "#000";
+  for(const t of treadMarks){ ctx.globalAlpha=t.a*.3; ctx.fillRect(t.x, t.y, 10, 3); }
+  ctx.globalAlpha = 1;
+
+  for(const h of holes){
+    if(h.x > W+10) continue;
+    ctx.fillStyle = "#0a0a0a";
+    ctx.beginPath();
+    ctx.moveTo(h.x, groundY);
+    ctx.lineTo(h.x+h.w, groundY);
+    ctx.lineTo(h.x+h.w-8, H);
+    ctx.lineTo(h.x+8, H);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle="#4a3520"; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(h.x, groundY); ctx.lineTo(h.x+8, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(h.x+h.w, groundY); ctx.lineTo(h.x+h.w-8, H); ctx.stroke();
+    ctx.fillStyle="#8a6a3a";
+    ctx.fillRect(h.x-4, groundY-3, 8, 4);
+    ctx.fillRect(h.x+h.w-4, groundY-3, 8, 4);
+  }
+
+  for(const o of obstacles){
+    if(o.x>W+10) continue;
+    if(o.type==="crate"){
+      ctx.fillStyle="#b8863f"; ctx.fillRect(o.x, groundY-o.h, o.w, o.h);
+      ctx.strokeStyle="#7a5a24"; ctx.lineWidth=2;
+      ctx.strokeRect(o.x, groundY-o.h, o.w, o.h);
+      ctx.beginPath();
+      ctx.moveTo(o.x, groundY-o.h); ctx.lineTo(o.x+o.w, groundY);
+      ctx.moveTo(o.x+o.w, groundY-o.h); ctx.lineTo(o.x, groundY);
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle="#999"; ctx.lineWidth=2;
+      for(let i=0;i<3;i++){
+        ctx.beginPath();
+        ctx.moveTo(o.x-6, groundY-o.h+i*12);
+        ctx.lineTo(o.x+o.w+6, groundY-o.h+8+i*12);
+        ctx.stroke();
+      }
+      ctx.fillStyle="#666";
+      ctx.fillRect(o.x, groundY-o.h, 4, o.h);
+      ctx.fillRect(o.x+o.w-4, groundY-o.h, 4, o.h);
+    }
+  }
+
+  for(const e of enemies) drawTank(e.x, e.y, e.w, e.h, -1, "#c0392b", G.t*0.4);
+
+  ctx.fillStyle = "#ffe680";
+  for(const b of bullets){
+    ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
+    ctx.fillStyle = "#ff8800";
+    ctx.beginPath(); ctx.arc(b.x, b.y, 2, 0, 7); ctx.fill();
+    ctx.fillStyle = "#ffe680";
+  }
+
+  if(!(G.over && !G.running)){
+    drawTank(player.x, player.y, player.w, player.h, player.dir,
+      "#2ecc71", player.tread);
+    if(!player.onGround){
+      ctx.fillStyle = "rgba(255,200,0,.6)";
+      ctx.beginPath();
+      ctx.arc(player.x - player.dir*22, player.y+20, 5, 0, 7);
+      ctx.fill();
+    }
+  }
+
+  for(const p of particles){
+    ctx.globalAlpha = p.a;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.s, p.s);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(50, now - last);
+  last = now;
+  if(G.running) update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+reset();
+draw();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
