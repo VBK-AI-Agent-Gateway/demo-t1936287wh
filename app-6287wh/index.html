@@ -2,456 +2,222 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>霓虹贪吃蛇 · Neon Snake</title>
-<style>
-  :root{
-    --bg:#0a0e1a;
-    --panel:rgba(17,24,44,.72);
-    --line:rgba(94,234,212,.25);
-    --accent:#5eead4;
-    --accent2:#f472b6;
-    --food:#fb7185;
-    --text:#e2e8f0;
-    --muted:#94a3b8;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%}
-  body{
-    font-family:"SF Pro Display","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-    background:
-      linear-gradient(180deg, rgba(10,14,26,.62), rgba(10,14,26,.78)),
-      url("bg.jpg") center/cover no-repeat fixed,
-      var(--bg);
-    color:var(--text);
-    display:flex;align-items:center;justify-content:center;
-    min-height:100vh;padding:24px;overflow:hidden;
-    user-select:none;
-  }
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-    background:
-      radial-gradient(900px 500px at 15% -5%, rgba(94,234,212,.10), transparent 60%),
-      radial-gradient(800px 500px at 90% 105%, rgba(244,114,182,.10), transparent 60%);
-  }
-  .app{position:relative;z-index:1;
-    width:min(520px,100%);
-    display:flex;flex-direction:column;gap:14px;
-  }
-  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-  h1{
-    font-size:26px;letter-spacing:2px;font-weight:800;
-    background:linear-gradient(90deg,var(--accent),#818cf8,var(--accent2));
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-  }
-  h1 small{font-size:12px;letter-spacing:4px;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:500;margin-left:8px}
-  .scores{display:flex;gap:10px}
-  .score-card{
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:6px 14px;text-align:center;min-width:78px;backdrop-filter:blur(8px);
-    transition:border-color .2s;
-  }
-  .score-card .label{font-size:11px;color:var(--muted);letter-spacing:2px}
-  .score-card .value{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent)}
-  .score-card.best .value{color:var(--accent2)}
-  .score-card.pop{animation:pop .25s ease}
-  @keyframes pop{40%{transform:scale(1.12)}}
-
-  header,.score-card,footer,.dpad button{
-    text-shadow:0 1px 8px rgba(0,0,0,.65);
-  }
-  .board-wrap{
-    position:relative;border-radius:18px;overflow:hidden;
-    border:1px solid var(--line);
-    background:rgba(9,13,26,.55);
-    backdrop-filter:blur(3px);
-    box-shadow:0 0 0 1px rgba(0,0,0,.4),0 24px 60px -20px rgba(0,0,0,.8),0 0 40px -12px rgba(94,234,212,.25);
-  }
-  canvas{display:block;width:100%;height:auto;touch-action:none;opacity:.94}
-
-  .overlay{
-    position:absolute;inset:0;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:14px;text-align:center;
-    background:rgba(7,10,20,.78);backdrop-filter:blur(6px);
-    transition:opacity .25s;padding:24px;
-  }
-  .overlay.hidden{opacity:0;pointer-events:none}
-  .overlay h2{font-size:34px;font-weight:900;letter-spacing:6px;
-    background:linear-gradient(90deg,var(--accent),var(--accent2));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .overlay p{color:var(--muted);font-size:14px;line-height:1.9}
-  .overlay .final{font-size:15px;color:var(--text)}
-  .overlay .final b{color:var(--accent);font-size:26px}
-  .new-record{color:var(--accent2);font-weight:700;letter-spacing:2px;animation:blink 1s infinite}
-  @keyframes blink{50%{opacity:.4}}
-
-  .btn{
-    cursor:pointer;border:none;border-radius:999px;
-    padding:12px 34px;font-size:15px;font-weight:700;letter-spacing:3px;
-    color:#04121a;background:linear-gradient(135deg,var(--accent),#38bdf8);
-    box-shadow:0 8px 24px -8px rgba(94,234,212,.7);
-    transition:transform .15s,box-shadow .15s,filter .15s;
-  }
-  .btn:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 12px 28px -8px rgba(94,234,212,.8)}
-  .btn:active{transform:translateY(0) scale(.97)}
-  .btn.ghost{
-    background:transparent;color:var(--accent);
-    border:1px solid var(--line);box-shadow:none;
-  }
-  .btn.ghost:hover{background:rgba(94,234,212,.1);box-shadow:none}
-
-  footer{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:#cbd5e1;
-    background:rgba(17,24,44,.55);border:1px solid rgba(94,234,212,.18);border-radius:12px;
-    padding:8px 12px;backdrop-filter:blur(8px);text-shadow:0 1px 6px rgba(0,0,0,.7)}
-  .keys{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-  kbd{
-    background:#151c30;border:1px solid #2a3554;border-bottom-width:3px;
-    border-radius:6px;padding:2px 7px;font-size:11px;color:#cbd5e1;font-family:inherit;
-  }
-  .dpad{display:none;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(2,56px);gap:8px;justify-content:center}
-  .dpad button{
-    border:1px solid var(--line);background:var(--panel);color:var(--accent);
-    border-radius:14px;font-size:20px;cursor:pointer;transition:background .15s,transform .1s;
-    backdrop-filter:blur(6px);
-  }
-  .dpad button:active{background:rgba(94,234,212,.22);transform:scale(.94)}
-  .dpad .up{grid-column:2;grid-row:1}
-  .dpad .left{grid-column:1;grid-row:2}
-  .dpad .down{grid-column:2;grid-row:2}
-  .dpad .right{grid-column:3;grid-row:2}
-  .controls-row{display:flex;justify-content:center}
-  @media (pointer:coarse),(max-width:640px){
-    .dpad{display:grid}
-    .keys{display:none}
-    h1{font-size:21px} h1 small{display:none}
-    .score-card{min-width:64px;padding:5px 10px}
-    .score-card .value{font-size:18px}
-  }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>图匠 · 本地图片编辑器</title>
+<meta name="description" content="纯浏览器本地图片编辑器：裁剪、旋转、缩放、调色、滤镜、水印，导出 PNG/JPG/WebP，图片不上传服务器。">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖼️</text></svg>">
 </head>
 <body>
-<div class="app">
-  <header>
-    <h1>霓虹贪吃蛇<small>NEON SNAKE</small></h1>
-    <div class="scores">
-      <div class="score-card" id="scoreCard"><div class="label">得分</div><div class="value" id="score">0</div></div>
-      <div class="score-card best"><div class="label">最高</div><div class="value" id="best">0</div></div>
-    </div>
-  </header>
-
-  <div class="board-wrap">
-    <canvas id="game" width="480" height="480" aria-label="贪吃蛇游戏区域"></canvas>
-    <div class="overlay" id="overlay">
-      <h2 id="ovTitle">贪吃蛇</h2>
-      <div class="final" id="ovFinal" hidden></div>
-      <div class="new-record" id="ovRecord" hidden>★ 新纪录 ★</div>
-      <p id="ovHelp">吃掉红色能量球成长，别撞墙也别咬到自己<br>方向键 / WASD / 滑动 控制 · 空格暂停</p>
-      <button class="btn" id="startBtn">开始游戏</button>
-    </div>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◧</span>
+    <span class="name">图匠 <em>Image Studio</em></span>
   </div>
-
-  <div class="controls-row">
-    <div class="dpad" aria-label="方向控制">
-      <button class="up" data-dir="up" aria-label="上">▲</button>
-      <button class="left" data-dir="left" aria-label="左">◀</button>
-      <button class="down" data-dir="down" aria-label="下">▼</button>
-      <button class="right" data-dir="right" aria-label="右">▶</button>
-    </div>
+  <div class="top-actions">
+    <button id="btnOpen" class="btn btn-ghost">打开图片</button>
+    <button id="btnUndo" class="btn btn-ghost" disabled>撤销</button>
+    <button id="btnReset" class="btn btn-ghost" disabled>重置</button>
+    <button id="btnDownload" class="btn btn-primary" disabled>下载图片</button>
+    <input type="file" id="fileInput" accept="image/*" hidden>
   </div>
+</header>
 
-  <footer>
-    <div class="keys">
-      <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd><span>或</span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>移动</span><kbd>Space</kbd><span>暂停</span>
+<main class="layout">
+  <section class="stage" id="stage">
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="上传图片">
+      <div class="dz-inner">
+        <div class="dz-icon">⇪</div>
+        <p class="dz-title">拖拽图片到此处，或点击选择</p>
+        <p class="dz-sub">支持 JPG / PNG / WebP / GIF / SVG · 全程本地处理，不上传服务器</p>
+      </div>
     </div>
-    <button class="btn ghost" id="resetBtn" style="padding:7px 18px;font-size:12px;letter-spacing:2px">重新开始</button>
-  </footer>
-</div>
+    <div class="canvas-wrap" id="canvasWrap" hidden>
+      <canvas id="viewCanvas" aria-label="图片预览画布"></canvas>
+      <div class="crop-overlay" id="cropOverlay" hidden>
+        <div class="crop-box" id="cropBox">
+          <span class="h tl" data-h="tl"></span><span class="h tr" data-h="tr"></span>
+          <span class="h bl" data-h="bl"></span><span class="h br" data-h="br"></span>
+          <span class="h t" data-h="t"></span><span class="h b" data-h="b"></span>
+          <span class="h l" data-h="l"></span><span class="h r" data-h="r"></span>
+          <div class="crop-info" id="cropInfo">0 × 0</div>
+        </div>
+      </div>
+    </div>
+    <div class="statusbar" id="statusbar" hidden>
+      <span id="metaName">—</span>
+      <span id="metaSize">—</span>
+      <span id="metaDim">—</span>
+    </div>
+  </section>
 
-<script>
-(() => {
-  'use strict';
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const COLS = 24, ROWS = 24;
-  const CELL = canvas.width / COLS;
+  <aside class="panel">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="adjust" role="tab">调节</button>
+      <button class="tab" data-tab="crop" role="tab">裁剪</button>
+      <button class="tab" data-tab="geo" role="tab">尺寸</button>
+      <button class="tab" data-tab="filter" role="tab">滤镜</button>
+      <button class="tab" data-tab="text" role="tab">水印</button>
+      <button class="tab" data-tab="export" role="tab">导出</button>
+    </div>
 
-  const scoreEl = document.getElementById('score');
-  const bestEl = document.getElementById('best');
-  const scoreCard = document.getElementById('scoreCard');
-  const overlay = document.getElementById('overlay');
-  const ovTitle = document.getElementById('ovTitle');
-  const ovFinal = document.getElementById('ovFinal');
-  const ovRecord = document.getElementById('ovRecord');
-  const startBtn = document.getElementById('startBtn');
-  const resetBtn = document.getElementById('resetBtn');
+    <div class="tab-body">
+      <!-- 调节 -->
+      <section class="tab-pane active" id="pane-adjust">
+        <div class="slider-row">
+          <label for="sBrightness">亮度 <output id="oBrightness">0</output></label>
+          <input type="range" id="sBrightness" min="-100" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label for="sContrast">对比度 <output id="oContrast">0</output></label>
+          <input type="range" id="sContrast" min="-100" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label for="sSaturation">饱和度 <output id="oSaturation">0</output></label>
+          <input type="range" id="sSaturation" min="-100" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label for="sHue">色相 <output id="oHue">0</output></label>
+          <input type="range" id="sHue" min="-180" max="180" value="0">
+        </div>
+        <div class="slider-row">
+          <label for="sBlur">模糊 <output id="oBlur">0</output></label>
+          <input type="range" id="sBlur" min="0" max="20" value="0" step="0.5">
+        </div>
+        <div class="slider-row">
+          <label for="sSepia">复古(棕褐) <output id="oSepia">0</output></label>
+          <input type="range" id="sSepia" min="0" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label for="sGrayscale">灰度 <output id="oGrayscale">0</output></label>
+          <input type="range" id="sGrayscale" min="0" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label for="sInvert">反色 <output id="oInvert">0</output></label>
+          <input type="range" id="sInvert" min="0" max="100" value="0">
+        </div>
+        <div class="btn-grid">
+          <button class="btn btn-soft" data-quick="warm">暖调</button>
+          <button class="btn btn-soft" data-quick="cool">冷调</button>
+          <button class="btn btn-soft" data-quick="vivid">鲜艳</button>
+          <button class="btn btn-soft" data-quick="bw">黑白</button>
+        </div>
+      </section>
 
-  const BEST_KEY = 'neon-snake-best';
-  let best = 0;
-  try { best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch (e) {}
-  bestEl.textContent = best;
+      <!-- 裁剪 -->
+      <section class="tab-pane" id="pane-crop">
+        <div class="seg" role="group" aria-label="裁剪比例">
+          <button class="seg-btn active" data-ratio="free">自由</button>
+          <button class="seg-btn" data-ratio="1:1">1:1</button>
+          <button class="seg-btn" data-ratio="4:3">4:3</button>
+          <button class="seg-btn" data-ratio="3:2">3:2</button>
+          <button class="seg-btn" data-ratio="16:9">16:9</button>
+          <button class="seg-btn" data-ratio="9:16">9:16</button>
+        </div>
+        <p class="hint">在画布上拖动裁剪框，可从四角/四边调整大小。</p>
+        <div class="btn-grid">
+          <button class="btn btn-soft" id="btnRotateL">↺ 左转 90°</button>
+          <button class="btn btn-soft" id="btnRotateR">↻ 右转 90°</button>
+          <button class="btn btn-soft" id="btnFlipH">⇋ 水平翻转</button>
+          <button class="btn btn-soft" id="btnFlipV">⇵ 垂直翻转</button>
+        </div>
+        <div class="btn-grid single">
+          <button class="btn btn-primary" id="btnApplyCrop">应用裁剪</button>
+        </div>
+      </section>
 
-  let snake, dir, nextDir, food, score, speed, timer, state, particles, shake = 0;
+      <!-- 尺寸 -->
+      <section class="tab-pane" id="pane-geo">
+        <div class="field-row">
+          <label for="inW">宽度 (px)</label>
+          <input type="number" id="inW" min="1" max="12000" value="0">
+        </div>
+        <div class="field-row">
+          <label for="inH">高度 (px)</label>
+          <input type="number" id="inH" min="1" max="12000" value="0">
+        </div>
+        <label class="check"><input type="checkbox" id="lockRatio" checked> 锁定原始比例</label>
+        <div class="btn-grid">
+          <button class="btn btn-soft" data-size="0.5">缩至 50%</button>
+          <button class="btn btn-soft" data-size="0.25">缩至 25%</button>
+          <button class="btn btn-soft" data-size="2">放大 200%</button>
+        </div>
+        <div class="btn-grid single">
+          <button class="btn btn-primary" id="btnApplyResize">应用尺寸</button>
+        </div>
+      </section>
 
-  function reset() {
-    snake = [{x:8,y:12},{x:7,y:12},{x:6,y:12}];
-    dir = {x:1,y:0};
-    nextDir = {x:1,y:0};
-    score = 0;
-    speed = 150;
-    particles = [];
-    scoreEl.textContent = '0';
-    placeFood();
-  }
+      <!-- 滤镜 -->
+      <section class="tab-pane" id="pane-filter">
+        <div class="filter-grid">
+          <button class="filter-card" data-filter="none"><span class="prev p-none"></span>原图</button>
+          <button class="filter-card" data-filter="mono"><span class="prev p-mono"></span>黑白</button>
+          <button class="filter-card" data-filter="vintage"><span class="prev p-vintage"></span>老照片</button>
+          <button class="filter-card" data-filter="cool"><span class="prev p-cool"></span>冷冽</button>
+          <button class="filter-card" data-filter="warm"><span class="prev p-warm"></span>暖阳</button>
+          <button class="filter-card" data-filter="fade"><span class="prev p-fade"></span>褪色</button>
+          <button class="filter-card" data-filter="highcontrast"><span class="prev p-hc"></span>高反差</button>
+          <button class="filter-card" data-filter="invert"><span class="prev p-invert"></span>底片</button>
+        </div>
+      </section>
 
-  function placeFood() {
-    const occupied = new Set(snake.map(s => s.x + ',' + s.y));
-    let p;
-    do {
-      p = {x:(Math.random()*COLS)|0, y:(Math.random()*ROWS)|0};
-    } while (occupied.has(p.x + ',' + p.y));
-    food = p;
-  }
+      <!-- 水印 -->
+      <section class="tab-pane" id="pane-text">
+        <div class="field-row">
+          <label for="wmText">水印文字</label>
+          <input type="text" id="wmText" maxlength="60" placeholder="© 你的名字">
+        </div>
+        <div class="field-row three">
+          <div><label for="wmSize">字号</label><input type="number" id="wmSize" min="8" max="400" value="48"></div>
+          <div><label for="wmColor">颜色</label><input type="color" id="wmColor" value="#ffffff"></div>
+          <div><label for="wmAlpha">透明度</label><input type="range" id="wmAlpha" min="10" max="100" value="80"></div>
+        </div>
+        <div class="seg" role="group" aria-label="水印位置">
+          <button class="seg-btn" data-pos="tl">左上</button>
+          <button class="seg-btn" data-pos="tc">顶部</button>
+          <button class="seg-btn" data-pos="tr">右上</button>
+          <button class="seg-btn" data-pos="ml">左中</button>
+          <button class="seg-btn active" data-pos="cc">居中</button>
+          <button class="seg-btn" data-pos="mr">右中</button>
+          <button class="seg-btn" data-pos="bl">左下</button>
+          <button class="seg-btn" data-pos="bc">底部</button>
+          <button class="seg-btn" data-pos="br">右下</button>
+        </div>
+        <label class="check"><input type="checkbox" id="wmStroke"> 添加描边（复杂背景更清晰）</label>
+        <div class="btn-grid single">
+          <button class="btn btn-primary" id="btnApplyWm">应用水印</button>
+        </div>
+        <div class="btn-grid single">
+          <button class="btn btn-ghost" id="btnClearWm">清除水印</button>
+        </div>
+      </section>
 
-  function setDir(x, y) {
-    if (state !== 'running') return;
-    if (x === -dir.x && y === -dir.y) return;
-    nextDir = {x, y};
-  }
+      <!-- 导出 -->
+      <section class="tab-pane" id="pane-export">
+        <div class="seg" role="group" aria-label="导出格式">
+          <button class="seg-btn active" data-format="image/png">PNG</button>
+          <button class="seg-btn" data-format="image/jpeg">JPG</button>
+          <button class="seg-btn" data-format="image/webp">WebP</button>
+        </div>
+        <div class="field-row" id="qualityRow" hidden>
+          <label for="inQuality">质量 <output id="oQuality">92</output>%</label>
+          <input type="range" id="inQuality" min="10" max="100" value="92">
+        </div>
+        <div class="field-row">
+          <label for="outName">文件名</label>
+          <input type="text" id="outName" value="edited">
+        </div>
+        <p class="hint" id="exportSummary">导出尺寸：—</p>
+        <div class="btn-grid single">
+          <button class="btn btn-primary btn-lg" id="btnExport">下载到本地</button>
+        </div>
+        <p class="hint secure">🔒 图片仅在你的浏览器中处理，不会离开本机。</p>
+      </section>
+    </div>
+  </aside>
+</main>
 
-  function updateScore() {
-    scoreEl.textContent = score;
-    scoreCard.classList.remove('pop');
-    void scoreCard.offsetWidth;
-    scoreCard.classList.add('pop');
-    if (score > best) {
-      best = score;
-      bestEl.textContent = best;
-      try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {}
-      return true;
-    }
-    return false;
-  }
-
-  function spawnParticles(x, y) {
-    for (let i = 0; i < 10; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const v = 40 + Math.random() * 90;
-      particles.push({
-        x: (x + .5) * CELL, y: (y + .5) * CELL,
-        vx: Math.cos(a) * v, vy: Math.sin(a) * v,
-        life: .5, r: 2 + Math.random() * 3
-      });
-    }
-  }
-
-  function tick() {
-    dir = nextDir;
-    const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
-
-    if (head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS) return gameOver();
-    const willGrow = head.x === food.x && head.y === food.y;
-    const body = willGrow ? snake : snake.slice(0, -1);
-    if (body.some(s => s.x === head.x && s.y === head.y)) return gameOver();
-
-    snake.unshift(head);
-    if (willGrow) {
-      spawnParticles(food.x, food.y);
-      score += 10;
-      if (updateScore()) ovRecord.hidden = false;
-      placeFood();
-      if (score % 50 === 0 && speed > 60) {
-        speed -= 8;
-        restartTimer();
-      }
-    } else {
-      snake.pop();
-    }
-  }
-
-  function gameOver() {
-    state = 'over';
-    clearInterval(timer);
-    ovTitle.textContent = '游戏结束';
-    ovFinal.innerHTML = '本局得分 <b>' + score + '</b>　最高 ' + best;
-    ovFinal.hidden = false;
-    startBtn.textContent = '再来一局';
-    overlay.classList.remove('hidden');
-    shake = .45;
-  }
-
-  function start() {
-    reset();
-    state = 'running';
-    ovRecord.hidden = true;
-    ovFinal.hidden = true;
-    ovTitle.textContent = '贪吃蛇';
-    startBtn.textContent = '开始游戏';
-    overlay.classList.add('hidden');
-    restartTimer();
-  }
-
-  function restartTimer() {
-    clearInterval(timer);
-    timer = setInterval(() => { if (state === 'running') tick(); }, speed);
-  }
-
-  function togglePause() {
-    if (state === 'running') {
-      state = 'paused';
-      ovTitle.textContent = '已暂停';
-      ovFinal.hidden = true;
-      startBtn.textContent = '继续';
-      overlay.classList.remove('hidden');
-    } else if (state === 'paused') {
-      state = 'running';
-      overlay.classList.add('hidden');
-    }
-  }
-
-  let lastT = 0, pulse = 0;
-
-  function draw(t) {
-    const dt = Math.min((t - lastT) / 1000, .05);
-    lastT = t;
-    pulse += dt;
-
-    ctx.save();
-    if (shake > 0) {
-      shake -= dt;
-      ctx.translate((Math.random() - .5) * 8 * shake, (Math.random() - .5) * 8 * shake);
-    }
-
-    ctx.fillStyle = 'rgba(9,13,26,0)';
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = 'rgba(94,234,212,.07)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let i = 1; i < COLS; i++) {
-      ctx.moveTo(i * CELL + .5, 0); ctx.lineTo(i * CELL + .5, canvas.height);
-      ctx.moveTo(0, i * CELL + .5); ctx.lineTo(canvas.width, i * CELL + .5);
-    }
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(94,234,212,.35)';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(1.5, 1.5, canvas.width - 3, canvas.height - 3);
-
-    const fx = (food.x + .5) * CELL, fy = (food.y + .5) * CELL;
-    const pr = CELL * (0.34 + Math.sin(pulse * 5) * 0.05);
-    const glow = ctx.createRadialGradient(fx, fy, 1, fx, fy, CELL * 1.4);
-    glow.addColorStop(0, 'rgba(251,113,133,.55)');
-    glow.addColorStop(1, 'rgba(251,113,133,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(fx - CELL * 1.4, fy - CELL * 1.4, CELL * 2.8, CELL * 2.8);
-    ctx.fillStyle = '#fb7185';
-    ctx.beginPath(); ctx.arc(fx, fy, pr, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.85)';
-    ctx.beginPath(); ctx.arc(fx - pr * .3, fy - pr * .3, pr * .3, 0, Math.PI * 2); ctx.fill();
-
-    const n = snake.length;
-    for (let i = n - 1; i >= 0; i--) {
-      const s = snake[i];
-      const k = i / Math.max(n - 1, 1);
-      const x = s.x * CELL, y = s.y * CELL;
-      const r = CELL / 2;
-      const hue = 165 + k * 90;
-      const pad = i === 0 ? 1.5 : 2.5;
-      ctx.shadowColor = 'hsla(' + hue + ',85%,60%,.9)';
-      ctx.shadowBlur = i === 0 ? 18 : 10;
-      ctx.fillStyle = 'hsl(' + hue + ',80%,' + (i === 0 ? 70 : 62 - k * 18) + '%)';
-      roundRect(x + pad, y + pad, CELL - pad * 2, CELL - pad * 2, i === 0 ? 8 : 6);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      if (i === 0) {
-        const ex = x + r + dir.x * r * .3;
-        const ey = y + r + dir.y * r * .3;
-        const off = CELL * .2;
-        const px = dir.y !== 0 ? off : 0;
-        const py = dir.x !== 0 ? off : 0;
-        ctx.fillStyle = '#0a0e1a';
-        for (const sgn of [-1, 1]) {
-          ctx.beginPath();
-          ctx.arc(ex + px * sgn, ey + py * sgn, CELL * .1, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-
-    ctx.globalCompositeOperation = 'lighter';
-    particles = particles.filter(p => (p.life -= dt) > 0);
-    for (const p of particles) {
-      p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .95; p.vy *= .95;
-      ctx.fillStyle = 'rgba(251,113,133,' + (p.life * 1.6) + ')';
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life + .5, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalCompositeOperation = 'source-over';
-
-    ctx.restore();
-    requestAnimationFrame(draw);
-  }
-
-  function roundRect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  const KEYS = {
-    ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0],
-    w:[0,-1], s:[0,1], a:[-1,0], d:[1,0],
-    W:[0,-1], S:[0,1], A:[-1,0], D:[1,0]
-  };
-  document.addEventListener('keydown', e => {
-    if (e.key === ' ' || e.code === 'Space') {
-      e.preventDefault();
-      if (state === 'over' || state === 'idle') start(); else togglePause();
-      return;
-    }
-    if (e.key === 'Enter' && state !== 'running') { start(); return; }
-    const k = KEYS[e.key];
-    if (k) { e.preventDefault(); setDir(k[0], k[1]); }
-  });
-
-  let touchStart = null;
-  canvas.addEventListener('touchstart', e => {
-    const t = e.changedTouches[0];
-    touchStart = {x:t.clientX, y:t.clientY};
-  }, {passive:true});
-  canvas.addEventListener('touchend', e => {
-    if (!touchStart) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
-    touchStart = null;
-    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
-    if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
-    else setDir(0, dy > 0 ? 1 : -1);
-  }, {passive:true});
-
-  document.querySelectorAll('.dpad button').forEach(btn => {
-    const map = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
-    btn.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      const d = map[btn.dataset.dir];
-      setDir(d[0], d[1]);
-    });
-  });
-
-  startBtn.addEventListener('click', () => {
-    if (state === 'paused') { state = 'running'; overlay.classList.add('hidden'); }
-    else start();
-  });
-  resetBtn.addEventListener('click', start);
-  window.addEventListener('blur', () => { if (state === 'running') togglePause(); });
-
-  state = 'idle';
-  reset();
-  requestAnimationFrame(draw);
-})();
-</script>
+<footer class="foot">图匠 · 纯前端图片编辑 · 无需登录 · 无水印限制</footer>
+<script src="app.js"></script>
 </body>
 </html>
