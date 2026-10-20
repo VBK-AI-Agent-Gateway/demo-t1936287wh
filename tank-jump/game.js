@@ -33,6 +33,13 @@ const rand = (a,b)=>a+Math.random()*(b-a);
 const clamp = (v,a,b)=>v<a?a:v>b?b:v;
 const lerp = (a,b,t)=>a+(b-a)*t;
 
+// ---------- 背景图片（用户提供） ----------
+const bgImg = new Image();
+let bgReady = false;
+bgImg.onload = ()=>{ bgReady = true; };
+bgImg.onerror = ()=>{ bgReady = false; };  // 失败回退程序化背景
+bgImg.src = 'background.jpg';
+
 // ---------- 游戏状态 ----------
 const S = {
   running:false, paused:false, over:false,
@@ -344,20 +351,52 @@ function updateGameplay(dt){
 // ============================================================
 //  渲染：高级卡通画风
 // ============================================================
+function drawSun(){
+  ctx.save();
+  ctx.translate(W-70,70);
+  const glow=ctx.createRadialGradient(0,0,8,0,0,60);
+  glow.addColorStop(0,'rgba(255,240,160,0.9)'); glow.addColorStop(1,'rgba(255,240,160,0)');
+  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(0,0,60,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,224,102,0.85)'; ctx.beginPath(); ctx.arc(0,0,28,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawClouds(){
+  for(const c of clouds){
+    c.x -= c.sp*0.016;
+    if(c.x < -140) c.x = W+140;
+    drawCloud(c.x, c.y, c.s);
+  }
+}
+
 function drawBackground(){
-  // 天空渐变
+  // --- 优先：用户提供的背景图，cover 铺满 + 轻微视差 ---
+  if(bgReady && bgImg.naturalWidth>0){
+    const iw=bgImg.naturalWidth, ih=bgImg.naturalHeight;
+    const scale=Math.max(W/iw, H/ih);       // cover
+    const dw=iw*scale, dh=ih*scale;
+    const par = (S.camX*0.12) % Math.max(1,(dw-W));  // 视差滚动
+    const ox = -Math.min(par, Math.max(0,dw-W));
+    const oy = (H-dh)/2;
+    ctx.drawImage(bgImg, ox, oy, dw, dh);
+    // 若横向未铺满（窄图），补右侧
+    if(ox+dw < W){ ctx.drawImage(bgImg, ox+dw-1, oy, dw, dh); }
+    // 底部渐隐，保证地形衔接自然
+    const fade=ctx.createLinearGradient(0,H*0.55,0,H);
+    fade.addColorStop(0,'rgba(160,220,255,0)');
+    fade.addColorStop(1,'rgba(255,233,184,0.35)');
+    ctx.fillStyle=fade; ctx.fillRect(0,0,W,H);
+    // 太阳 + 云仍然叠加，保持卡通感
+    drawSun();
+    drawClouds();
+    return; // 图片成功则不再画程序化远山
+  }
+
+  // --- 回退：程序化天空渐变 ---
   const sky = ctx.createLinearGradient(0,0,0,GROUND_Y);
   sky.addColorStop(0,'#6ec6ff'); sky.addColorStop(0.55,'#a8e0ff'); sky.addColorStop(1,'#ffe9b8');
   ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
 
-  // 太阳
-  ctx.save();
-  ctx.translate(W-120,90);
-  const glow=ctx.createRadialGradient(0,0,10,0,0,70);
-  glow.addColorStop(0,'rgba(255,240,160,0.95)'); glow.addColorStop(1,'rgba(255,240,160,0)');
-  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(0,0,70,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#ffe066'; ctx.beginPath(); ctx.arc(0,0,34,0,Math.PI*2); ctx.fill();
-  ctx.restore();
+  drawSun();
 
   // 远山（两层视差）
   const cam=S.camX;
@@ -378,11 +417,7 @@ function drawBackground(){
   }
 
   // 云朵
-  for(const c of clouds){
-    c.x -= c.sp*0.016;
-    if(c.x < -140) c.x = W+140;
-    drawCloud(c.x, c.y, c.s);
-  }
+  drawClouds();
 }
 function drawCloud(x,y,s){
   ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
