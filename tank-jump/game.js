@@ -1,282 +1,556 @@
-(function(){
-"use strict";
-const cv = document.getElementById('game');
-const ctx = cv.getContext('2d');
-const W = cv.width, H = cv.height;
+/* ============================================================
+   坦克跳坑 · Tank Jump — 经典高级卡通版
+   Canvas 2D · 蓄力跳跃 · 程序化地形 · 粒子特效 · WebAudio 音效
+   ============================================================ */
+(() => {
+'use strict';
 
-const UI = {
+// ---------- 基础 ----------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const ui = {
   score: document.getElementById('score'),
-  best: document.getElementById('best'),
-  state: document.getElementById('state'),
-  overlay: document.getElementById('overlay'),
-  ovTitle: document.getElementById('ovTitle'),
-  ovDesc: document.getElementById('ovDesc'),
-  btnStart: document.getElementById('btnStart')
+  dist:  document.getElementById('dist'),
+  lives: document.getElementById('lives'),
+  start: document.getElementById('overlay-start'),
+  pause: document.getElementById('overlay-pause'),
+  over:  document.getElementById('overlay-over'),
+  finalScore: document.getElementById('final-score'),
+  finalDist:  document.getElementById('final-dist'),
+  bestScore:  document.getElementById('best-score'),
 };
 
-// ---- 常量 ----
-const TILE = 48;                 // 地面砖块尺寸
-const GROUND_Y = H - TILE*2;      // 地面基准线
-const GRAV = 0.7, MOVE_ACC = 0.9, MAX_VX = 7.5, FRICTION = 0.86;
-const JUMP_V = -13.5;
+const GROUND_Y = 430;          // 地面基准线
+const GRAVITY  = 2400;         // 重力 px/s^2
+const MOVE_SPEED = 190;        // 坦克地面速度 px/s
+const MAX_CHARGE = 1.0;        // 最大蓄力
+const CHARGE_RATE = 1.4;       // 蓄力速度 /s
 
-let tiles = [];       // {x,w} 有地面的段，其余为坑
-let segX = 0;         // 下一段生成位置
-let tank, camX, score, best, running, dead, particles;
+// ---------- 工具 ----------
+const rand = (a,b)=>a+Math.random()*(b-a);
+const clamp = (v,a,b)=>v<a?a:v>b?b:v;
+const lerp = (a,b,t)=>a+(b-a)*t;
 
-best = +(localStorage.getItem('tankjump_best') || 0);
-UI.best.textContent = best;
+// ---------- 游戏状态 ----------
+const S = {
+  running:false, paused:false, over:false,
+  time:0, camX:0,
+  score:0, lives:3, dist:0, best: +(localStorage.getItem('tankjump_best')||0),
+  charging:false, charge:0,
+  speed: MOVE_SPEED,
+};
 
-function reset(){
-  tiles = [];
-  camX = 0; score = 0; dead = false;
-  particles = [];
-  // 起始平台
-  pushSegment(0, TILE*6, 0);
-  segX = TILE*6;
-  genAhead();
-  tank = { x: TILE*1.5, y: GROUND_Y-34, w: 44, h: 34, vx: 0, vy: 0, onGround: true, track: 0 };
-  running = true;
-  UI.state.textContent = 'RUN';
+// ---------- 音效 (WebAudio 合成) ----------
+let AC=null;
+function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function beep(freq, dur, type='square', vol=0.14, slide=0){
+  const a=ac(); if(!a) return;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq, a.currentTime);
+  if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide), a.currentTime+dur);
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime+dur);
+  o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+dur);
+}
+const sndJump  = ()=>beep(340,0.22,'square',0.13,420);
+const sndCharge =()=>beep(180,0.05,'sawtooth',0.05,60);
+const sndStar   =()=>{beep(880,0.09,'sine',0.16); setTimeout(()=>beep(1320,0.12,'sine',0.16),70);};
+const sndPit    =()=>beep(220,0.4,'sawtooth',0.16,-160);
+const sndLand   =()=>beep(120,0.1,'triangle',0.1,-40);
+const sndOver   =()=>{beep(440,0.2,'square',0.15); setTimeout(()=>beep(330,0.3,'square',0.15),160);};
+
+// ---------- 粒子 ----------
+const particles=[];
+function addParticle(x,y,vx,vy,life,color,size,grav=1){
+  particles.push({x,y,vx,vy,life,max:life,color,size,grav});
+}
+function burst(x,y,n,color,spd=200,life=0.6,size=5,grav=1){
+  for(let i=0;i<n;i++){ const a=rand(0,Math.PI*2),s=rand(spd*0.3,spd);
+    addParticle(x,y,Math.cos(a)*s,Math.sin(a)*s,rand(life*0.5,life),color,rand(size*0.5,size),grav);}
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){ const p=particles[i];
+    p.life-=dt; if(p.life<=0){particles.splice(i,1);continue;}
+    p.vy += GRAV*p.grav*dt*0.4; p.x+=p.vx*dt; p.y+=p.vy*dt; }
+}
+function drawParticles(){
+  for(const p of particles){ const a=clamp(p.life/p.max,0,1);
+    ctx.globalAlpha=a; ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.size*a+0.5,0,Math.PI*2); ctx.fill(); }
+  ctx.globalAlpha=1;
 }
 
-// 生成一段地面（有随机宽度的坑）
-function pushSegment(x, w, lvl){
-  tiles.push({ x:x, w:w });
-}
-function genAhead(){
-  while(segX < camX + W*2){
-    const progress = segX / TILE;            // 越远越难
-    // 坑宽：随进度变宽
-    const gap = TILE * (1 + Math.random() * (1 + Math.min(3, progress/40)));
-    const land = TILE * (2 + Math.random()*3);
-    segX += gap;                             // 跳过坑
-    pushSegment(segX, land, 0);
-    segX += land;
+// ---------- 程序化地形（深坑） ----------
+// segments: {type:'ground'|'pit', w}
+const segments=[]; let terrainX=0;
+const STAR_TYPES=0;
+const stars=[]; // {x,y,taken}
+function ensureTerrain(untilX){
+  while(terrainX < untilX){
+    const gw = rand(260, 560);
+    segments.push({type:'ground', x:terrainX, w:gw});
+    terrainX += gw;
+    // 决定是否有坑
+    if(terrainX > 420){ // 前 420px 保证安全起始
+      const pw = rand(90, 175) * (1 + Math.min(S.dist/2600,0.7));
+      segments.push({type:'pit', x:terrainX, w:pw});
+      terrainX += pw;
+      // 坑上方悬浮星星
+      if(Math.random()<0.62){
+        stars.push({x:terrainX-pw/2 + rand(-20,20), y:GROUND_Y-rand(95,150), taken:false, phase:rand(0,6.28)});
+      }
+    }
   }
-  // 清理屏外数据
-  tiles = tiles.filter(t => t.x + t.w > camX - TILE*4);
 }
-
 function groundAt(x){
-  for(let i=0;i<tiles.length;i++){
-    const t = tiles[i];
-    if(x >= t.x && x < t.x + t.w) return GROUND_Y;
+  for(const s of segments){
+    if(s.type==='ground' && x>=s.x && x<s.x+s.w) return GROUND_Y;
+    if(s.type==='pit' && x>=s.x && x<s.x+s.w) return null;
   }
+  return null; // 未生成区域视作坑（不该发生）
+}
+function pitAt(x){
+  for(const s of segments) if(s.type==='pit'&&x>=s.x&&x<s.x+s.w) return s;
   return null;
 }
 
-// ---- 输入 ----
-const keys = { left:false, right:false, jump:false };
-const KEYMAP = {
-  ArrowLeft:'left', KeyA:'left',
-  ArrowRight:'right', KeyD:'right',
-  ArrowUp:'jump', KeyW:'jump', Space:'jump'
+// ---------- 坦克 ----------
+const tank = {
+  x:80, y:GROUND_Y, vy:0,
+  w:74, h:44,
+  onGround:true,
+  barrelAngle:-0.35,
+  trackPhase:0,
+  tilt:0,
 };
-addEventListener('keydown', e=>{
-  const k = KEYMAP[e.code]; if(!k) return;
-  e.preventDefault();
-  if(k==='jump' && !keys.jump) tryJump();
-  keys[k]=true;
-  if(!running && (e.code==='Enter'||e.code==='Space')) UI.btnStart.click();
+
+// ---------- 背景（云、远山、树） ----------
+const clouds=[], hills=[];
+function initDecor(){
+  clouds.length=0; hills.length=0;
+  for(let i=0;i<9;i++) clouds.push({x:rand(0,W*2),y:rand(30,180),s:rand(0.6,1.4),sp:rand(6,16)});
+  for(let i=0;i<14;i++) hills.push({x:i*140+rand(-40,40),w:rand(160,280),h:rand(70,150),c:i%2});
+}
+initDecor();
+
+// ---------- 输入 ----------
+let pressing=false;
+function pressStart(e){
+  if(S.over||!S.running||S.paused) return;
+  e.preventDefault && e.preventDefault();
+  if(!S.charging){ S.charging=true; S.charge=0; }
+}
+function pressEnd(e){
+  if(!S.charging) return;
+  e.preventDefault && e.preventDefault();
+  doJump();
+}
+function doJump(){
+  if(!tank.onGround){ S.charging=false; S.charge=0; return; }
+  const p = clamp(S.charge/MAX_CHARGE, 0.15, 1);
+  tank.vy = -(520 + p*760);          // 蓄力决定起跳力度
+  tank.onGround=false;
+  S.charging=false; S.charge=0;
+  sndJump();
+  // 尾气/尘土
+  burst(tank.x-20, tank.y, 14, '#c9bda6', 240, 0.5, 6, 0.6);
+}
+
+window.addEventListener('keydown', ev=>{
+  if(ev.code==='Space'||ev.code==='ArrowUp'||ev.code==='KeyW'){
+    if(!ev.repeat) pressStart(ev);
+    else ev.preventDefault();
+  }
+  if(ev.code==='KeyP'||ev.code==='Escape') togglePause();
 });
-addEventListener('keyup', e=>{ const k=KEYMAP[e.code]; if(k) keys[k]=false; });
-
-// 触屏按钮
-document.querySelectorAll('.tbtn').forEach(b=>{
-  const k = b.dataset.k;
-  const on = ev=>{ ev.preventDefault(); if(k==='jump'){ tryJump(); } keys[k]=true; };
-  const off = ev=>{ ev.preventDefault(); keys[k]=false; };
-  b.addEventListener('touchstart', on, {passive:false});
-  b.addEventListener('touchend', off, {passive:false});
-  b.addEventListener('mousedown', on);
-  b.addEventListener('mouseup', off);
-  b.addEventListener('mouseleave', off);
+window.addEventListener('keyup', ev=>{
+  if(ev.code==='Space'||ev.code==='ArrowUp'||ev.code==='KeyW') pressEnd(ev);
 });
+canvas.addEventListener('pointerdown', pressStart);
+window.addEventListener('pointerup', pressEnd);
+window.addEventListener('pointercancel', pressEnd);
 
-let jumpHeld = false;
-function tryJump(){
-  if(running && tank && tank.onGround){
-    tank.vy = JUMP_V; tank.onGround = false;
-    for(let i=0;i<8;i++) spawnParticle(tank.x+tank.w/2, tank.y+tank.h, '#9aa7c0');
-  }
+// ---------- UI 按钮 ----------
+document.getElementById('btn-start').onclick = ()=>{ ac(); startGame(); };
+document.getElementById('btn-restart').onclick = ()=>{ startGame(); };
+document.getElementById('btn-pause').onclick = ()=>togglePause();
+document.getElementById('btn-resume').onclick = ()=>togglePause();
+
+function togglePause(){
+  if(S.over||!S.running) return;
+  S.paused=!S.paused;
+  ui.pause.classList.toggle('hidden', !S.paused);
+  if(!S.paused) last=performance.now();
 }
-
-// ---- 粒子 ----
-function spawnParticle(x,y,c){
-  particles.push({x,y,vx:(Math.random()-.5)*4, vy:-Math.random()*3, life:30, c});
+function startGame(){
+  S.running=true; S.paused=false; S.over=false;
+  S.score=0; S.lives=3; S.dist=0; S.speed=MOVE_SPEED; S.camX=0; S.time=0;
+  S.charging=false; S.charge=0;
+  segments.length=0; stars.length=0; terrainX=0;
+  ensureTerrain(W+800);
+  tank.x=80; tank.y=GROUND_Y; tank.vy=0; tank.onGround=true; tank.tilt=0;
+  particles.length=0;
+  ui.start.classList.add('hidden');
+  ui.over.classList.add('hidden');
+  ui.pause.classList.add('hidden');
+  updateHUD();
+  last=performance.now();
 }
-
-// ---- 更新 ----
-function update(){
-  if(!running) return;
-  // 水平
-  if(keys.left)  tank.vx -= MOVE_ACC;
-  if(keys.right) tank.vx += MOVE_ACC;
-  tank.vx *= FRICTION;
-  if(Math.abs(tank.vx) > MAX_VX) tank.vx = Math.sign(tank.vx)*MAX_VX;
-  tank.x += tank.vx;
-  if(tank.x < camX + TILE*0.6){ tank.x = camX + TILE*0.6; tank.vx = 0; }
-
-  // 垂直
-  tank.vy += GRAV;
-  tank.y += tank.vy;
-
-  const footX1 = tank.x + 6, footX2 = tank.x + tank.w - 6;
-  const g1 = groundAt(footX1), g2 = groundAt(footX2);
-  const gy = (g1!==null || g2!==null) ? GROUND_Y : null;
-
-  if(gy !== null && tank.y + tank.h >= gy && tank.vy >= 0){
-    tank.y = gy - tank.h; tank.vy = 0; tank.onGround = true;
-  } else {
-    tank.onGround = false;
-  }
-
-  // 摄像机跟随
-  const target = tank.x - W*0.35;
-  if(target > camX) camX = target;
-
-  // 掉坑
-  if(tank.y > H + 100){ gameOver(); }
-
-  // 分数 = 前进距离
-  score = Math.max(score, Math.floor((tank.x - TILE*1.5)/TILE*10)/10 | 0);
-  score = Math.max(0, Math.floor((tank.x - TILE*1.5)/10));
-  UI.score.textContent = score;
-
-  genAhead();
-
-  // 履带痕迹
-  tank.track += Math.abs(tank.vx);
-  if(tank.onGround && tank.track > 18 && Math.abs(tank.vx)>1){
-    tank.track = 0;
-    spawnParticle(tank.x+tank.w/2, tank.y+tank.h, '#6b7590');
-  }
-
-  // 粒子
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.2; p.life--;
-    if(p.life<=0) particles.splice(i,1);
-  }
-}
-
 function gameOver(){
-  running = false; dead = true;
-  UI.state.textContent = 'OVER';
-  if(score > best){ best = score; localStorage.setItem('tankjump_best', best); UI.best.textContent = best; }
-  UI.ovTitle.textContent = '💥 游戏结束';
-  UI.ovDesc.innerHTML = '本次前进 <b style="color:#5cf08a">'+score+'</b> 米<br>最佳纪录 '+best+' 米';
-  UI.btnStart.textContent = '再来一局';
-  UI.overlay.classList.add('show');
+  S.over=true; S.running=false;
+  sndOver();
+  ui.finalScore.textContent=S.score;
+  ui.finalDist.textContent=Math.floor(S.dist);
+  if(S.score>S.best){ S.best=S.score; localStorage.setItem('tankjump_best',S.best); }
+  ui.bestScore.textContent=S.best;
+  ui.over.classList.remove('hidden');
+}
+function loseLife(reason){
+  S.lives--;
+  if(reason==='pit') sndPit();
+  updateHUD();
+  if(S.lives<=0){ gameOver(); return; }
+  // 复活在坑后安全地面
+  const safe = findSafeGround(tank.x+40);
+  tank.x=safe; tank.y=GROUND_Y-6; tank.vy=0; tank.onGround=true;
+  S.camX = Math.max(0, tank.x - W*0.32);
+  S.charging=false; S.charge=0;
+  burst(tank.x,tank.y-20,18,'#ff6b4a',300,0.7,7,0.5);
+}
+function findSafeGround(fromX){
+  let x=fromX;
+  for(let i=0;i<400;i++){ if(groundAt(x)!==null && groundAt(x+30)!==null && groundAt(x+70)!==null) return x; x+=10; }
+  return fromX;
+}
+function updateHUD(){
+  ui.score.textContent=S.score;
+  ui.dist.textContent=Math.floor(S.dist);
+  ui.lives.textContent=S.lives;
 }
 
-// ---- 渲染 ----
-function drawTank(x,y){
+// ---------- 碰撞 & 计分 ----------
+let pitCooldown=0;
+function updateGameplay(dt){
+  S.time+=dt;
+  // 蓄力
+  if(S.charging && tank.onGround){ S.charge=clamp(S.charge+CHARGE_RATE*dt,0,MAX_CHARGE); if(Math.random()<0.3) sndCharge(); }
+
+  // 难度递增
+  S.speed = MOVE_SPEED + Math.min(S.dist*0.06, 150);
+
+  // 坦克前进（空中略慢，地面快）
+  const targetV = tank.onGround ? S.speed : S.speed*0.7;
+  tank.x += targetV*dt;
+  S.dist = tank.x/40;
+  ensureTerrain(tank.x + W + 600);
+
+  // 垂直物理
+  const g = groundAt(tank.x + tank.w*0.4);
+  if(tank.onGround){
+    if(g===null){ // 走到坑上方 → 开始下坠
+      tank.onGround=false; tank.vy=0;
+    } else {
+      tank.y = g;
+      tank.vy = 0;
+      tank.tilt = lerp(tank.tilt, 0, 10*dt);
+    }
+  }
+  if(!tank.onGround){
+    tank.vy += GRAVITY*dt;
+    tank.y += tank.vy*dt;
+    tank.tilt = clamp(tank.vy/1400, -0.5, 0.6);
+    const gg = groundAt(tank.x + tank.w*0.4);
+    if(gg!==null && tank.y>=gg && tank.vy>0){
+      tank.y=gg; tank.vy=0; tank.onGround=true;
+      sndLand();
+      burst(tank.x, tank.y, 12, '#d8ccb4', 200, 0.45, 6, 0.6);
+    }
+  }
+
+  // 掉坑检测（坦克中心落入坑）
+  pitCooldown-=dt;
+  const cx = tank.x;
+  const pit = pitAt(cx);
+  if(pit && tank.y > GROUND_Y + 40){
+    loseLife('pit');
+    return;
+  }
+  // 越过坑奖励：坦克完全通过坑右边缘
+  if(pitCooldown<=0){
+    for(const s of segments){
+      if(s.type==='pit' && tank.x > s.x+s.w+30 && !s.done && tank.x < s.x+s.w+160 && tank.onGround){
+        s.done=true; S.score+=10; sndStar(); updateHUD();
+        burst(tank.x-40, tank.y-30, 8, '#ffe066', 160, 0.5, 4, 0.5);
+      }
+    }
+  }
+
+  // 星星收集
+  for(const st of stars){
+    if(st.taken) continue;
+    const dx=st.x-tank.x, dy=st.y-(tank.y-tank.h*0.5);
+    if(Math.abs(dx)<46 && Math.abs(dy)<46){
+      st.taken=true; S.score+=50; sndStar(); updateHUD();
+      burst(st.x,st.y,16,'#ffd93b',240,0.7,6,0.3);
+    }
+  }
+
+  // 排除过远的段与星
+  while(segments.length && segments[0].x+segments[0].w < tank.x-600) segments.shift();
+  for(let i=stars.length-1;i>=0;i--) if(stars[i].taken||stars[i].x<tank.x-400) stars.splice(i,1);
+
+  // 相机
+  const targetCam = tank.x - W*0.32;
+  S.camX = lerp(S.camX, targetCam, 6*dt);
+  if(S.camX<0) S.camX=0;
+
+  // 尾气烟雾
+  if(tank.onGround && Math.random()<0.35){
+    addParticle(tank.x-34, tank.y-16, rand(-60,-20), rand(-40,-10), rand(0.4,0.8), 'rgba(200,200,200,0.5)', rand(4,8), -0.1);
+  }
+}
+
+// ============================================================
+//  渲染：高级卡通画风
+// ============================================================
+function drawBackground(){
+  // 天空渐变
+  const sky = ctx.createLinearGradient(0,0,0,GROUND_Y);
+  sky.addColorStop(0,'#6ec6ff'); sky.addColorStop(0.55,'#a8e0ff'); sky.addColorStop(1,'#ffe9b8');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // 太阳
+  ctx.save();
+  ctx.translate(W-120,90);
+  const glow=ctx.createRadialGradient(0,0,10,0,0,70);
+  glow.addColorStop(0,'rgba(255,240,160,0.95)'); glow.addColorStop(1,'rgba(255,240,160,0)');
+  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(0,0,70,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#ffe066'; ctx.beginPath(); ctx.arc(0,0,34,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // 远山（两层视差）
+  const cam=S.camX;
+  for(const h of hills){
+    const px = ((h.x - cam*0.25) % (W+300) + (W+300)) % (W+300) - 150;
+    ctx.fillStyle = h.c? '#5a8f5a' : '#4a7a6a';
+    ctx.beginPath();
+    ctx.moveTo(px-h.w/2, GROUND_Y);
+    ctx.quadraticCurveTo(px, GROUND_Y-h.h*1.6, px+h.w/2, GROUND_Y);
+    ctx.closePath(); ctx.fill();
+    // 雪顶
+    ctx.fillStyle='rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.moveTo(px-h.w*0.1, GROUND_Y-h.h*0.95);
+    ctx.quadraticCurveTo(px, GROUND_Y-h.h*1.6, px+h.w*0.1, GROUND_Y-h.h*0.95);
+    ctx.quadraticCurveTo(px, GROUND_Y-h.h*1.25, px-h.w*0.1, GROUND_Y-h.h*0.95);
+    ctx.fill();
+  }
+
+  // 云朵
+  for(const c of clouds){
+    c.x -= c.sp*0.016;
+    if(c.x < -140) c.x = W+140;
+    drawCloud(c.x, c.y, c.s);
+  }
+}
+function drawCloud(x,y,s){
+  ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  const puffs=[[-38,6,26],[0,0,34],[34,8,24],[-8,14,22],[20,16,20]];
+  for(const [px,py,r] of puffs){ ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill(); }
+  ctx.restore();
+}
+
+function drawTerrain(){
+  const cam=S.camX;
+  for(const s of segments){
+    const sx = s.x - cam;
+    if(sx+s.w < -50 || sx > W+50) continue;
+    if(s.type==='ground') drawGroundSeg(sx, s.w);
+    else drawPitSeg(sx, s.w);
+  }
+}
+function drawGroundSeg(x,w){
+  // 草皮顶层
+  const grass=ctx.createLinearGradient(0,GROUND_Y,0,GROUND_Y+26);
+  grass.addColorStop(0,'#7ed957'); grass.addColorStop(1,'#4fa832');
+  ctx.fillStyle=grass;
+  ctx.beginPath(); ctx.rect(x,GROUND_Y,w,H-GROUND_Y); ctx.fill();
+  // 泥土层
+  const soil=ctx.createLinearGradient(0,GROUND_Y+24,0,H);
+  soil.addColorStop(0,'#a9743f'); soil.addColorStop(1,'#6b4423');
+  ctx.fillStyle=soil;
+  ctx.beginPath(); ctx.rect(x,GROUND_Y+24,w,H-GROUND_Y-24); ctx.fill();
+  // 草皮锯齿
+  ctx.fillStyle='#7ed957';
+  ctx.beginPath();
+  for(let i=0;i<w;i+=16){ ctx.moveTo(x+i,GROUND_Y+2); ctx.lineTo(x+i+8,GROUND_Y-8); ctx.lineTo(x+i+16,GROUND_Y+2); }
+  ctx.fill();
+  // 泥土斑点
+  ctx.fillStyle='rgba(80,50,25,0.4)';
+  for(let i=0;i<w;i+=40){ const dx=x+((i*37)%w); ctx.beginPath(); ctx.arc(dx,GROUND_Y+40+((i*13)%30),4,0,6.3); ctx.fill(); }
+}
+function drawPitSeg(x,w){
+  // 深坑黑洞
+  const pit=ctx.createLinearGradient(0,GROUND_Y,0,H);
+  pit.addColorStop(0,'#241009'); pit.addColorStop(1,'#000');
+  ctx.fillStyle=pit;
+  ctx.beginPath(); ctx.rect(x,GROUND_Y,w,H-GROUND_Y); ctx.fill();
+  // 坑口阴影边缘
+  ctx.fillStyle='#3a2416';
+  ctx.fillRect(x-4,GROUND_Y-3,8,14);
+  ctx.fillRect(x+w-4,GROUND_Y-3,8,14);
+  // 尖牙
+  ctx.fillStyle='#e8e0d0';
+  for(let i=x+6;i<x+w-6;i+=18){ ctx.beginPath(); ctx.moveTo(i,GROUND_Y); ctx.lineTo(i+9,GROUND_Y+16); ctx.lineTo(i+18,GROUND_Y); ctx.fill(); }
+}
+
+function drawStars(){
+  const cam=S.camX;
+  for(const st of stars){
+    if(st.taken) continue;
+    const sx=st.x-cam; if(sx<-40||sx>W+40) continue;
+    const sy=st.y+Math.sin(S.time*3+st.phase)*7;
+    drawStar(sx,sy,15,'#ffd93b','#ff9d2e');
+  }
+}
+function drawStar(x,y,r,fill,stroke){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(Math.sin(y*0.1)*0.2);
+  ctx.beginPath();
+  for(let i=0;i<10;i++){ const ang=-Math.PI/2 + i*Math.PI/5; const rr=i%2?r*0.46:r;
+    ctx.lineTo(Math.cos(ang)*rr, Math.sin(ang)*rr); }
+  ctx.closePath();
+  ctx.fillStyle=fill; ctx.fill();
+  ctx.lineWidth=2.5; ctx.strokeStyle=stroke; ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- 卡通坦克 ----------
+function drawTank(){
+  const cam=S.camX;
+  const x=tank.x-cam, y=tank.y;
   ctx.save();
   ctx.translate(x, y);
-  // 履带
-  ctx.fillStyle = '#2b3242';
-  roundRect(0, 20, 44, 14, 6); ctx.fill();
-  ctx.fillStyle = '#4a5570';
-  for(let i=0;i<5;i++){ ctx.fillRect(4+i*8, 23, 5, 8); }
-  // 车身
-  ctx.fillStyle = '#3f7a4a';
-  roundRect(3, 8, 38, 14, 3); ctx.fill();
-  ctx.fillStyle = '#57a86a';
-  ctx.fillRect(6, 10, 32, 5);
-  // 炮塔
-  ctx.fillStyle = '#356b41';
-  roundRect(14, 2, 16, 10, 3); ctx.fill();
-  // 炮管
-  ctx.fillStyle = '#2b3242';
-  ctx.fillRect(28, 5, 16, 4);
+  ctx.rotate(tank.tilt*0.5);
+
+  // 阴影
+  if(tank.onGround){ ctx.save(); ctx.translate(0,4); ctx.scale(1,0.3);
+    ctx.fillStyle='rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(0,0,44,18,0,0,6.3); ctx.fill(); ctx.restore(); }
+
+  // ---- 履带 ----
+  ctx.fillStyle='#2f3b2f';
+  roundRect(-42,-20,84,26,13); ctx.fill();
+  ctx.strokeStyle='#1b231b'; ctx.lineWidth=3; ctx.stroke();
+  // 履带纹
+  ctx.strokeStyle='#4a5a4a'; ctx.lineWidth=4;
+  tank.trackPhase = (tank.trackPhase + S.speed*0.02) % 14;
+  for(let i=-40;i<40;i+=14){ const off=((i+tank.trackPhase)%80+80)%80-40;
+    ctx.beginPath(); ctx.moveTo(off,-16); ctx.lineTo(off,-2); ctx.stroke(); }
+  // 负重轮
+  for(const wx of [-26,-9,9,26]){ ctx.fillStyle='#c9c9c9'; ctx.beginPath(); ctx.arc(wx,-7,7,0,6.3); ctx.fill();
+    ctx.fillStyle='#7a7a7a'; ctx.beginPath(); ctx.arc(wx,-7,3,0,6.3); ctx.fill(); }
+
+  // ---- 车体 ----
+  const body=ctx.createLinearGradient(0,-46,0,-16);
+  body.addColorStop(0,'#8fd44f'); body.addColorStop(1,'#4f9e34');
+  ctx.fillStyle=body;
+  roundRect(-36,-46,72,28,7); ctx.fill();
+  ctx.strokeStyle='#2f6b1e'; ctx.lineWidth=3; ctx.stroke();
+  // 高光
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  roundRect(-30,-43,44,7,3); ctx.fill();
+  // 车头挡板
+  ctx.fillStyle='#6bbf3f'; roundRect(28,-44,10,24,4); ctx.fill();
+  ctx.strokeStyle='#2f6b1e'; ctx.lineWidth=2; ctx.stroke();
+
+  // ---- 炮塔 ----
+  ctx.fillStyle='#7ac943'; ctx.beginPath(); ctx.arc(-4,-50,17,Math.PI,0); ctx.fill();
+  ctx.fillRect(-21,-50,34,8);
+  ctx.strokeStyle='#2f6b1e'; ctx.lineWidth=3; ctx.stroke();
+  ctx.beginPath(); ctx.arc(-4,-50,17,Math.PI,0); ctx.stroke();
+  // 指挥塔舱盖
+  ctx.fillStyle='#4f9e34'; ctx.beginPath(); ctx.arc(-4,-64,7,Math.PI,0); ctx.fill();
+  ctx.stroke();
+
+  // ---- 炮管 ----
+  const ang = tank.barrelAngle + (S.charging? -S.charge*0.5 : 0);
+  ctx.save(); ctx.translate(6,-54); ctx.rotate(ang);
+  ctx.fillStyle='#3d6b28'; roundRect(0,-5,52,10,4); ctx.fill();
+  ctx.strokeStyle='#24401a'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle='#2c5220'; roundRect(44,-7,12,14,3); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // ---- 装饰：五角星徽章 + 眼睛（卡通感） ----
+  drawStar(-20,-32,8,'#ffd93b','#c98a12');
+  // 卡通眼睛
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(18,-36,7,0,6.3); ctx.fill();
+  ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(20,-36,3.5,0,6.3); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(21,-38,1.4,0,6.3); ctx.fill();
+
   ctx.restore();
 }
 function roundRect(x,y,w,h,r){
   ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);
-  ctx.arcTo(x,y,x+w,y,r);
-  ctx.closePath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
 }
 
-function drawBG(){
-  // 天空渐变
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#0a0f1e'); g.addColorStop(1,'#16233a');
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  // 星星
-  ctx.fillStyle = 'rgba(255,255,255,.5)';
-  for(let i=0;i<40;i++){
-    const sx = (i*137 - camX*0.2) % W; const x = (sx+W)%W;
-    const y = (i*53) % (H*0.5);
-    ctx.fillRect(x, y, 2, 2);
-  }
-  // 远山
-  ctx.fillStyle = '#101a2c';
-  for(let i=0;i<12;i++){
-    const bx = ((i*260) - camX*0.4) % (W+260) - 130;
-    ctx.beginPath();
-    ctx.moveTo(bx, GROUND_Y);
-    ctx.lineTo(bx+130, GROUND_Y-120);
-    ctx.lineTo(bx+260, GROUND_Y);
-    ctx.fill();
+// ---------- 蓄力条 ----------
+function drawChargeBar(){
+  if(!S.charging || !tank.onGround) return;
+  const cam=S.camX;
+  const bx=tank.x-cam-30, by=tank.y-100, bw=60, bh=12;
+  ctx.fillStyle='rgba(0,0,0,0.5)'; roundRect(bx-3,by-3,bw+6,bh+6,6); ctx.fill();
+  ctx.fillStyle='#333'; roundRect(bx,by,bw,bh,4); ctx.fill();
+  const p=S.charge/MAX_CHARGE;
+  const g=ctx.createLinearGradient(bx,0,bx+bw,0);
+  g.addColorStop(0,'#5cf05c'); g.addColorStop(0.5,'#ffe14d'); g.addColorStop(1,'#ff4d4d');
+  ctx.fillStyle=g; roundRect(bx,by,Math.max(6,bw*p),bh,4); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2; roundRect(bx,by,bw,bh,4); ctx.stroke();
+}
+
+// ---------- 提示文字 ----------
+function drawHint(){
+  if(S.running && !S.over && S.time<6 && S.dist<40){
+    ctx.save(); ctx.globalAlpha=clamp(1-(S.time-4)/2,0,1);
+    ctx.font='bold 26px sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#2c548a'; ctx.lineWidth=6;
+    const msg='按住 空格/点击 蓄力 → 松开起跳！';
+    ctx.strokeText(msg, W/2, 150); ctx.fillText(msg, W/2, 150);
+    ctx.restore();
   }
 }
 
-function drawGround(){
-  for(const t of tiles){
-    const sx = t.x - camX;
-    if(sx + t.w < -10 || sx > W+10) continue;
-    // 土层
-    ctx.fillStyle = '#5a4632';
-    ctx.fillRect(sx, GROUND_Y, t.w, H-GROUND_Y);
-    // 草皮
-    ctx.fillStyle = '#4f8a3d';
-    ctx.fillRect(sx, GROUND_Y, t.w, 10);
-    ctx.fillStyle = '#6bb550';
-    for(let i=0;i<t.w;i+=16) ctx.fillRect(sx+i, GROUND_Y, 10, 5);
-    // 砖纹
-    ctx.strokeStyle = 'rgba(0,0,0,.25)';
-    ctx.strokeRect(sx, GROUND_Y, t.w, H-GROUND_Y);
-  }
-}
-
-function drawParticles(){
-  for(const p of particles){
-    ctx.globalAlpha = Math.max(0, p.life/30);
-    ctx.fillStyle = p.c;
-    ctx.fillRect(p.x-camX, p.y, 4, 4);
-  }
-  ctx.globalAlpha = 1;
-}
-
-function render(){
-  drawBG();
-  drawGround();
-  drawParticles();
-  if(tank) drawTank(tank.x-camX, tank.y);
-  // 深渊提示
-  ctx.fillStyle = 'rgba(0,0,0,.45)';
-}
-
-// ---- 主循环 ----
-function loop(){
-  update();
-  render();
+// ---------- 主循环 ----------
+let last=performance.now();
+function loop(now){
   requestAnimationFrame(loop);
+  let dt=(now-last)/1000; last=now;
+  if(dt>0.05) dt=0.05;   // 防大帧跳
+
+  if(S.running && !S.paused && !S.over){
+    updateGameplay(dt);
+    updateParticles(dt);
+  } else {
+    updateParticles(dt);
+  }
+
+  // ---- 绘制 ----
+  drawBackground();
+  drawTerrain();
+  drawStars();
+  drawParticles();
+  if(S.running || S.over) { drawTank(); drawChargeBar(); drawHint(); }
+  else {
+    // 开始界面下也让坦克亮相
+    drawTank();
+  }
 }
+requestAnimationFrame(loop);
 
-UI.btnStart.addEventListener('click', ()=>{
-  UI.overlay.classList.remove('show');
-  reset();
-});
-
-// 初始渲染一帧背景
-camX = 0; tank = null; particles = [];
-reset(); running = false; UI.state.textContent='READY';
-UI.overlay.classList.add('show');
-loop();
+// 初始地形（供开始背景）
+ensureTerrain(W+800);
+updateHUD();
 })();

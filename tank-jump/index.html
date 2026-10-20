@@ -2,42 +2,52 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>坦克跳坑 · Tank Jump</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>坦克跳坑 · Tank Jump · 经典卡通版</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="wrap">
-  <header>
-    <h1>🚜 坦克跳坑 <span>TANK&nbsp;JUMP</span></h1>
-    <div id="hud">
-      <div class="stat">距离 <b id="score">0</b> m</div>
-      <div class="stat">最佳 <b id="best">0</b> m</div>
-      <div class="stat">状态 <b id="state">READY</b></div>
-    </div>
-  </header>
+<div id="game-wrap">
+  <canvas id="game" width="960" height="540"></canvas>
 
-  <div id="stage">
-    <canvas id="game" width="960" height="480"></canvas>
+  <div id="hud">
+    <div class="hud-box"><span class="hud-icon">⭐</span><span id="score">0</span></div>
+    <div class="hud-box"><span class="hud-icon">🚩</span>距离 <span id="dist">0</span>m</div>
+    <div class="hud-box"><span class="hud-icon">❤️</span><span id="lives">3</span></div>
+    <button id="btn-pause" class="hud-btn" title="暂停">⏸</button>
+  </div>
 
-    <div id="overlay" class="show">
-      <div class="panel">
-        <h2 id="ovTitle">坦克跳坑</h2>
-        <p id="ovDesc">操控坦克跨越深渊坑洞，越远越好！<br>
-          ← → / A D 移动　　↑ / W / 空格 跳跃</p>
-        <button id="btnStart">开始游戏</button>
+  <div id="overlay-start" class="overlay">
+    <div class="panel">
+      <h1 class="title">🪖 坦克跳坑</h1>
+      <p class="subtitle">经典卡通 · 蓄力飞跃深坑</p>
+      <div class="howto">
+        <p>⌨️ 按住 <b>空格</b> / <b>↑</b> / 点击屏幕 = 蓄力</p>
+        <p>松开 = 起跳（蓄力越久跳得越高越远）</p>
+        <p>🕳️ 越过深坑 +10，吃 ⭐ 星星 +50，掉坑 lose 1 ❤️</p>
       </div>
+      <button id="btn-start" class="btn-main">▶ 开始游戏</button>
     </div>
   </div>
 
-  <div id="touch">
-    <button class="tbtn" data-k="left">◀</button>
-    <button class="tbtn" data-k="right">▶</button>
-    <button class="tbtn jump" data-k="jump">JUMP</button>
+  <div id="overlay-pause" class="overlay hidden">
+    <div class="panel">
+      <h2>⏸ 已暂停</h2>
+      <button id="btn-resume" class="btn-main">继续游戏</button>
+    </div>
   </div>
 
-  <footer>经典版 · 方向键移动，空格/上键跳跃，掉进坑里就结束</footer>
+  <div id="overlay-over" class="overlay hidden">
+    <div class="panel">
+      <h2 class="title-sm">💥 游戏结束</h2>
+      <p>最终得分：<b id="final-score">0</b></p>
+      <p>最远距离：<b id="final-dist">0</b>m</p>
+      <p id="best-line">历史最佳：<b id="best-score">0</b></p>
+      <button id="btn-restart" class="btn-main">🔄 再来一局</button>
+    </div>
+  </div>
 </div>
+
 <script src="game.js"></script>
 </body>
 </html>

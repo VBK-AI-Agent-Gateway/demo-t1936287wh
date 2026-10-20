@@ -1,43 +1,98 @@
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { height:100%; }
 body {
-  font-family: "Courier New", ui-monospace, monospace;
-  background:#12141c url('background.jpg') center/cover fixed no-repeat;
-  color:#e8f0ff; display:flex; justify-content:center; align-items:flex-start;
-  min-height:100%;
+  font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  background:radial-gradient(circle at 50% 30%, #2b4a72 0%, #16283f 60%, #0c1726 100%);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; user-select:none;
 }
-body::before { content:""; position:fixed; inset:0; background:rgba(8,10,16,.72); z-index:0; }
-#wrap { position:relative; z-index:1; width:100%; max-width:980px; padding:16px; }
+#game-wrap {
+  position:relative; width:min(100vw, 177.78vh); height:min(56.25vw, 100vh);
+  max-width:960px; max-height:540px; aspect-ratio:16/9;
+  border-radius:14px; overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 0 4px #3a2a18, 0 0 0 8px #6b4a26;
+}
+#game { display:block; width:100%; height:100%; background:#8ed3f7; image-rendering:auto; }
 
-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
-h1 { font-size:26px; letter-spacing:2px; text-shadow:0 0 8px #38f; }
-h1 span { color:#ffb020; font-size:16px; letter-spacing:4px; }
-#hud { display:flex; gap:14px; }
-.stat { background:#1b2030; border:2px solid #2e3a55; padding:6px 10px; border-radius:6px; font-size:13px; }
-.stat b { color:#5cf08a; font-size:16px; }
+/* HUD */
+#hud {
+  position:absolute; top:0; left:0; right:0; padding:10px 14px;
+  display:flex; gap:10px; align-items:center; pointer-events:none;
+  font-weight:800; color:#fff; text-shadow:0 2px 3px rgba(0,0,0,.55);
+}
+.hud-box {
+  background:linear-gradient(#4a7bb5cc,#2c548acc);
+  border:2px solid #aee0ff88; border-radius:20px;
+  padding:5px 14px; font-size:16px; display:flex; align-items:center; gap:6px;
+  box-shadow:0 3px 0 #16324f;
+}
+.hud-icon { font-size:16px; }
+.hud-btn {
+  margin-left:auto; pointer-events:auto; cursor:pointer;
+  width:40px; height:40px; border-radius:50%; border:2px solid #aee0ff88;
+  background:linear-gradient(#4a7bb5,#2c548acc); color:#fff; font-size:18px;
+  box-shadow:0 3px 0 #16324f;
+}
+.hud-btn:active { transform:translateY(2px); box-shadow:0 1px 0 #16324f; }
 
-#stage { position:relative; border:4px solid #2e3a55; border-radius:8px; overflow:hidden; box-shadow:0 0 30px rgba(0,0,0,.6); background:#0a0d14; }
-canvas { display:block; width:100%; height:auto; image-rendering:pixelated; }
+/* Overlay */
+.overlay {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 50% 40%, rgba(10,25,45,.55), rgba(5,12,22,.85));
+  backdrop-filter:blur(3px); z-index:10;
+}
+.overlay.hidden { display:none; }
+.panel {
+  background:linear-gradient(#fdf4e0,#f3ddad);
+  border:4px solid #7a4b1e; border-radius:22px;
+  padding:26px 34px; text-align:center; max-width:82%;
+  box-shadow:0 12px 0 #5a3512, 0 24px 50px rgba(0,0,0,.55);
+  color:#4a2c10;
+}
+.title {
+  font-size:clamp(28px,6vw,48px); letter-spacing:2px; color:#c0392b;
+  text-shadow:0 3px 0 #fff, 0 6px 0 #7a2018; margin-bottom:6px;
+}
+.title-sm { font-size:clamp(24px,5vw,36px); color:#c0392b; text-shadow:0 2px 0 #fff; }
+.subtitle { font-size:16px; font-weight:700; color:#7a4b1e; margin-bottom:14px; }
+.howto {
+  background:#fff8e6cc; border:2px dashed #c8a15e; border-radius:14px;
+  padding:12px 16px; font-size:14px; line-height:1.7; text-align:left; margin-bottom:18px;
+}
+.howto b { color:#c0392b; }
+.btn-main {
+  cursor:pointer; font-size:20px; font-weight:800; color:#fff;
+  padding:14px 34px; border:none; border-radius:16px;
+  background:linear-gradient(#ff9d3c,#ef6c1a);
+  box-shadow:0 6px 0 #a8410c, 0 10px 20px rgba(0,0,0,.3);
+  transition:transform .08s;
+}
+.btn-main:hover { filter:brightness(1.07); }
+.btn-main:active { transform:translateY(4px); box-shadow:0 2px 0 #a8410c; }
+.panel p { font-size:17px; margin:6px 0; }
 
-#overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(6,8,14,.85); }
-#overlay.show { display:flex; }
-.panel { text-align:center; padding:24px; max-width:90%; }
-.panel h2 { font-size:32px; color:#ffb020; margin-bottom:14px; text-shadow:0 0 10px #f80; }
-.panel p { line-height:1.9; font-size:15px; color:#cfe0ff; margin-bottom:20px; }
-button { font-family:inherit; cursor:pointer; }
-#btnStart { background:#5cf08a; color:#06210f; border:none; padding:14px 34px; font-size:20px; font-weight:bold; border-radius:8px; letter-spacing:3px; box-shadow:0 4px 0 #2e9e56; transition:.1s; }
-#btnStart:active { transform:translateY(3px); box-shadow:0 1px 0 #2e9e56; }
-
-#touch { display:none; justify-content:space-between; gap:12px; margin-top:14px; }
-.tbtn { flex:1; height:64px; font-size:22px; font-weight:bold; background:#1b2030; color:#e8f0ff; border:3px solid #2e3a55; border-radius:10px; }
-.tbtn.jump { background:#ffb020; color:#241200; border-color:#c47f00; }
-.tbtn:active { transform:scale(.96); }
-
-footer { margin-top:14px; text-align:center; font-size:12px; color:#8ba0c8; }
-
-@media (max-width:720px){
-  h1 { font-size:20px; }
-  #hud { width:100%; justify-content:space-between; gap:6px; }
-  #touch { display:flex; }
-  footer { font-size:11px; }
+/* ===== 响应式三档断点 ===== */
+/* 大屏 >=1024px: 保持 960x540 逻辑分辨率，容器按视口自适应 */
+@media (min-width:1024px) {
+  #game-wrap { max-width:960px; max-height:540px; }
+  .hud-box { font-size:17px; }
+}
+/* 中屏 600-1023px（平板/小笔电） */
+@media (min-width:600px) and (max-width:1023px) {
+  #game-wrap { max-width:100vw; max-height:100vh; border-radius:0; box-shadow:none; }
+  .hud-box { font-size:15px; padding:4px 12px; }
+  .panel { padding:22px 26px; }
+}
+/* 小屏 <600px（手机竖/横屏） */
+@media (max-width:599px) {
+  body { background:#0c1726; }
+  #game-wrap { width:100vw; height:100vh; max-width:100vw; max-height:100vh; border-radius:0; box-shadow:none; }
+  #hud { padding:8px 8px; gap:6px; }
+  .hud-box { font-size:13px; padding:4px 9px; }
+  .hud-btn { width:36px; height:36px; font-size:16px; }
+  .panel { padding:20px 18px; max-width:92%; }
+  .title { font-size:34px; }
+  .howto { font-size:13px; padding:10px 12px; line-height:1.6; }
+  .btn-main { font-size:18px; padding:12px 28px; }
+  .panel p { font-size:15px; }
 }
