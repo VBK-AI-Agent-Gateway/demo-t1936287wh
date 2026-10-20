@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>坦克跳坑 · Tank Ditch Jump</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <div id="hud">
+    <span id="hudScore">分数 0</span>
+    <span id="hudLevel">关卡 1</span>
+    <span id="hudLives">生命 ♥♥♥</span>
+    <span id="hudCoins">金币 0</span>
+    <span id="hudBest">最高 0</span>
+  </div>
+
+  <div id="overlay" class="show">
+    <div id="panel">
+      <h1 id="title">坦克跳坑</h1>
+      <p id="sub">越过深坑 · 碾压敌军 · 收集金币</p>
+      <div id="help">
+        <b>操作</b>
+        <div>← → / A D —— 加速 &amp; 移动</div>
+        <div>空格 / ↑ / W —— 跳跃（空中可二段跳）</div>
+        <div>P / Esc —— 暂停</div>
+        <div>移动端：右侧按钮跳跃，左侧按钮后退</div>
+      </div>
+      <button id="btnStart">开始游戏</button>
+      <p id="finalScore"></p>
+    </div>
+  </div>
+
+  <div id="touch">
+    <button class="tbtn" id="tLeft">◀</button>
+    <button class="tbtn" id="tJump">▲跳</button>
+    <button class="tbtn" id="tRight">▶</button>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
