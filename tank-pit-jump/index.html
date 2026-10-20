@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>坦克跳坑 · Tank Pit Jump</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <span>❤ <b id="lives">3</b></span>
+    <span>🏁 <b id="level">1</b>/3</span>
+    <span>🚩 <b id="flags">0</b>/3</span>
+    <span>⏱ <b id="time">0.0</b>s</span>
+    <span id="best">最佳: --</span>
+  </div>
+  <div id="stage">
+    <canvas id="game" width="960" height="540"></canvas>
+    <div id="overlay">
+      <div id="panel">
+        <h1 id="title">坦克跳坑</h1>
+        <p id="desc">方向键 / A D 移动，空格 / W 跳跃。躲开坑洞，收集 3 面旗帜，抵达终点！</p>
+        <button id="btn">开始游戏</button>
+      </div>
+    </div>
+  </div>
+  <div id="touch">
+    <button class="tb" data-k="left">◀</button>
+    <button class="tb" data-k="right">▶</button>
+    <button class="tb jump" data-k="jump">跳</button>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
