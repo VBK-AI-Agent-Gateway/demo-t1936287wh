@@ -242,8 +242,8 @@ function loseLife(reason){
   if(reason==='pit') sndPit();
   updateHUD();
   if(S.lives<=0){ gameOver(); return; }
-  // 复活在坑后安全地面
-  const safe = findSafeGround(tank.x+40);
+  // 复活在坑后安全地面（只向前找，禁止回退到已裁剪区域）
+  const safe = findSafeGround(tank.x+60);
   tank.x=safe; tank.y=GROUND_Y-6; tank.vy=0; tank.onGround=true;
   S.camX = Math.max(0, tank.x - W*0.30);
   S.charging=false; S.charge=0;
@@ -252,7 +252,11 @@ function loseLife(reason){
 function findSafeGround(fromX){
   let x=fromX;
   for(let i=0;i<400;i++){ if(groundAt(x)!==null && groundAt(x+30)!==null && groundAt(x+70)!==null) return x; x+=10; }
-  return fromX;
+  // 兜底：向后也找不到时，强制在当前位置右侧生成一段安全地面
+  const seg={type:'ground', x:fromX, w:420};
+  segments.push(seg); terrainX=Math.max(terrainX, fromX+420);
+  ensureTerrain(tank.x+W+600);
+  return fromX+40;
 }
 function updateHUD(){
   ui.score.textContent=S.score;
@@ -333,8 +337,8 @@ function updateGameplay(dt){
     }
   }
 
-  // 排除过远的段与星
-  while(segments.length && segments[0].x+segments[0].w < tank.x-600) segments.shift();
+  // 排除过远的段与星（复活只向后 ≤100px，保留 400px 即可，避免重复裁剪造成误判）
+  while(segments.length && segments[0].x+segments[0].w < tank.x-400) segments.shift();
   for(let i=stars.length-1;i>=0;i--) if(stars[i].taken||stars[i].x<tank.x-400) stars.splice(i,1);
 
   // 相机
