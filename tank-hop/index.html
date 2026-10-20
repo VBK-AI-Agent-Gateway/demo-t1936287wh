@@ -59,7 +59,7 @@
     </div>
   </div>
 
-  <div class="overlay" id="menu">
+  <div class="overlay" id="menu" style="background:rgba(10,12,24,.78),url('bg.jpg') center/cover no-repeat;">
     <h1>坦克跳坑</h1>
     <div class="sub">TANK HOP · 经典版 · 跨越深坑，击毁敌军</div>
     <button class="btn" id="startBtn">开始游戏</button>
@@ -333,6 +333,20 @@ function star(cx, cy, spikes, r1, r2){
 }
 
 function draw(){
+  if(bgOK){
+    // 视差滚动背景图(慢速跟随镜头)
+    const bw = bgImg.width * (H / bgImg.height);
+    let off = (camX * 0.18) % bw;
+    if(off < 0) off += bw;
+    for(let x = -off; x < W; x += bw){
+      ctx.drawImage(bgImg, x, 0, bw, H);
+    }
+    // 底部压暗，保证地面/坑可读
+    const fade = ctx.createLinearGradient(0, GY-160, 0, H);
+    fade.addColorStop(0, 'rgba(26,28,44,0)');
+    fade.addColorStop(1, 'rgba(26,28,44,.75)');
+    ctx.fillStyle = fade; ctx.fillRect(0, GY-160, W, H-GY+160);
+  } else {
   const sky = ctx.createLinearGradient(0,0,0,GY);
   sky.addColorStop(0,'#6bb5d8'); sky.addColorStop(1,'#bfe3ef');
   ctx.fillStyle = sky; ctx.fillRect(0,0,W,GY);
@@ -351,6 +365,7 @@ function draw(){
     ctx.beginPath();
     ctx.arc(cx, cy, 24, 0, 7); ctx.arc(cx+26, cy-8, 20, 0, 7); ctx.arc(cx+52, cy, 22, 0, 7);
     ctx.fill();
+  }
   }
 
   ctx.save();
@@ -409,6 +424,13 @@ function draw(){
   ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 6;
   ctx.strokeRect(3,3,W-6,H-6);
 }
+
+// ---- 背景图(用户提供) ----
+const bgImg = new Image();
+bgImg.src = 'bg.jpg';
+let bgOK = false;
+bgImg.onload = ()=>{ bgOK = true; };
+bgImg.onerror = ()=>{ bgOK = false; };
 
 let last = 0;
 function loop(t){
