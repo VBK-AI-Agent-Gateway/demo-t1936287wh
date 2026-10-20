@@ -8,7 +8,7 @@
 // ---------- 基础 ----------
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
+const W = canvas.width, H = canvas.height; // 360x640 竖版
 
 const ui = {
   score: document.getElementById('score'),
@@ -22,7 +22,7 @@ const ui = {
   bestScore:  document.getElementById('best-score'),
 };
 
-const GROUND_Y = 430;          // 地面基准线
+const GROUND_Y = 470;          // 地面基准线
 const GRAVITY  = 2400;         // 重力 px/s^2
 const MOVE_SPEED = 190;        // 坦克地面速度 px/s
 const MAX_CHARGE = 1.0;        // 最大蓄力
@@ -119,7 +119,7 @@ function pitAt(x){
 // ---------- 坦克 ----------
 const tank = {
   x:80, y:GROUND_Y, vy:0,
-  w:74, h:44,
+  w:58, h:36,
   onGround:true,
   barrelAngle:-0.35,
   trackPhase:0,
@@ -168,9 +168,32 @@ window.addEventListener('keydown', ev=>{
 window.addEventListener('keyup', ev=>{
   if(ev.code==='Space'||ev.code==='ArrowUp'||ev.code==='KeyW') pressEnd(ev);
 });
+// --- 手机触控：跳键蓄力/松开起跳 + 屏幕点击备用 ---
+const jumpBtn = document.getElementById('jump-btn');
+const chargeFill = document.getElementById('charge-fill');
+function btnDown(e){
+  if(S.over||!S.running||S.paused) return;
+  e.preventDefault();
+  jumpBtn.classList.add('pressed');
+  pressStart(e);
+}
+function btnUp(e){
+  jumpBtn.classList.remove('pressed');
+  pressEnd(e);
+}
+if(jumpBtn){
+  jumpBtn.addEventListener('pointerdown', btnDown);
+  jumpBtn.addEventListener('pointerup', btnUp);
+  jumpBtn.addEventListener('pointercancel', btnUp);
+  jumpBtn.addEventListener('pointerleave', btnUp);
+  jumpBtn.addEventListener('contextmenu', e=>e.preventDefault());
+}
+// 屏幕任意处点击（已蓄力则跳，未蓄力则先蓄力）——防误触：touchstart 只开始蓄力，touchend 起跳
 canvas.addEventListener('pointerdown', pressStart);
 window.addEventListener('pointerup', pressEnd);
 window.addEventListener('pointercancel', pressEnd);
+// 禁止双指缩放/双击缩放
+document.addEventListener('gesturestart', e=>e.preventDefault());
 
 // ---------- UI 按钮 ----------
 document.getElementById('btn-start').onclick = ()=>{ ac(); startGame(); };
@@ -215,7 +238,7 @@ function loseLife(reason){
   // 复活在坑后安全地面
   const safe = findSafeGround(tank.x+40);
   tank.x=safe; tank.y=GROUND_Y-6; tank.vy=0; tank.onGround=true;
-  S.camX = Math.max(0, tank.x - W*0.32);
+  S.camX = Math.max(0, tank.x - W*0.30);
   S.charging=false; S.charge=0;
   burst(tank.x,tank.y-20,18,'#ff6b4a',300,0.7,7,0.5);
 }
@@ -227,7 +250,13 @@ function findSafeGround(fromX){
 function updateHUD(){
   ui.score.textContent=S.score;
   ui.dist.textContent=Math.floor(S.dist);
-  ui.lives.textContent=S.lives;
+  // 生命用 emoji 心显示
+  ui.lives.textContent = '\u2764\uFE0F'.repeat(Math.max(0,S.lives)) || '\u2764\uFE0F';
+}
+function updateChargeBar(){
+  if(!chargeFill) return;
+  const p = S.charging ? clamp(S.charge/MAX_CHARGE,0,1) : 0;
+  chargeFill.style.width = (p*100).toFixed(1)+'%';
 }
 
 // ---------- 碰撞 & 计分 ----------
@@ -302,7 +331,7 @@ function updateGameplay(dt){
   for(let i=stars.length-1;i>=0;i--) if(stars[i].taken||stars[i].x<tank.x-400) stars.splice(i,1);
 
   // 相机
-  const targetCam = tank.x - W*0.32;
+  const targetCam = tank.x - W*0.30;
   S.camX = lerp(S.camX, targetCam, 6*dt);
   if(S.camX<0) S.camX=0;
 
@@ -499,6 +528,7 @@ function roundRect(x,y,w,h,r){
 
 // ---------- 蓄力条 ----------
 function drawChargeBar(){
+  return; // 蓄力条已移到底部 DOM (#charge-fill)
   if(!S.charging || !tank.onGround) return;
   const cam=S.camX;
   const bx=tank.x-cam-30, by=tank.y-100, bw=60, bh=12;
@@ -517,7 +547,7 @@ function drawHint(){
     ctx.save(); ctx.globalAlpha=clamp(1-(S.time-4)/2,0,1);
     ctx.font='bold 26px sans-serif'; ctx.textAlign='center';
     ctx.fillStyle='#fff'; ctx.strokeStyle='#2c548a'; ctx.lineWidth=6;
-    const msg='按住 空格/点击 蓄力 → 松开起跳！';
+    const msg='按住右下「跳」按钮蓄力 → 松开起跳！';
     ctx.strokeText(msg, W/2, 150); ctx.fillText(msg, W/2, 150);
     ctx.restore();
   }
@@ -533,8 +563,10 @@ function loop(now){
   if(S.running && !S.paused && !S.over){
     updateGameplay(dt);
     updateParticles(dt);
+    updateChargeBar();
   } else {
     updateParticles(dt);
+    updateChargeBar();
   }
 
   // ---- 绘制 ----

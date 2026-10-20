@@ -2,34 +2,55 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>坦克跳坑 · Tank Jump · 经典卡通版</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0c1726">
+<title>坦克跳坑 · 手机版</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="game-wrap">
-  <canvas id="game" width="960" height="540"></canvas>
+  <canvas id="game" width="360" height="640"></canvas>
 
+  <!-- 顶部 HUD -->
   <div id="hud">
     <div class="hud-box"><span class="hud-icon">⭐</span><span id="score">0</span></div>
-    <div class="hud-box"><span class="hud-icon">🚩</span>距离 <span id="dist">0</span>m</div>
-    <div class="hud-box"><span class="hud-icon">❤️</span><span id="lives">3</span></div>
-    <button id="btn-pause" class="hud-btn" title="暂停">⏸</button>
+    <div class="hud-box"><span class="hud-icon">🚩</span><span id="dist">0</span>m</div>
+    <div class="hud-box hearts"><span id="lives">❤️❤️❤️</span></div>
+    <button id="btn-pause" class="hud-btn" aria-label="暂停">⏸</button>
   </div>
 
+  <!-- 底部触控区：大跳键 + 蓄力条 -->
+  <div id="controls">
+    <div id="charge-wrap">
+      <div id="charge-bar"><div id="charge-fill"></div></div>
+      <div id="charge-label">蓄力</div>
+    </div>
+    <button id="jump-btn" aria-label="跳跃按钮">
+      <span class="jump-icon">🚀</span>
+      <span class="jump-text">跳</span>
+      <span class="jump-hint">按住蓄力 · 松开起跳</span>
+    </button>
+  </div>
+
+  <!-- 开始界面 -->
   <div id="overlay-start" class="overlay">
     <div class="panel">
-      <h1 class="title">🪖 坦克跳坑</h1>
-      <p class="subtitle">经典卡通 · 蓄力飞跃深坑</p>
+      <div class="tank-art">🪖</div>
+      <h1 class="title">坦克跳坑</h1>
+      <p class="subtitle">手机版 · 蓄力飞跃深坑</p>
       <div class="howto">
-        <p>⌨️ 按住 <b>空格</b> / <b>↑</b> / 点击屏幕 = 蓄力</p>
-        <p>松开 = 起跳（蓄力越久跳得越高越远）</p>
-        <p>🕳️ 越过深坑 +10，吃 ⭐ 星星 +50，掉坑 lose 1 ❤️</p>
+        <p>👇 <b>按住大按钮</b>（或屏幕）蓄力</p>
+        <p>✋ <b>松开</b>即起跳，越久跳越高</p>
+        <p>🕳️ 过坑 +10 · ⭐ 星星 +50 · 掉坑 −1❤️</p>
       </div>
       <button id="btn-start" class="btn-main">▶ 开始游戏</button>
+      <p class="tip">建议竖屏游玩，横屏也可</p>
     </div>
   </div>
 
+  <!-- 暂停界面 -->
   <div id="overlay-pause" class="overlay hidden">
     <div class="panel">
       <h2>⏸ 已暂停</h2>
@@ -37,12 +58,16 @@
     </div>
   </div>
 
+  <!-- 结束界面 -->
   <div id="overlay-over" class="overlay hidden">
     <div class="panel">
-      <h2 class="title-sm">💥 游戏结束</h2>
-      <p>最终得分：<b id="final-score">0</b></p>
-      <p>最远距离：<b id="final-dist">0</b>m</p>
-      <p id="best-line">历史最佳：<b id="best-score">0</b></p>
+      <div class="tank-art">💥</div>
+      <h2 class="title-sm">游戏结束</h2>
+      <div class="result-grid">
+        <div class="result-cell"><div class="rv" id="final-score">0</div><div class="rl">得分</div></div>
+        <div class="result-cell"><div class="rv" id="final-dist">0</div><div class="rl">距离(m)</div></div>
+        <div class="result-cell"><div class="rv" id="best-score">0</div><div class="rl">最佳</div></div>
+      </div>
       <button id="btn-restart" class="btn-main">🔄 再来一局</button>
     </div>
   </div>
