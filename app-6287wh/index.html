@@ -3,758 +3,348 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini3D · 游戏3D引擎</title>
+<title>五子棋</title>
 <style>
-  *{box-sizing:border-box; margin:0; padding:0;}
-  html,body{height:100%; overflow:hidden; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:#0d1117; color:#e6edf3;}
-  #gl{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab;}
-  #gl.drag{cursor:grabbing;}
-  /* HUD */
-  #hud{position:absolute; left:10px; top:10px; background:rgba(13,17,23,.78); border:1px solid #30363d;
-    border-radius:10px; padding:8px 12px; font-size:12px; line-height:1.7; pointer-events:none; min-width:150px;}
-  #hud b{color:#58a6ff;}
-  #hudTitle{font-size:13px; font-weight:bold; color:#f0883e; margin-bottom:2px;}
-  /* 左侧场景树 */
-  #panel{position:absolute; left:10px; top:110px; width:210px; background:rgba(13,17,23,.88);
-    border:1px solid #30363d; border-radius:10px; padding:10px; font-size:12px; max-height:calc(100vh - 220px); overflow:auto;}
-  #panel h3{font-size:12px; color:#8b949e; margin:4px 0 6px; letter-spacing:1px;}
-  .node{padding:5px 8px; border-radius:6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;}
-  .node:hover{background:#161b22;}
-  .node.sel{background:#1f6feb; color:#fff;}
-  .node .ty{font-size:10px; opacity:.7;}
-  .addbar{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
-  .addbar button, .mini{
-    background:#21262d; color:#e6edf3; border:1px solid #30363d; border-radius:6px;
-    padding:4px 9px; font-size:12px; cursor:pointer;}
-  .addbar button:hover{background:#30363d; border-color:#58a6ff;}
-  .del{background:#da3633 !important; border-color:#da3633 !important;}
-  /* 右侧属性面板 */
-  #props{position:absolute; right:10px; top:10px; width:250px; background:rgba(13,17,23,.88);
-    border:1px solid #30363d; border-radius:10px; padding:12px; font-size:12px; max-height:calc(100vh - 60px); overflow:auto;}
-  #props h3{font-size:13px; color:#f0883e; margin-bottom:8px;}
-  .prow{display:flex; align-items:center; gap:6px; margin-bottom:7px;}
-  .prow span{width:34px; color:#8b949e; flex-shrink:0;}
-  .prow input[type=number]{width:56px; background:#0d1117; color:#e6edf3; border:1px solid #30363d;
-    border-radius:5px; padding:3px 5px; font-size:12px;}
-  .prow input[type=color]{width:34px; height:24px; border:none; background:none; cursor:pointer; padding:0;}
-  .prow input[type=text]{flex:1; background:#0d1117; color:#e6edf3; border:1px solid #30363d;
-    border-radius:5px; padding:4px 6px; font-size:12px;}
-  #noneSel{color:#8b949e; text-align:center; padding:14px 0;}
-  /* 运行控制 */
-  #runbar{position:absolute; left:50%; top:10px; transform:translateX(-50%); display:flex; gap:8px;}
-  #runbar button{
-    background:rgba(13,17,23,.88); color:#e6edf3; border:1px solid #30363d; border-radius:8px;
-    padding:8px 16px; font-size:13px; cursor:pointer; font-weight:bold;}
-  #runbar button:hover{border-color:#58a6ff; color:#58a6ff;}
-  #runbar button.run{background:#238636; border-color:#2ea043;}
-  #runbar button.run.on{background:#da3633; border-color:#da3633;}
-  #help{position:absolute; right:10px; bottom:10px; font-size:11px; color:#8b949e;
-    background:rgba(13,17,23,.7); border:1px solid #30363d; border-radius:8px; padding:6px 10px; line-height:1.8;}
-  kbd{background:#21262d; border:1px solid #30363d; border-radius:4px; padding:0 5px; font-size:10px;}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #eee;
+    padding: 20px;
+  }
+  h1 { margin-bottom: 8px; font-size: 28px; letter-spacing: 4px; }
+  .status {
+    margin-bottom: 14px;
+    font-size: 18px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .dot.black { background: #111; border: 1px solid #555; }
+  .dot.white { background: #f5f5f5; border: 1px solid #999; }
+  #board {
+    position: relative;
+    background: #dcb35c;
+    background-image: radial-gradient(circle at 30% 20%, #e8c477 0%, #d0a44e 70%);
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5), inset 0 0 30px rgba(0,0,0,.08);
+    padding: 20px;
+    touch-action: manipulation;
+  }
+  canvas { display: block; cursor: pointer; }
+  .toolbar { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  button {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #eee;
+    padding: 9px 20px;
+    border-radius: 20px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: .2s;
+  }
+  button:hover { background: rgba(255,255,255,.22); transform: translateY(-1px); }
+  button.primary { background: #e94560; border-color: #e94560; }
+  button.primary:hover { background: #ff5f7a; }
+  .info { margin-top: 12px; font-size: 13px; color: #999; }
 </style>
 </head>
 <body>
-<canvas id="gl"></canvas>
 
-<div id="hud">
-  <div id="hudTitle">Mini3D 引擎 v1.0</div>
-  FPS: <b id="fps">0</b><br>
-  三角面: <b id="tris">0</b><br>
-  物体数: <b id="objs">0</b><br>
-  模式: <b id="mode">编辑</b>
+<h1>五 子 棋</h1>
+<div class="status" id="status"></div>
+<div id="board"><canvas id="canvas"></canvas></div>
+<div class="toolbar">
+  <button class="primary" id="newGame">新对局</button>
+  <button id="undo">悔棋</button>
+  <button id="aiToggle">AI: 关</button>
+  <button id="swapColor">执子切换</button>
 </div>
-
-<div id="runbar">
-  <button class="run" id="btnRun">▶ 运行游戏</button>
-  <button id="btnReset">↺ 重置场景</button>
-  <button id="btnSave">💾 保存</button>
-  <button id="btnLoad">📂 载入</button>
-</div>
-
-<div id="panel">
-  <h3>📦 场景树（点击选中）</h3>
-  <div id="tree"></div>
-  <h3 style="margin-top:8px;">➕ 添加物体</h3>
-  <div class="addbar">
-    <button data-add="cube">立方体</button>
-    <button data-add="sphere">球体</button>
-    <button data-add="cone">圆锥</button>
-    <button data-add="cyl">圆柱</button>
-    <button data-add="plane">地板</button>
-    <button data-add="light">💡灯</button>
-    <button data-add="player">🏃玩家</button>
-  </div>
-</div>
-
-<div id="props">
-  <h3>🔧 属性 Inspector</h3>
-  <div id="noneSel">未选中物体<br>点击左侧场景树或视口中的物体</div>
-  <div id="propForm" style="display:none;">
-    <div class="prow"><span>名称</span><input type="text" id="pName"></div>
-    <div class="prow"><span>颜色</span><input type="color" id="pColor"><span style="width:auto;"></span>
-      <button class="mini" id="pEmit">自发光: 关</button></div>
-    <div style="color:#8b949e; margin:6px 0 2px;">位置 XYZ</div>
-    <div class="prow"><span>pos</span>
-      <input type="number" step="0.1" id="px"><input type="number" step="0.1" id="py"><input type="number" step="0.1" id="pz"></div>
-    <div style="color:#8b949e; margin:6px 0 2px;">旋转 角度</div>
-    <div class="prow"><span>rot</span>
-      <input type="number" step="5" id="rx"><input type="number" step="5" id="ry"><input type="number" step="5" id="rz"></div>
-    <div style="color:#8b949e; margin:6px 0 2px;">缩放</div>
-    <div class="prow"><span>scl</span>
-      <input type="number" step="0.1" id="sx"><input type="number" step="0.1" id="sy"><input type="number" step="0.1" id="sz"></div>
-    <div style="color:#8b949e; margin:6px 0 2px;">物理</div>
-    <div class="prow"><span></span>
-      <button class="mini" id="pPhys">动态刚体: 关</button></div>
-    <div class="prow"><span></span>
-      <button class="mini del" id="pDel">🗑 删除物体</button></div>
-  </div>
-</div>
-
-<div id="help">
-  <kbd>左键拖拽</kbd> 旋转视角 · <kbd>右键拖拽</kbd>/<kbd>滚轮</kbd> 平移缩放<br>
-  <kbd>点击</kbd> 选中物体 · 运行模式下 <kbd>W A S D</kbd> 移动玩家 · <kbd>空格</kbd> 跳跃
-</div>
+<div class="info">点击交叉点落子 · 五子连珠即获胜</div>
 
 <script>
-"use strict";
-/* ================================================================
-   Mini3D —— 自研 WebGL1 游戏3D引擎
-   特性：矩阵数学库 / 光照着色器 / 轨道相机 / 拾取 / 场景树 /
-         属性编辑 / 简易物理(重力碰撞) / 玩家控制 / 关卡存取
-================================================================= */
+const N = 15;                 // 15 x 15
+const GAP = 36;                // 格距
+const PAD = 24;                // 内边距
+const SIZE = PAD * 2 + GAP * (N - 1);
 
-/* ---------------- 4x4 矩阵数学库 ---------------- */
-const M4 = {
-  identity(){ const m=new Float32Array(16); m[0]=m[5]=m[10]=m[15]=1; return m; },
-  multiply(a,b){
-    const o=new Float32Array(16);
-    for(let c=0;c<4;c++) for(let r=0;r<4;r++){
-      o[c*4+r] = a[r]*b[c*4] + a[4+r]*b[c*4+1] + a[8+r]*b[c*4+2] + a[12+r]*b[c*4+3];
-    }
-    return o;
-  },
-  perspective(fovy,aspect,near,far){
-    const f=1/Math.tan(fovy/2), m=new Float32Array(16);
-    m[0]=f/aspect; m[5]=f; m[10]=(far+near)/(near-far); m[11]=-1;
-    m[14]=2*far*near/(near-far);
-    return m;
-  },
-  lookAt(eye,center,up){
-    let zx=eye[0]-center[0], zy=eye[1]-center[1], zz=eye[2]-center[2];
-    let l=Math.hypot(zx,zy,zz)||1; zx/=l; zy/=l; zz/=l;
-    let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;
-    l=Math.hypot(xx,xy,xz)||1; xx/=l; xy/=l; xz/=l;
-    const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
-    return new Float32Array([
-      xx,yx,zx,0, xy,yy,zy,0, xz,yz,zz,0,
-      -(xx*eye[0]+xy*eye[1]+xz*eye[2]),
-      -(yx*eye[0]+yy*eye[1]+yz*eye[2]),
-      -(zx*eye[0]+zy*eye[1]+zz*eye[2]), 1]);
-  },
-  translate(x,y,z){ const m=M4.identity(); m[12]=x; m[13]=y; m[14]=z; return m; },
-  scale(x,y,z){ const m=M4.identity(); m[0]=x; m[5]=y; m[10]=z; return m; },
-  rotX(a){ const m=M4.identity(),c=Math.cos(a),s=Math.sin(a); m[5]=c;m[6]=s;m[9]=-s;m[10]=c; return m; },
-  rotY(a){ const m=M4.identity(),c=Math.cos(a),s=Math.sin(a); m[0]=c;m[2]=-s;m[8]=s;m[10]=c; return m; },
-  rotZ(a){ const m=M4.identity(),c=Math.cos(a),s=Math.sin(a); m[0]=c;m[1]=s;m[4]=-s;m[5]=c; return m; },
-  /* 组合 TRS */
-  compose(pos,rotDeg,scl){
-    const d=Math.PI/180;
-    let m = M4.translate(pos[0],pos[1],pos[2]);
-    m = M4.multiply(m, M4.rotY(rotDeg[1]*d));
-    m = M4.multiply(m, M4.rotX(rotDeg[0]*d));
-    m = M4.multiply(m, M4.rotZ(rotDeg[2]*d));
-    m = M4.multiply(m, M4.scale(scl[0],scl[1],scl[2]));
-    return m;
-  },
-  transformPoint(m,p){
-    const x=p[0],y=p[1],z=p[2];
-    return [
-      m[0]*x+m[4]*y+m[8]*z+m[12],
-      m[1]*x+m[5]*y+m[9]*z+m[13],
-      m[2]*x+m[6]*y+m[10]*z+m[14],
-      m[3]*x+m[7]*y+m[11]*z+m[15]];
-  },
-  /* 逆矩阵（拾取射线用） */
-  invert(m){
-    const inv=new Float32Array(16);
-    inv[0]=m[5]*m[10]*m[15]-m[5]*m[11]*m[14]-m[9]*m[6]*m[15]+m[9]*m[7]*m[14]+m[13]*m[6]*m[11]-m[13]*m[7]*m[10];
-    inv[4]=-m[4]*m[10]*m[15]+m[4]*m[11]*m[14]+m[8]*m[6]*m[15]-m[8]*m[7]*m[14]-m[12]*m[6]*m[11]+m[12]*m[7]*m[10];
-    inv[8]=m[4]*m[9]*m[15]-m[4]*m[11]*m[13]-m[8]*m[5]*m[15]+m[8]*m[7]*m[13]+m[12]*m[5]*m[11]-m[12]*m[7]*m[9];
-    inv[12]=-m[4]*m[9]*m[14]+m[4]*m[10]*m[13]+m[8]*m[5]*m[14]-m[8]*m[6]*m[13]-m[12]*m[5]*m[10]+m[12]*m[6]*m[9];
-    inv[1]=-m[1]*m[10]*m[15]+m[1]*m[11]*m[14]+m[9]*m[2]*m[15]-m[9]*m[3]*m[14]-m[13]*m[2]*m[11]+m[13]*m[3]*m[10];
-    inv[5]=m[0]*m[10]*m[15]-m[0]*m[11]*m[14]-m[8]*m[2]*m[15]+m[8]*m[3]*m[14]+m[12]*m[2]*m[11]-m[12]*m[3]*m[10];
-    inv[9]=-m[0]*m[9]*m[15]+m[0]*m[11]*m[13]+m[8]*m[1]*m[15]-m[8]*m[3]*m[13]-m[12]*m[1]*m[11]+m[12]*m[3]*m[9];
-    inv[13]=m[0]*m[9]*m[14]-m[0]*m[10]*m[13]-m[8]*m[1]*m[14]+m[8]*m[2]*m[13]+m[12]*m[1]*m[10]-m[12]*m[2]*m[9];
-    inv[2]=m[1]*m[6]*m[15]-m[1]*m[7]*m[14]-m[5]*m[2]*m[15]+m[5]*m[3]*m[14]+m[13]*m[2]*m[7]-m[13]*m[3]*m[6];
-    inv[6]=-m[0]*m[6]*m[15]+m[0]*m[7]*m[14]+m[4]*m[2]*m[15]-m[4]*m[3]*m[14]-m[12]*m[2]*m[7]+m[12]*m[3]*m[6];
-    inv[10]=m[0]*m[5]*m[15]-m[0]*m[7]*m[13]-m[4]*m[1]*m[15]+m[4]*m[3]*m[13]+m[12]*m[1]*m[7]-m[12]*m[3]*m[5];
-    inv[14]=-m[0]*m[5]*m[14]+m[0]*m[6]*m[13]+m[4]*m[1]*m[14]-m[4]*m[2]*m[13]-m[12]*m[1]*m[6]+m[12]*m[2]*m[5];
-    inv[3]=-m[1]*m[6]*m[11]+m[1]*m[7]*m[10]+m[5]*m[2]*m[11]-m[5]*m[3]*m[10]-m[9]*m[2]*m[7]+m[9]*m[3]*m[6];
-    inv[7]=m[0]*m[6]*m[11]-m[0]*m[7]*m[10]-m[4]*m[2]*m[11]+m[4]*m[3]*m[10]+m[8]*m[2]*m[7]-m[8]*m[3]*m[6];
-    inv[11]=-m[0]*m[5]*m[11]+m[0]*m[7]*m[9]+m[4]*m[1]*m[11]-m[4]*m[3]*m[9]-m[8]*m[1]*m[7]+m[8]*m[3]*m[5];
-    inv[15]=m[0]*m[5]*m[10]-m[0]*m[6]*m[9]-m[4]*m[1]*m[10]+m[4]*m[2]*m[9]+m[8]*m[1]*m[6]-m[8]*m[2]*m[5];
-    let det=m[0]*inv[0]+m[1]*inv[4]+m[2]*inv[8]+m[3]*inv[12];
-    if(!det) return M4.identity();
-    det=1/det;
-    for(let i=0;i<16;i++) inv[i]*=det;
-    return inv;
-  }
-};
-const hex2rgb = h => [parseInt(h.slice(1,3),16)/255, parseInt(h.slice(3,5),16)/255, parseInt(h.slice(5,7),16)/255];
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+canvas.width = SIZE * dpr;
+canvas.height = SIZE * dpr;
+canvas.style.width = SIZE + 'px';
+canvas.style.height = SIZE + 'px';
+ctx.scale(dpr, dpr);
 
-/* ---------------- 网格生成器 ---------------- */
-const Mesh = {
-  cube(){
-    const p=[],n=[],idx=[];
-    const faces=[
-      [[0,0,1],[1,0,0],[1,1,0],[0,1,0]], [[0,0,-1],[-1,0,0],[-1,1,0],[0,1,0]],
-      [[1,0,0],[0,0,-1],[0,1,-1],[1,1,0]], [[-1,0,0],[1,0,1],[1,1,1],[-1,1,1]],
-      [[0,1,0],[-1,0,1],[0,0,1],[1,0,1]].map(v=>v), [[0,-1,0],[1,0,0],[0,0,1],[-1,0,0]],
-    ];
-    const quad=(a,b,c,d,nrm)=>{
-      const base=p.length/3;
-      [a,b,c,d].forEach(v=>{p.push(v[0]*.5,v[1]*.5,v[2]*.5); n.push(nrm[0],nrm[1],nrm[2]);});
-      idx.push(base,base+1,base+2, base,base+2,base+3);
-    };
-    quad([0,0,1],[1,0,1],[1,1,1],[0,1,1],[0,0,1]);
-    quad([1,0,0],[0,0,0],[0,1,0],[1,1,0],[0,0,-1]);
-    quad([1,0,1],[1,0,0],[1,1,0],[1,1,1],[1,0,0]);
-    quad([0,0,0],[0,0,1],[0,1,1],[0,1,0],[-1,0,0]);
-    quad([0,1,1],[1,1,1],[1,1,0],[0,1,0],[0,1,0]);
-    quad([0,0,0],[1,0,0],[1,0,1],[0,0,1],[0,-1,0]);
-    return {pos:new Float32Array(p), nrm:new Float32Array(n), idx:new Uint16Array(idx)};
-  },
-  plane(size){
-    const s=size/2;
-    return {
-      pos:new Float32Array([-s,0,-s, s,0,-s, s,0,s, -s,0,s]),
-      nrm:new Float32Array([0,1,0, 0,1,0, 0,1,0, 0,1,0]),
-      idx:new Uint16Array([0,2,1, 0,3,2])
-    };
-  },
-  sphere(seg){
-    seg=seg||24;
-    const p=[],n=[],idx=[];
-    for(let y=0;y<=seg;y++){
-      const v=y/seg, phi=v*Math.PI;
-      for(let x=0;x<=seg;x++){
-        const u=x/seg, th=u*2*Math.PI;
-        const sx=Math.sin(phi)*Math.cos(th), sy=Math.cos(phi), sz=Math.sin(phi)*Math.sin(th);
-        p.push(sx*.5,sy*.5,sz*.5); n.push(sx,sy,sz);
-      }
-    }
-    for(let y=0;y<seg;y++) for(let x=0;x<seg;x++){
-      const a=y*(seg+1)+x, b=a+seg+1;
-      idx.push(a,b,a+1, b,b+1,a+1);
-    }
-    return {pos:new Float32Array(p), nrm:new Float32Array(n), idx:new Uint16Array(idx)};
-  },
-  cone(seg){
-    seg=seg||24;
-    const p=[],n=[],idx=[];
-    // 侧面
-    for(let i=0;i<=seg;i++){
-      const th=i/seg*2*Math.PI, x=Math.cos(th)*.5, z=Math.sin(th)*.5;
-      p.push(x,0,z); n.push(Math.cos(th),.5,Math.sin(th));
-      p.push(0,.5,0); n.push(Math.cos(th),.5,Math.sin(th));
-    }
-    for(let i=0;i<seg;i++){ const b=i*2; idx.push(b,b+1,b+2); }
-    // 底面
-    const base=p.length/3;
-    p.push(0,0,0); n.push(0,-1,0);
-    for(let i=0;i<=seg;i++){
-      const th=i/seg*2*Math.PI;
-      p.push(Math.cos(th)*.5,0,Math.sin(th)*.5); n.push(0,-1,0);
-      if(i>0) idx.push(base, base+i, base+i+1);
-    }
-    return {pos:new Float32Array(p), nrm:new Float32Array(n), idx:new Uint16Array(idx)};
-  },
-  cylinder(seg){
-    seg=seg||20;
-    const p=[],n=[],idx=[];
-    for(let i=0;i<=seg;i++){
-      const th=i/seg*2*Math.PI, x=Math.cos(th)*.5, z=Math.sin(th)*.5, nx=Math.cos(th), nz=Math.sin(th);
-      p.push(x,0,z); n.push(nx,0,nz);
-      p.push(x,.5,z); n.push(nx,0,nz);
-    }
-    for(let i=0;i<seg;i++){ const b=i*2; idx.push(b,b+2,b+1, b+1,b+2,b+3); }
-    [[0,-1],[Math.PI,1]].forEach(([ph,dir])=>{
-      const base=p.length/3;
-      p.push(0,dir*.25,0); n.push(0,dir,0);
-      for(let i=0;i<=seg;i++){
-        const th=i/seg*2*Math.PI;
-        p.push(Math.cos(th)*.5,dir*.25,Math.sin(th)*.5); n.push(0,dir,0);
-        if(i>0) idx.push(base, base+i+(dir>0?1:0), base+i+(dir>0?0:1));
-      }
-    });
-    return {pos:new Float32Array(p), nrm:new Float32Array(n), idx:new Uint16Array(idx)};
-  }
-};
+let board, history, current, gameOver, aiOn = false, playerColor = 1; // 1黑 2白
+let hoverPos = null;
 
-/* ---------------- 着色器 ---------------- */
-const VS = `
-attribute vec3 aPos; attribute vec3 aNrm;
-uniform mat4 uMVP; uniform mat4 uModel;
-varying vec3 vNrm; varying vec3 vWorld;
-void main(){
-  vec4 w = uModel * vec4(aPos,1.0);
-  vWorld = w.xyz;
-  vNrm = mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz) * aNrm;
-  gl_Position = uMVP * vec4(aPos,1.0);
-}`;
-const FS = `
-precision mediump float;
-varying vec3 vNrm; varying vec3 vWorld;
-uniform vec3 uColor; uniform float uEmit;
-uniform vec3 uLightDir;      // 主平行光（指向场景）
-uniform vec3 uLampPos; uniform vec3 uLampColor;   // 点光源
-uniform vec3 uCamPos;
-void main(){
-  vec3 N = normalize(vNrm);
-  vec3 base = uColor;
-  // 棋盘地面
-  if(uEmit < -0.5){
-    vec2 g = floor(vWorld.xz * 0.5);
-    base = mod(g.x + g.y, 2.0) < 0.5 ? vec3(0.22,0.24,0.30) : vec3(0.34,0.37,0.45);
-  }
-  float diff = max(dot(N, -uLightDir), 0.0);
-  float amb = 0.30;
-  // 点光衰减
-  vec3 Ld = uLampPos - vWorld;
-  float dist = length(Ld);
-  float att = 1.0 / (1.0 + 0.06*dist + 0.02*dist*dist);
-  float pd = max(dot(N, Ld/max(dist,0.001)), 0.0) * att;
-  // 简单高光
-  vec3 V = normalize(uCamPos - vWorld);
-  vec3 H = normalize(-uLightDir + V);
-  float spec = pow(max(dot(N,H),0.0), 32.0) * 0.35;
-  vec3 col = base * (amb + diff*0.85) + base * uLampColor * pd * 2.2 + vec3(spec);
-  if(uEmit > 0.0) col = mix(col, base, uEmit);
-  // 雾
-  float d = length(uCamPos - vWorld);
-  float fog = clamp((d - 18.0) / 30.0, 0.0, 1.0);
-  col = mix(col, vec3(0.05,0.07,0.11), fog);
-  gl_FragColor = vec4(col, 1.0);
-}`;
-
-/* ---------------- 引擎核心 ---------------- */
-const canvas = document.getElementById("gl");
-const gl = canvas.getContext("webgl", {antialias:true});
-if(!gl){ document.body.innerHTML="<p style='padding:40px'>浏览器不支持 WebGL</p>"; throw new Error("no webgl"); }
-
-function compile(type, src){
-  const s = gl.createShader(type);
-  gl.shaderSource(s, src); gl.compileShader(s);
-  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
-  return s;
-}
-const prog = gl.createProgram();
-gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
-gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
-gl.linkProgram(prog);
-gl.enable(gl.DEPTH_TEST);
-gl.enable(gl.CULL_FACE);
-
-const LOC = {
-  aPos: gl.getAttribLocation(prog,"aPos"),
-  aNrm: gl.getAttribLocation(prog,"aNrm"),
-  uMVP: gl.getUniformLocation(prog,"uMVP"),
-  uModel: gl.getUniformLocation(prog,"uModel"),
-  uColor: gl.getUniformLocation(prog,"uColor"),
-  uEmit: gl.getUniformLocation(prog,"uEmit"),
-  uLightDir: gl.getUniformLocation(prog,"uLightDir"),
-  uLampPos: gl.getUniformLocation(prog,"uLampPos"),
-  uLampColor: gl.getUniformLocation(prog,"uLampColor"),
-  uCamPos: gl.getUniformLocation(prog,"uCamPos"),
-};
-
-function upload(m){
-  const vao = {
-    vp: gl.createBuffer(), vn: gl.createBuffer(), ib: gl.createBuffer(), count: m.idx.length
-  };
-  gl.bindBuffer(gl.ARRAY_BUFFER, vao.vp);
-  gl.bufferData(gl.ARRAY_BUFFER, m.pos, gl.STATIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, vao.vn);
-  gl.bufferData(gl.ARRAY_BUFFER, m.nrm, gl.STATIC_DRAW);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vao.ib);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, m.idx, gl.STATIC_DRAW);
-  return vao;
-}
-const MESHES = {
-  cube: upload(Mesh.cube()),
-  sphere: upload(Mesh.sphere(24)),
-  cone: upload(Mesh.cone(24)),
-  cyl: upload(Mesh.cylinder(20)),
-  plane: upload(Mesh.plane(40)),
-};
-
-/* ---------------- 场景 ---------------- */
-let uid = 1;
-function defaultScene(){
-  uid = 1;
-  return [
-    {id:uid++, name:"地面", type:"plane", pos:[0,0,0], rot:[0,0,0], scl:[1,1,1], color:"#3d4252", emit:0, phys:false, floor:true},
-    {id:uid++, name:"主光", type:"light", pos:[6,9,5], rot:[0,0,0], scl:[1,1,1], color:"#ffd27d", emit:1, phys:false},
-    {id:uid++, name:"玩家", type:"player", pos:[0,1,6], rot:[0,0,0], scl:[1,1.4,1], color:"#4dabf7", emit:0, phys:true},
-    {id:uid++, name:"弹跳球", type:"sphere", pos:[-3,4,-2], rot:[0,0,0], scl:[1.4,1.4,1.4], color:"#f06595", emit:0, phys:true},
-    {id:uid++, name:"方块塔1", type:"cube", pos:[3,0.5,-3], rot:[0,20,0], scl:[1,1,1], color:"#69db7c", emit:0, phys:false},
-    {id:uid++, name:"方块塔2", type:"cube", pos:[3,1.5,-3], rot:[0,45,0], scl:[1,1,1], color:"#ffd43b", emit:0, phys:false},
-    {id:uid++, name:"小路灯", type:"cone", pos:[-5,1.2,3], rot:[0,0,180], scl:[1,1.5,1], color:"#ff922b", emit:1, phys:false},
-  ];
-}
-let scene = defaultScene();
-let selected = null;      // id
-let running = false;
-
-/* 物理运行时状态 */
-const bodies = new Map(); // id -> {vy, y0}
-
-/* ---------------- 轨道相机 ---------------- */
-const cam = {yaw:0.7, pitch:0.45, dist:16, target:[0,1.5,0]};
-function camEye(){
-  const cp=Math.cos(cam.pitch), sp=Math.sin(cam.pitch);
-  return [
-    cam.target[0] + cam.dist*cp*Math.sin(cam.yaw),
-    cam.target[1] + cam.dist*sp,
-    cam.target[2] + cam.dist*cp*Math.cos(cam.yaw)];
-}
-
-/* ---------------- 输入：轨道控制 + 拾取 ---------------- */
-let drag=null;
-canvas.addEventListener("contextmenu", e=>e.preventDefault());
-canvas.addEventListener("mousedown", e=>{
-  drag = {x:e.clientX, y:e.clientY, btn:e.button, moved:0, yaw:cam.yaw, pitch:cam.pitch, tx:cam.target[0], ty:cam.target[1], tz:cam.target[2]};
-  canvas.classList.add("drag");
-});
-window.addEventListener("mousemove", e=>{
-  if(!drag) return;
-  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
-  drag.moved = Math.max(drag.moved, Math.abs(dx)+Math.abs(dy));
-  if(drag.btn===0){ cam.yaw = drag.yaw - dx*0.008; cam.pitch = Math.max(-1.4, Math.min(1.45, drag.pitch + dy*0.008)); }
-  else {
-    const s = cam.dist*0.0016;
-    const rx = Math.cos(cam.yaw)*dx*s, rz = -Math.sin(cam.yaw)*dx*s;
-    cam.target[0] = drag.tx - rx + Math.sin(cam.yaw)*dy*s*0 ;
-    cam.target[0] = drag.tx - rx;
-    cam.target[1] = drag.ty + dy*s;
-    cam.target[2] = drag.tz - rz;
-  }
-});
-window.addEventListener("mouseup", e=>{
-  if(!drag) return;
-  if(drag.btn===0 && drag.moved<5) pick(e.clientX, e.clientY);
-  drag=null; canvas.classList.remove("drag");
-});
-canvas.addEventListener("wheel", e=>{
-  e.preventDefault();
-  cam.dist = Math.max(3, Math.min(70, cam.dist * (e.deltaY>0?1.1:0.9)));
-},{passive:false});
-
-/* 射线拾取（包围球近似） */
-function pick(cx, cy){
-  const r = canvas.getBoundingClientRect();
-  const ndcX = ((cx-r.left)/r.width)*2-1;
-  const ndcY = 1-((cy-r.top)/r.height)*2;
-  const proj = M4.perspective(Math.PI/3, canvas.width/canvas.height, 0.1, 200);
-  const view = M4.lookAt(camEye(), cam.target, [0,1,0]);
-  const vp = M4.multiply(proj, view);
-  const inv = M4.invert(vp);
-  const pN = M4.transformPoint(inv, [ndcX, ndcY, -1]);
-  const pF = M4.transformPoint(inv, [ndcX, ndcY, 1]);
-  const o = [pN[0]/pN[3], pN[1]/pN[3], pN[2]/pN[3]];
-  const f = [pF[0]/pF[3], pF[1]/pF[3], pF[2]/pF[3]];
-  const d = [f[0]-o[0], f[1]-o[1], f[2]-o[2]];
-  let best=null, bestT=Infinity;
-  for(const ob of scene){
-    if(ob.type==="light"||ob.floor) continue;
-    const c = ob.pos;
-    const rad = Math.max(ob.scl[0],ob.scl[1],ob.scl[2])*0.75 + 0.2;
-    // 解 |o+td-c|=rad
-    const oc=[o[0]-c[0],o[1]-c[1],o[2]-c[2]];
-    const a=d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
-    const b=2*(oc[0]*d[0]+oc[1]*d[1]+oc[2]*d[2]);
-    const cc=oc[0]*oc[0]+oc[1]*oc[1]+oc[2]*oc[2]-rad*rad;
-    const disc=b*b-4*a*cc;
-    if(disc<0) continue;
-    const t=(-b-Math.sqrt(disc))/(2*a);
-    if(t>0 && t<bestT){ bestT=t; best=ob; }
-  }
-  select(best?best.id:null);
-}
-
-/* ---------------- 键盘（运行模式玩家控制） ---------------- */
-const keys = {};
-window.addEventListener("keydown", e=>{ keys[e.key.toLowerCase()]=true;
-  if(running && ["w","a","s","d"," "].includes(e.key.toLowerCase())) e.preventDefault(); });
-window.addEventListener("keyup", e=>{ keys[e.key.toLowerCase()]=false; });
-
-/* ---------------- 主循环 ---------------- */
-let last=performance.now(), fpsAcc=0, fpsN=0, fpsShow=0;
-let tris=0;
-function frame(now){
-  const dt = Math.min(0.05, (now-last)/1000); last=now;
-  fpsAcc += 1/Math.max(dt,1e-4); fpsN++;
-  if(fpsN>=20){ fpsShow=Math.round(fpsAcc/fpsN); fpsAcc=0; fpsN=0;
-    document.getElementById("fps").textContent = fpsShow; }
-
-  if(running) stepGame(dt);
+function init() {
+  board = Array.from({length: N}, () => Array(N).fill(0));
+  history = [];
+  current = 1;
+  gameOver = false;
+  hoverPos = null;
   draw();
-  requestAnimationFrame(frame);
+  updateStatus();
 }
 
-function draw(){
-  const w=canvas.clientWidth, h=canvas.clientHeight;
-  if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h); }
-  gl.clearColor(0.05,0.07,0.11,1);
-  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+function px(i) { return PAD + i * GAP; }
 
-  const eye = running && playerObj() ? (()=>{ const p=playerObj().pos; return [p[0]+7*0, p[1]+5, p[2]+9]; })() : camEye();
-  const target = running && playerObj() ? (()=>{ const p=playerObj().pos; return [p[0], p[1]+1, p[2]]; })() : cam.target;
-  const proj = M4.perspective(Math.PI/3, canvas.width/canvas.height, 0.1, 200);
-  const view = M4.lookAt(eye, target, [0,1,0]);
-  const vp = M4.multiply(proj, view);
+function draw() {
+  ctx.clearRect(0, 0, SIZE, SIZE);
 
-  const light = scene.find(o=>o.type==="light");
-  const lightDir = light ? norm3(sub3(light.pos,[0,0,0])) : [0.5,-1,0.3];
-  const lamp = scene.find(o=>o.emit===1 && o.type!=="light");
-
-  gl.useProgram(prog);
-  tris = 0;
-  for(const ob of scene){
-    let m = MESHES[ob.type==="player"?"cube":ob.type];
-    if(!m) continue;
-    const model = M4.compose(ob.pos, ob.rot, ob.scl);
-    const mvp = M4.multiply(vp, model);
-    gl.uniformMatrix4fv(LOC.uMVP, false, mvp);
-    gl.uniformMatrix4fv(LOC.uModel, false, model);
-    gl.uniform3fv(LOC.uColor, hex2rgb(ob.color));
-    gl.uniform1f(LOC.uEmit, ob.type==="light" ? 1 : (ob.emit ? 1 : (ob.floor ? -1 : 0)));
-    gl.uniform3fv(LOC.uLightDir, lightDir);
-    gl.uniform3fv(LOC.uLampPos, lamp ? lamp.pos : [0,-100,0]);
-    gl.uniform3fv(LOC.uLampColor, lamp ? [1,0.8,0.5] : [0,0,0]);
-    gl.uniform3fv(LOC.uCamPos, eye);
-    gl.bindBuffer(gl.ARRAY_BUFFER, m.vp);
-    gl.enableVertexAttribArray(LOC.aPos);
-    gl.vertexAttribPointer(LOC.aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, m.vn);
-    gl.enableVertexAttribArray(LOC.aNrm);
-    gl.vertexAttribPointer(LOC.aNrm, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ib);
-    // 选中描边：画两遍放大
-    if(selected===ob.id && !running){
-      gl.uniform3fv(LOC.uColor, [1,0.75,0.2]);
-      gl.uniform1f(LOC.uEmit, 1);
-      gl.cullFace(gl.FRONT);
-      const big = M4.multiply(vp, M4.multiply(model, M4.scale(1.06,1.06,1.06)));
-      gl.uniformMatrix4fv(LOC.uMVP, false, big);
-      gl.drawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_SHORT, 0);
-      gl.cullFace(gl.BACK);
-      gl.uniform3fv(LOC.uColor, hex2rgb(ob.color));
-      gl.uniform1f(LOC.uEmit, ob.floor?-1:0);
-    }
-    gl.drawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_SHORT, 0);
-    tris += m.count/3;
+  // 棋盘线
+  ctx.strokeStyle = '#5a4520';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < N; i++) {
+    ctx.beginPath();
+    ctx.moveTo(px(0), px(i));
+    ctx.lineTo(px(N-1), px(i));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px(i), px(0));
+    ctx.lineTo(px(i), px(N-1));
+    ctx.stroke();
   }
-  document.getElementById("tris").textContent = tris;
-  document.getElementById("objs").textContent = scene.length;
-}
 
-function sub3(a,b){ return [a[0]-b[0],a[1]-b[1],a[2]-b[2]]; }
-function norm3(v){ const l=Math.hypot(...v)||1; return [v[0]/l,v[1]/l,v[2]/l]; }
-
-/* ---------------- 游戏运行逻辑 ---------------- */
-function playerObj(){ return scene.find(o=>o.type==="player"); }
-function stepGame(dt){
-  const pl = playerObj();
-  if(!pl) return;
-  // 初始化物理状态
-  for(const ob of scene){
-    if(ob.phys && !bodies.has(ob.id)) bodies.set(ob.id, {vy:0});
-  }
-  // 玩家移动
-  const spd = 6;
-  let mx=0, mz=0;
-  if(keys["w"]) mz-=1; if(keys["s"]) mz+=1;
-  if(keys["a"]) mx-=1; if(keys["d"]) mx+=1;
-  if(mx||mz){
-    const l=Math.hypot(mx,mz); mx/=l; mz/=l;
-    // 相对相机朝向
-    const cy=Math.cos(cam.yaw), sy=Math.sin(cam.yaw);
-    pl.pos[0] += (mx*cy - mz*sy) * spd * dt;
-    pl.pos[2] += (-mx*sy - mz*cy) * spd * dt * -1;
-    pl.pos[0] = Math.max(-19, Math.min(19, pl.pos[0]));
-    pl.pos[2] = Math.max(-19, Math.min(19, pl.pos[2]));
-  }
-  const pb = bodies.get(pl.id);
-  if(keys[" "] && pb.vy===0) pb.vy = 7;
-  // 重力 + 地面
-  const G = 18;
-  for(const ob of scene){
-    if(!ob.phys) continue;
-    const b = bodies.get(ob.id);
-    b.vy -= G*dt;
-    ob.pos[1] += b.vy*dt;
-    const halfH = ob.scl[1]*(ob.type==="player"?0.7:0.5);
-    if(ob.pos[1] < halfH){
-      ob.pos[1] = halfH;
-      b.vy = Math.abs(b.vy) > 1 ? Math.abs(b.vy)*0.65 : 0;   // 弹性反弹
-      if(Math.abs(b.vy) < 0.5) b.vy = 0;
-    }
-    // 静态方块碰撞（推挤）
-    for(const s of scene){
-      if(s===ob || s.floor || s.type==="light") continue;
-      const rr = (ob.scl[0]+s.scl[0])*0.5;
-      const dx=ob.pos[0]-s.pos[0], dz=ob.pos[2]-s.pos[2];
-      const d2=dx*dx+dz*dz;
-      const dy=Math.abs(ob.pos[1]-s.pos[1]);
-      if(d2 < rr*rr && dy < (ob.scl[1]+s.scl[1])*0.5){
-        const d=Math.sqrt(d2)||0.001;
-        const push = rr-d;
-        ob.pos[0] += dx/d*push; ob.pos[2] += dz/d*push;
-        if(ob!==pl && ob.type!=="player") b.vy = Math.max(b.vy, 0);
-      }
-    }
-  }
-}
-
-/* ---------------- UI：场景树 ---------------- */
-const TYPE_LABEL = {cube:"立方体", sphere:"球体", cone:"圆锥", cyl:"圆柱", plane:"地面", light:"灯光", player:"玩家"};
-function renderTree(){
-  const box = document.getElementById("tree");
-  box.innerHTML = scene.map(o=>`
-    <div class="node ${selected===o.id?"sel":""}" data-id="${o.id}">
-      <span>${o.type==="light"?"💡":o.type==="player"?"🏃":o.floor?"⬜":"🔷"} ${esc(o.name)}</span>
-      <span class="ty">${TYPE_LABEL[o.type]||o.type}</span>
-    </div>`).join("");
-  box.querySelectorAll(".node").forEach(n=>{
-    n.onclick = ()=>select(+n.dataset.id);
+  // 星位
+  ctx.fillStyle = '#5a4520';
+  [[3,3],[3,11],[11,3],[11,11],[7,7]].forEach(([r,c]) => {
+    ctx.beginPath();
+    ctx.arc(px(c), px(r), 3.5, 0, Math.PI * 2);
+    ctx.fill();
   });
-}
-function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
-function select(id){
-  selected = id;
-  renderTree(); renderProps();
-}
-const selObj = ()=> scene.find(o=>o.id===selected);
-
-/* ---------------- UI：属性面板 ---------------- */
-function renderProps(){
-  const o = selObj();
-  document.getElementById("noneSel").style.display = o?"none":"block";
-  document.getElementById("propForm").style.display = o?"block":"none";
-  if(!o) return;
-  const set=(id,v)=>document.getElementById(id).value = v;
-  set("pName", o.name); set("pColor", o.color);
-  set("px", o.pos[0].toFixed(2)); set("py", o.pos[1].toFixed(2)); set("pz", o.pos[2].toFixed(2));
-  set("rx", Math.round(o.rot[0])); set("ry", Math.round(o.rot[1])); set("rz", Math.round(o.rot[2]));
-  set("sx", o.scl[0].toFixed(2)); set("sy", o.scl[1].toFixed(2)); set("sz", o.scl[2].toFixed(2));
-  document.getElementById("pEmit").textContent = "自发光: " + (o.emit?"开":"关");
-  document.getElementById("pPhys").textContent = "动态刚体: " + (o.phys?"开":"关");
-}
-function bindProp(id, fn, ev){
-  const el = document.getElementById(id);
-  el.addEventListener(ev||"input", ()=>{
-    const o = selObj(); if(!o) return;
-    fn(o, el.value); renderTree(); if(ev==="change") renderProps();
-  });
-}
-bindProp("pName", (o,v)=>o.name=v);
-bindProp("pColor", (o,v)=>o.color=v);
-["px","py","pz"].forEach((id,i)=>bindProp(id, (o,v)=>{ o.pos[i]=parseFloat(v)||0; }));
-["rx","ry","rz"].forEach((id,i)=>bindProp(id, (o,v)=>{ o.rot[i]=parseFloat(v)||0; }));
-["sx","sy","sz"].forEach((id,i)=>bindProp(id, (o,v)=>{ o.scl[i]=Math.max(0.05,parseFloat(v)||0.1); }));
-document.getElementById("pEmit").onclick = ()=>{ const o=selObj(); if(o){ o.emit=o.emit?0:1; renderProps(); } };
-document.getElementById("pPhys").onclick = ()=>{ const o=selObj(); if(o){ o.phys=!o.phys; bodies.delete(o.id); renderProps(); } };
-document.getElementById("pDel").onclick = ()=>{
-  const o=selObj(); if(!o) return;
-  if(o.type==="player"){ toast("玩家不能删除"); return; }
-  scene = scene.filter(x=>x!==o); select(null); toast("已删除 "+o.name);
-};
-
-/* ---------------- UI：添加物体 ---------------- */
-document.querySelectorAll("[data-add]").forEach(b=>{
-  b.onclick = ()=>{
-    const t = b.dataset.add;
-    const nameMap = {cube:"立方体", sphere:"球体", cone:"圆锥", cyl:"圆柱", plane:"地板", light:"灯光", player:"玩家"};
-    const palette = ["#4dabf7","#f06595","#69db7c","#ffd43b","#b197fc","#ff922b","#63e6be","#f783ac"];
-    const ob = {
-      id: uid++, name: nameMap[t]+uid, type: t==="cyl"?"cyl":t,
-      pos: t==="plane"?[0,0,0]:[Math.random()*6-3, t==="light"?6:(t==="plane"?0:2), Math.random()*6-3],
-      rot: t==="light"?[0,0,0]:[0, Math.round(Math.random()*4)*45, 0],
-      scl: t==="plane"?[1,1,1]:[1,1,1],
-      color: palette[Math.floor(Math.random()*palette.length)],
-      emit: t==="light"?1:0, phys: (t==="cube"||t==="sphere"||t==="cone"),
-      floor: t==="plane"
-    };
-    if(t==="player"){
-      const old = playerObj();
-      if(old){ toast("已有玩家，替换旧玩家"); scene = scene.filter(x=>x!==old); }
-      ob.name="玩家"; ob.type="player"; ob.color="#4dabf7"; ob.phys=true; ob.pos=[0,1,6]; ob.scl=[1,1.4,1];
+  // 棋子
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (board[r][c]) drawPiece(r, c, board[r][c]);
     }
-    if(t==="light"){ ob.name="点光源"; ob.type="light"; ob.scl=[0.5,0.5,0.5]; }
-    scene.push(ob);
-    select(ob.id);
-    toast("已添加 " + ob.name);
-  };
-});
+  }
 
-/* ---------------- 运行 / 重置 / 存档 ---------------- */
-document.getElementById("btnRun").onclick = function(){
-  running = !running;
-  this.classList.toggle("on", running);
-  this.textContent = running ? "⏸ 停止运行" : "▶ 运行游戏";
-  document.getElementById("mode").textContent = running ? "运行 🎮" : "编辑";
-  if(running){
-    bodies.clear();
-    // 记录初始位置用于停止时恢复
-    scene.forEach(o=>o._home = [...o.pos]);
-    if(!playerObj()) toast("场景中没有玩家，先添加一个 🏃玩家");
-    else toast("🎮 运行中：WASD 移动，空格跳跃");
-    select(null);
+  // 最后一手标记
+  if (history.length) {
+    const [r, c] = history[history.length - 1];
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px(c), px(r), 8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 悬停预览
+  if (hoverPos && !gameOver && board[hoverPos[0]][hoverPos[1]] === 0) {
+    const [r, c] = hoverPos;
+    ctx.globalAlpha = 0.35;
+    drawPiece(r, c, current);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawPiece(r, c, color) {
+  const x = px(c), y = px(r), rad = GAP / 2 - 2;
+  const grad = ctx.createRadialGradient(x - rad*0.3, y - rad*0.3, rad*0.1, x, y, rad);
+  if (color === 1) {
+    grad.addColorStop(0, '#555');
+    grad.addColorStop(1, '#000');
   } else {
-    scene.forEach(o=>{ if(o._home){ o.pos = o._home; delete o._home; } });
-    bodies.clear();
-    toast("已停止，回到编辑模式");
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(1, '#cfcfcf');
   }
-};
-document.getElementById("btnReset").onclick = ()=>{
-  if(running) document.getElementById("btnRun").click();
-  scene = defaultScene(); select(null); toast("已恢复默认场景");
-};
-document.getElementById("btnSave").onclick = ()=>{
-  localStorage.setItem("mini3d_scene", JSON.stringify({scene, uid}));
-  toast("💾 场景已保存到本地");
-};
-document.getElementById("btnLoad").onclick = ()=>{
-  const raw = localStorage.getItem("mini3d_scene");
-  if(!raw){ toast("没有找到存档"); return; }
-  try{
-    const d = JSON.parse(raw);
-    scene = d.scene; uid = d.uid||scene.length+1;
-    scene.forEach(o=>delete o._home);
-    bodies.clear(); select(null); toast("📂 场景已载入");
-  }catch(e){ toast("存档损坏"); }
-};
-
-/* ---------------- Toast ---------------- */
-let toastTimer=null;
-function toast(msg){
-  let el = document.getElementById("_t");
-  if(!el){
-    el = document.createElement("div");
-    el.id="_t";
-    el.style.cssText="position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#1f6feb;color:#fff;padding:10px 22px;border-radius:999px;font-size:14px;z-index:99;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.4)";
-    document.body.appendChild(el);
-  }
-  el.textContent = msg; el.style.opacity = "1";
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>{ el.style.opacity="0"; }, 2400);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(x, y, rad, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 }
 
-/* ---------------- 启动 ---------------- */
-renderTree(); renderProps();
-requestAnimationFrame(frame);
+function checkWin(r, c, color) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  for (const [dr, dc] of dirs) {
+    let count = 1;
+    for (let s = 1; s < 5; s++) {
+      const nr = r + dr*s, nc = c + dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==color) break;
+      count++;
+    }
+    for (let s = 1; s < 5; s++) {
+      const nr = r - dr*s, nc = c - dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==color) break;
+      count++;
+    }
+    if (count >= 5) return true;
+  }
+  return false;
+}
+
+function place(r, c) {
+  if (gameOver || board[r][c] !== 0) return;
+  board[r][c] = current;
+  history.push([r, c]);
+
+  if (checkWin(r, c, current)) {
+    gameOver = true;
+    draw();
+    updateStatus();
+    return;
+  }
+  if (history.length === N * N) {
+    gameOver = true;
+    draw();
+    updateStatus();
+    return;
+  }
+  current = current === 1 ? 2 : 1;
+  draw();
+  updateStatus();
+
+  if (aiOn && current !== playerColor && !gameOver) {
+    setTimeout(aiMove, 300);
+  }
+}
+
+function updateStatus() {
+  const el = document.getElementById('status');
+  if (gameOver) {
+    if (history.length === N * N) {
+      el.innerHTML = '平局！';
+    } else {
+      const winner = board[history[history.length-1][0]][history[history.length-1][1]];
+      el.innerHTML = `<span class="dot ${winner===1?'black':'white'}"></span>${winner===1?'黑':'白'}棋获胜！`;
+    }
+    return;
+  }
+  const isAI = aiOn && current !== playerColor;
+  el.innerHTML = `<span class="dot ${current===1?'black':'white'}"></span>${current===1?'黑':'白'}棋走${isAI?'（AI思考中…）':''}`;
+}
+
+// ---- 简易 AI：优先堵/冲，其次进攻 ----
+function aiMove() {
+  if (gameOver) return;
+  const me = current, opp = me === 1 ? 2 : 1;
+  let best = null, bestScore = -Infinity;
+
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (board[r][c] !== 0) continue;
+      // 只考虑已有棋子的邻近区域，加速
+      if (!hasNeighbor(r, c, 2)) continue;
+      let score = 0;
+      score += evaluatePoint(r, c, me) * 1.1;   // 进攻
+      score += evaluatePoint(r, c, opp);         // 防守
+      score += Math.random() * 0.5;
+      if (score > bestScore) { bestScore = score; best = [r, c]; }
+    }
+  }
+  if (best) place(best[0], best[1]);
+}
+
+function hasNeighbor(r, c, dist) {
+  for (let i = -dist; i <= dist; i++)
+    for (let j = -dist; j <= dist; j++) {
+      const nr = r+i, nc = c+j;
+      if (nr>=0&&nr<N&&nc>=0&&nc<N&&board[nr][nc]!==0) return true;
+    }
+  return false;
+}
+
+function evaluatePoint(r, c, color) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  let total = 0;
+  for (const [dr, dc] of dirs) {
+    let count = 1, blocked = 0;
+    for (let s = 1; s < 5; s++) {
+      const nr = r+dr*s, nc = c+dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N) { blocked++; break; }
+      if (board[nr][nc] === color) count++;
+      else { if (board[nr][nc] !== 0) blocked++; break; }
+    }
+    for (let s = 1; s < 5; s++) {
+      const nr = r-dr*s, nc = c-dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N) { blocked++; break; }
+      if (board[nr][nc] === color) count++;
+      else { if (board[nr][nc] !== 0) blocked++; break; }
+    }
+    if (count >= 5) total += 100000;
+    else if (count === 4 && blocked === 0) total += 10000;
+    else if (count === 4 && blocked === 1) total += 1000;
+    else if (count === 3 && blocked === 0) total += 800;
+    else if (count === 3 && blocked === 1) total += 100;
+    else if (count === 2 && blocked === 0) total += 60;
+    else if (count === 2 && blocked === 1) total += 10;
+    else if (count === 1 && blocked === 0) total += 2;
+  }
+  return total;
+}
+
+// ---- 交互 ----
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  const c = Math.round((x - PAD) / GAP);
+  const r = Math.round((y - PAD) / GAP);
+  if (r < 0 || r >= N || c < 0 || c >= N) return null;
+  // 距离判定
+  if (Math.abs(px(c) - x) > GAP/2 || Math.abs(px(r) - y) > GAP/2) return null;
+  return [r, c];
+}
+
+canvas.addEventListener('mousemove', e => {
+  const p = getPos(e);
+  if (JSON.stringify(p) !== JSON.stringify(hoverPos)) {
+    hoverPos = p;
+    draw();
+  }
+});
+canvas.addEventListener('mouseleave', () => { hoverPos = null; draw(); });
+canvas.addEventListener('click', e => {
+  const p = getPos(e);
+  if (p) place(p[0], p[1]);
+});
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const p = getPos(e);
+  if (p) place(p[0], p[1]);
+}, {passive: false});
+
+document.getElementById('newGame').onclick = init;
+document.getElementById('undo').onclick = () => {
+  if (!history.length) return;
+  gameOver = false;
+  const steps = (aiOn && history.length >= 2) ? 2 : 1;
+  for (let i = 0; i < steps && history.length; i++) {
+    const [r, c] = history.pop();
+    board[r][c] = 0;
+    current = current === 1 ? 2 : 1;
+  }
+  draw();
+  updateStatus();
+};
+document.getElementById('aiToggle').onclick = function() {
+  aiOn = !aiOn;
+  this.textContent = 'AI: ' + (aiOn ? '开' : '关');
+  updateStatus();
+  if (aiOn && current !== playerColor && !gameOver) setTimeout(aiMove, 300);
+};
+document.getElementById('swapColor').onclick = () => {
+  playerColor = playerColor === 1 ? 2 : 1;
+  alert('你已执' + (playerColor === 1 ? '黑' : '白') + '棋');
+  if (aiOn && current !== playerColor && !gameOver) setTimeout(aiMove, 300);
+};
+
+init();
 </script>
 </body>
 </html>
