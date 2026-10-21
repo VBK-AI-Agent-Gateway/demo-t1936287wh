@@ -187,6 +187,28 @@ function checkWin(r, c, color) {
   }
   return false;
 }
+function showBanner(icon, text){
+  document.getElementById("bIcon").textContent = icon;
+  document.getElementById("bText").textContent = text;
+  bannerEl.classList.add("show");
+}
+document.getElementById("btnAgain").onclick = ()=>{
+  bannerEl.classList.remove("show");
+  document.getElementById("btnNew").click();
+};
+function confetti(){
+  const emo = ["🎉","🎈","⭐","🍬","🎊","🌟","🍭"];
+  for(let i=0;i<25;i++){
+    const s = document.createElement("span");
+    s.className = "confetti";
+    s.textContent = emo[i%emo.length];
+    s.style.left = Math.random()*100 + "vw";
+    s.style.animationDuration = (2.5 + Math.random()*3) + "s";
+    s.style.animationDelay = (Math.random()*1.5) + "s";
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(), 7000);
+  }
+}
 
 function place(r, c) {
   if (gameOver || board[r][c] !== 0) return;
