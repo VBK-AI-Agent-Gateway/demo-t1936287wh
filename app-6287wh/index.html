@@ -97,6 +97,16 @@ details .in{margin-top:12px}
 .checklist li::before{content:"✓";position:absolute;left:0;top:0;color:var(--ok);font-weight:700;background:var(--ok-bg);width:19px;height:19px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;margin-top:4px}
 .risk-tbl td:first-child{font-weight:600;white-space:nowrap}
 footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 10px}
+.fold-sec .fold-body{overflow:hidden;max-height:0;opacity:0;transition:max-height .35s ease,opacity .25s ease,margin .35s ease}
+.fold-sec.open .fold-body{max-height:6000px;opacity:1}
+.fold-sec>h2{cursor:pointer;user-select:none}
+.fold-sec>h2 .car{display:inline-block;font-size:14px;color:var(--muted);transition:transform .25s;transform:rotate(-90deg)}
+.fold-sec.open>h2 .car{transform:rotate(0)}
+.fold-sec:not(.open)>h2{border-bottom-color:transparent;margin-bottom:0;padding-bottom:6px}
+.fold-sec:not(.open)>h2 .subhint{font-weight:400;font-size:13px;color:var(--muted);margin-left:10px}
+.sub-bar{position:sticky;top:0;z-index:5;background:rgba(245,247,251,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 48px;font-size:13px;color:var(--muted);display:flex;gap:14px;align-items:center}
+.sub-bar button{border:1px solid var(--line);background:#fff;color:var(--brand);border-radius:99px;padding:5px 16px;font-size:13px;cursor:pointer}
+.sub-bar button:hover{background:#eef2fa}
 .toc-mobile{display:none}
 @media (max-width:960px){
   .wrap{flex-direction:column}
@@ -147,9 +157,12 @@ footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 1
 
 <div class="content">
 
+<div class="sub-bar"><span>长文已折叠：点击各章节标题展开 / 收起</span><button id="foldAll">全部收起</button><button id="openAll">全部展开</button></div>
+
 <!-- ============ 0 ============ -->
-<section class="blk" id="principles">
-  <h2><span class="num">0</span>设计原则（约束映射）</h2>
+<section class="blk fold-sec open" id="principles">
+  <h2><span class="car">▼</span><span class="num">0</span>设计原则（约束映射）<span class="subhint">约束 → 设计落点对照表</span></h2>
+  <div class="fold-body">
   <div class="tbl-scroll"><table>
     <tr><th style="width:34%">约束</th><th>设计落点</th></tr>
     <tr><td>判定必须可解释</td><td>每个引擎输出 <code>evidence[]</code>；融合层结论必须回链证据 ID；报告层只渲染「证据 → 结论」链，抽检可 100% 回链</td></tr>
@@ -158,11 +171,13 @@ footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 1
     <tr><td>外部服务可替换</td><td>策略模式 + <code>Provider</code> 抽象接口，配置化选择（Crossref / OpenAlex / CNKI、iThenticate / 自建库、自研 / 商用 AIGC 检测…），熔断降级 + 结果缓存</td></tr>
     <tr><td>四层架构</td><td>接入解析层 → 检测引擎层 → 融合决策层 → 报告接口层（见 §1）</td></tr>
   </table></div>
+  </div>
 </section>
 
 <!-- ============ 1 ============ -->
-<section class="blk" id="arch">
-  <h2><span class="num">1</span>四层架构</h2>
+<section class="blk fold-sec" id="arch">
+  <h2><span class="car">▼</span><span class="num">1</span>四层架构<span class="subhint">接入解析 → 检测引擎 → 融合决策 → 报告接口 + DocumentIR</span></h2>
+  <div class="fold-body">
   <div class="arch">
     <div class="layer">
       <h4>④ 报告接口层（同步 HTTP）</h4>
@@ -202,11 +217,13 @@ footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 1
   "equations": [...], "tables": [...],
   "parse": {"ok": true, "confidence": 0.97, "engine": "grobid-0.8"}
 }</code></pre>
+  </div>
 </section>
 
 <!-- ============ 2 ============ -->
-<section class="blk" id="engine">
-  <h2><span class="num">2</span>检测引擎层 · 统一输出信封</h2>
+<section class="blk fold-sec" id="engine">
+  <h2><span class="car">▼</span><span class="num">2</span>检测引擎层 · 统一输出信封<span class="subhint">E1 引用真实性 · E2 文本原创性 · E3 图像完整性 · E4 逻辑与元数据</span></h2>
+  <div class="fold-body">
   <p>每个引擎无论内部算法如何，输出统一结构（便于融合层无差别消费）：</p>
 <pre><code>EngineResult = {
   engine: "e1" | "e2_text" | "e2_aigc" | "e3" | "e4",
@@ -305,11 +322,13 @@ footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 1
  "benchmark":"&lt;0.20","severity":0.5}</code></pre>
     </div>
   </div>
+  </div>
 </section>
 
 <!-- ============ 3 ============ -->
-<section class="blk" id="fusion">
-  <h2><span class="num">3</span>融合决策规则（三级判定）</h2>
+<section class="blk fold-sec" id="fusion">
+  <h2><span class="car">▼</span><span class="num">3</span>融合决策规则（三级判定）<span class="subhint">证据聚合 → 加权融合 + 硬规则 → 通过 / 复核 / 高风险</span></h2>
+  <div class="fold-body">
 
   <h3>3.1 证据链聚合与分类</h3>
   <ol>
@@ -374,11 +393,13 @@ w(E2 AIGC)     = 0.10    w(E3 图像)     = 0.22    w(E4 逻辑) = 0.10
     <div class="vd high"><b>✕ 高风险 HIGH</b><ul><li>硬规则命中，或多引擎高严重度信号汇聚</li><li>100% 关联人工复核入口</li><li>结论必须可回链到具体证据</li></ul></div>
   </div>
   <p><b>解释结构</b>：<code>explanation = {headline, top_reasons[{cluster, weight_contribution, evidence_ids}], counter_signals[], review_checklist[]}</code> —— 报告层据此渲染"为什么是这个结论 + 人工应先看哪几条"。</p>
+  </div>
 </section>
 
 <!-- ============ 4 ============ -->
-<section class="blk" id="dm">
-  <h2><span class="num">4</span>数据模型（PostgreSQL 15 + pgvector）</h2>
+<section class="blk fold-sec" id="dm">
+  <h2><span class="car">▼</span><span class="num">4</span>数据模型（PostgreSQL 15 + pgvector）<span class="subhint">11 张核心表 + 3 张向量表</span></h2>
+  <div class="fold-body">
 <pre><code><span class="kw">documents</span>        (id, owner_id, title, file_uri, file_hash,
                   format(pdf|tex|md|bib), parse_status, domain, created_at)
 
@@ -419,11 +440,13 @@ w(E2 AIGC)     = 0.10    w(E3 图像)     = 0.22    w(E4 逻辑) = 0.10
 <span class="kw">image_embeddings</span>   (fig_id, embedding vector(512))                <span class="cmt">-- 图像复用检索</span>
 <span class="kw">ref_embeddings</span>     (ref_id, embedding vector(384))                <span class="cmt">-- 语义支持度</span></code></pre>
   <p><b>关键索引</b>：<code>detection_tasks(status, group_id)</code> · <code>evidence(task_id, cluster_id)</code> · <code>references(doi)</code> · <code>documents(file_hash)</code>（同文件秒级判重）。</p>
+  </div>
 </section>
 
 <!-- ============ 5 ============ -->
-<section class="blk" id="api">
-  <h2><span class="num">5</span>API 设计</h2>
+<section class="blk fold-sec" id="api">
+  <h2><span class="car">▼</span><span class="num">5</span>API 设计<span class="subhint">提交 / 进度 / 报告 / Webhook / 复核</span></h2>
+  <div class="fold-body">
   <p>Base：<code>https://api.example.org/v1</code> · 鉴权 <code>Authorization: Bearer &lt;api_key&gt;</code> · 幂等 <code>Idempotency-Key</code> 头。</p>
 
   <h3>5.1 提交检测</h3>
@@ -497,11 +520,13 @@ callback_url=https://client.example/hook
     <li><code>GET /v1/tasks/{id}/evidence/{eid}/artifact</code> — 取高亮文本 / 图像 overlay 等取证附件</li>
     <li><code>GET /v1/engines</code> — 引擎与 Provider 健康状态（可替换性的可观测面）</li>
   </ul>
+  </div>
 </section>
 
 <!-- ============ 6 ============ -->
-<section class="blk" id="stack">
-  <h2><span class="num">6</span>技术栈建议</h2>
+<section class="blk fold-sec" id="stack">
+  <h2><span class="car">▼</span><span class="num">6</span>技术栈建议<span class="subhint">FastAPI · Celery · GROBID · pgvector · Provider 抽象</span></h2>
+  <div class="fold-body">
   <div class="tbl-scroll"><table>
     <tr><th style="width:16%">层</th><th style="width:40%">选型</th><th>理由</th></tr>
     <tr><td>后端 API</td><td><b>FastAPI (Python 3.11)</b> + Pydantic v2</td><td>异步、OpenAPI 自动生成、类型化 schema</td></tr>
@@ -525,11 +550,13 @@ registry = {<span class="str">"crossref"</span>: CrossrefProvider(),
             <span class="str">"openalex"</span>: OpenAlexProvider(),
             <span class="str">"cnki"</span>:     CnkiProvider()}
 provider = registry[config.metadata_provider]          <span class="cmt"># 配置切换，零代码改动</span></code></pre>
+  </div>
 </section>
 
 <!-- ============ 7 ============ -->
-<section class="blk" id="risk">
-  <h2><span class="num">7</span>关键风险与缓解措施</h2>
+<section class="blk fold-sec" id="risk">
+  <h2><span class="car">▼</span><span class="num">7</span>关键风险与缓解措施<span class="subhint">误报 · 隐私合规 · 外部依赖 · AIGC 不确定性 · 解析失败</span></h2>
+  <div class="fold-body">
   <div class="tbl-scroll"><table class="risk-tbl">
     <tr><th style="width:14%">风险</th><th style="width:24%">影响</th><th>缓解措施</th></tr>
     <tr><td>误报</td><td>查重误伤合理引用、跨语言同表达、AIGC 误判非母语作者 → 冤枉作者、信任崩塌</td>
@@ -544,11 +571,13 @@ provider = registry[config.metadata_provider]          <span class="cmt"># 配�
     <tr><td>解析失败</td><td>扫描版 PDF、复杂 TeX → 任务失败</td><td>解析置信度自评，低置信 → 强制 REVIEW 并提示人工核对解析结果；OCR 兜底</td></tr>
     <tr><td>批量资源挤占</td><td>SLA 违约</td><td>队列按优先级分道（interactive / batch）、按队列深度 HPA、子任务级进度上报</td></tr>
   </table></div>
+  </div>
 </section>
 
 <!-- ============ 8 ============ -->
-<section class="blk" id="accept">
-  <h2><span class="num">8</span>验收标准</h2>
+<section class="blk fold-sec" id="accept">
+  <h2><span class="car">▼</span><span class="num">8</span>验收标准<span class="subhint">功能 · 性能 · 可解释性 · 可扩展性</span></h2>
+  <div class="fold-body">
 
   <h3>8.1 功能</h3>
   <ul class="checklist">
@@ -584,11 +613,13 @@ provider = registry[config.metadata_provider]          <span class="cmt"># 配�
     <li>引擎可独立部署为 worker，单独扩缩容 / 换 GPU 资源</li>
     <li>回归：黄金样本集（已知抄袭 / 已知清白 / AIGC 改写集）每版本跑通，指标不回退</li>
   </ul>
+  </div>
 </section>
 
 <!-- ============ 附录 ============ -->
-<section class="blk" id="appendix">
-  <h2><span class="num">A</span>附录</h2>
+<section class="blk fold-sec" id="appendix">
+  <h2><span class="car">▼</span><span class="num">A</span>附录<span class="subhint">端到端时序 · Schema · 分阶段落地路线</span></h2>
+  <div class="fold-body">
 
   <h3>A.1 端到端时序</h3>
 <pre><code>Client ──POST /submissions──▶ API 落库 + 入队 ──▶ 202 {task_id}
@@ -616,6 +647,7 @@ Client ──GET /report──▶ 证据链 + 三级结论 + 复核清单</code>
     <div class="kpi"><b>P1 · +6 周</b><span>E1 语义支持度、E2 AIGC 信号、E3 复用检测、E4 统计/格式规则；HTML/PDF 报告与 Webhook</span></div>
     <div class="kpi"><b>P2 · +6 周</b><span>E3 篡改/AI 图取证、引用网络分析、人工复核工作台、策略校准与黄金集回归流水线</span></div>
   </div>
+  </div>
 </section>
 
 <footer>论文验证系统 · 多维度学术诚信检测平台 — 完整设计方案 v1.0 · 结构化 Markdown 交付 · 所有判定均附可解释证据链</footer>
@@ -623,6 +655,21 @@ Client ──GET /report──▶ 证据链 + 三级结论 + 复核清单</code>
 </main>
 </div>
 <script>
+// 折叠：点击章节标题展开/收起
+document.querySelectorAll('.fold-sec>h2').forEach(h=>{
+  h.addEventListener('click',e=>{
+    if(e.target.tagName==='A')return;
+    h.parentElement.classList.toggle('open');
+  });
+});
+const foldBtn=document.getElementById('foldAll'),openBtn=document.getElementById('openAll');
+function setAll(open){
+  document.querySelectorAll('.fold-sec').forEach(s=>s.classList.toggle('open',open));
+}
+foldBtn.addEventListener('click',()=>setAll(false));
+openBtn.addEventListener('click',()=>setAll(true));
+// 默认折叠细节章节，保留 0/1 开篇两节
+if(!location.hash||true){setAll(false);document.getElementById('principles').classList.add('open');}
 // scroll-spy 高亮侧栏
 const links=[...document.querySelectorAll('#side a.item')];
 const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
@@ -631,6 +678,12 @@ const obs=new IntersectionObserver(es=>{
     const a=map.get(e.target.id);if(a)a.classList.add('on');}});
 },{rootMargin:'-20% 0px -70% 0px'});
 document.querySelectorAll('section.blk,[id][class]').forEach(s=>{if(map.has(s.id))obs.observe(s);});
+// 侧栏锚点跳转时自动展开目标章节
+links.forEach(a=>a.addEventListener('click',()=>{
+  const id=a.getAttribute('href').slice(1);
+  const sec=document.getElementById(id);
+  if(sec&&sec.classList.contains('fold-sec'))sec.classList.add('open');
+}));
 </script>
 </body>
 </html>
