@@ -6,7 +6,7 @@ TOKEN = open('/ws/.secrets/github_pat').read().strip()
 REPO = 'VBK-AI-Agent-Gateway/demo-t1936287wh'
 BRANCH = 'main'
 DIR = 'app-6287wh'
-LOCAL = '/ws/demo-t1936287wh/' + DIR
+LOCAL = sys.argv[1] if len(sys.argv) > 1 else '/ws/demo-t1936287wh/' + DIR
 
 def api(method, path, payload=None):
     req = urllib.request.Request(
@@ -35,7 +35,14 @@ for name in sorted(os.listdir(LOCAL)):
     payload = {'message': 'deploy %s' % p, 'content': content, 'branch': BRANCH}
     if sha:
         payload['sha'] = sha
-    d = api('PUT', '/contents/' + p, payload)
+    d = {}
+    for attempt in range(3):
+        try:
+            d = api('PUT', '/contents/' + p, payload)
+            break
+        except Exception as e:
+            d = {'message': 'retryable: %s' % e}
+            import time; time.sleep(3)
     if 'content' in d:
         ok.append(name)
     else:
