@@ -97,16 +97,118 @@ details .in{margin-top:12px}
 .checklist li::before{content:"✓";position:absolute;left:0;top:0;color:var(--ok);font-weight:700;background:var(--ok-bg);width:19px;height:19px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;margin-top:4px}
 .risk-tbl td:first-child{font-weight:600;white-space:nowrap}
 footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 10px}
-.fold-sec .fold-body{overflow:hidden;max-height:0;opacity:0;transition:max-height .35s ease,opacity .25s ease,margin .35s ease}
-.fold-sec.open .fold-body{max-height:6000px;opacity:1}
-.fold-sec>h2{cursor:pointer;user-select:none}
-.fold-sec>h2 .car{display:inline-block;font-size:14px;color:var(--muted);transition:transform .25s;transform:rotate(-90deg)}
-.fold-sec.open>h2 .car{transform:rotate(0)}
-.fold-sec:not(.open)>h2{border-bottom-color:transparent;margin-bottom:0;padding-bottom:6px}
-.fold-sec:not(.open)>h2 .subhint{font-weight:400;font-size:13px;color:var(--muted);margin-left:10px}
+/* ===== 折叠面板：诊断后重构（见交付说明）=====
+   问题：触发器无 hover/focus/active 态、图标无状态旋转、头部与内容无层级、
+   显隐生硬、无摘要/徽章、无 aria、触控区不足 44px、无深色适配。 */
+:root{
+  --fold-head-h:56px;          /* 8px 网格，移动端 ≥44px */
+  --fold-radius:14px;
+  --fold-radius-in:10px;
+  --fold-gap:8px;
+  --fold-head-bg:#f8fafd;
+  --fold-head-bg-hover:#eef3fb;
+  --fold-head-bg-active:#e8f0fc;
+  --fold-body-bg:#ffffff;
+  --fold-shadow:0 1px 2px rgba(20,40,90,.04), 0 6px 18px rgba(20,40,90,.05);
+  --fold-shadow-hover:0 2px 4px rgba(20,40,90,.05), 0 10px 24px rgba(20,40,90,.07);
+  --fold-duration:.32s;
+  --fold-ease:cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ink:#e6ecf7; --ink2:#b9c5dd; --muted:#8494b3; --line:#2a3550;
+    --bg:#0e1424; --card:#151d33; --brand:#6d94ff; --brand2:#8aabff;
+    --ok:#3ecf8e; --warn:#f0b429; --high:#ff6b6b;
+    --ok-bg:#123226; --warn-bg:#332810; --high-bg:#331616;
+    --fold-head-bg:#18213a;
+    --fold-head-bg-hover:#1e2a49; --fold-head-bg-active:#243358;
+    --fold-body-bg:#131b30;
+    --fold-shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25);
+    --fold-shadow-hover:0 2px 4px rgba(0,0,0,.35), 0 10px 24px rgba(0,0,0,.3);
+    --code-bg:#0a0f1e; --code-ink:#cfe0ff;
+  }
+  nav.side{background:#0a0f1e}
+  th{background:#1b2540}
+  tr:nth-child(even) td{background:#161f38}
+  tr:nth-child(even):hover td{background:#1c2748}
+  .arch .layer,.kpi,.engine,.pill,details{background:#141d34}
+  .arch .layer .flow{background:#10182e;color:var(--ink2)}
+  .engine>.eh{background:linear-gradient(90deg,#1b2540,#162040)}
+  .sub-bar{background:rgba(14,20,36,.92)}
+  .sub-bar button{background:#151d33;border-color:var(--line)}
+  .sub-bar button:hover{background:#1e2a49}
+}
+.fold-sec{padding:0 !important;overflow:hidden}
+/* —— 折叠头部：整行可点击的原生 button —— */
+.fold-head{
+  display:flex;align-items:center;gap:12px;width:100%;
+  min-height:var(--fold-head-h);padding:12px 24px;
+  background:var(--fold-head-bg);border:0;border-radius:var(--fold-radius) var(--fold-radius) 0 0;
+  font:inherit;font-size:21px;color:var(--ink);text-align:left;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  transition:background var(--fold-duration) var(--fold-ease);
+}
+.fold-head:hover{background:var(--fold-head-bg-hover)}
+.fold-head:focus-visible{outline:3px solid var(--brand2);outline-offset:-3px;border-radius:var(--fold-radius)}
+.fold-head:active{background:var(--fold-head-bg-active)}
+.fold-sec.open .fold-head{background:var(--fold-head-bg-active);border-bottom:1px dashed var(--line)}
+.fold-head .chev{
+  flex-shrink:0;width:24px;height:24px;display:grid;place-items:center;
+  color:var(--brand);font-size:14px;transform:rotate(-90deg);
+  transition:transform var(--fold-duration) var(--fold-ease);
+}
+.fold-sec.open .fold-head .chev{transform:rotate(0deg)}
+.fold-head .num{
+  background:var(--brand);color:#fff;width:30px;height:30px;border-radius:8px;
+  display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;
+}
+.fold-head .ttl{font-weight:650;letter-spacing:.3px}
+.fold-head .subhint{
+  font-weight:400;font-size:13.5px;color:var(--muted);flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.fold-head .cnt{
+  flex-shrink:0;background:rgba(43,89,195,.1);color:var(--brand);
+  border:1px solid rgba(43,89,195,.25);border-radius:99px;
+  padding:2px 10px;font-size:12px;font-weight:600;
+}
+.fold-head .state{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:6px;
+  font-size:12.5px;color:var(--muted);
+}
+.fold-head .state::before{
+  content:"";width:7px;height:7px;border-radius:50%;background:var(--brand2);
+  transition:background var(--fold-duration) var(--fold-ease);
+}
+.fold-sec.open .fold-head .state{color:var(--brand)}
+.fold-sec.open .fold-head .state::before{background:var(--ok)}
+/* —— 内容区：淡入 + 高度过渡，避免生硬跳动 —— */
+.fold-body{
+  background:var(--fold-body-bg);border-radius:0 0 var(--fold-radius) var(--fold-radius);
+  overflow:hidden;max-height:0;opacity:0;padding:0 24px;
+  transition:max-height var(--fold-duration) var(--fold-ease),
+             opacity .22s ease .08s,
+             padding var(--fold-duration) var(--fold-ease);
+}
+.fold-sec.open .fold-body{max-height:8000px;opacity:1;padding:24px 24px 28px}
+.fold-sec{box-shadow:var(--fold-shadow);transition:box-shadow var(--fold-duration) var(--fold-ease)}
+.fold-sec:hover{box-shadow:var(--fold-shadow-hover)}
+/* 旧 .car 图标退役，保留 .fold-body 业务结构不变 */
+.fold-sec>h2.car,.fold-sec .car{display:none}
+/* —— 无障碍 / 减弱动效 / 触控 —— */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .fold-head,.fold-body,.fold-head .chev,.fold-sec{transition-duration:.01ms !important}
+}
+@media (max-width:960px){
+  .fold-head{padding:14px 16px;font-size:17px;min-height:48px}
+  .fold-sec.open .fold-body{padding:16px 16px 20px}
+  .fold-head .subhint{display:none}
+}
 .sub-bar{position:sticky;top:0;z-index:5;background:rgba(245,247,251,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 48px;font-size:13px;color:var(--muted);display:flex;gap:14px;align-items:center}
 .sub-bar button{border:1px solid var(--line);background:#fff;color:var(--brand);border-radius:99px;padding:5px 16px;font-size:13px;cursor:pointer}
 .sub-bar button:hover{background:#eef2fa}
+.sub-bar button:focus-visible{outline:3px solid var(--brand2);outline-offset:2px}
 .toc-mobile{display:none}
 @media (max-width:960px){
   .wrap{flex-direction:column}
@@ -160,9 +262,9 @@ footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 1
 <div class="sub-bar"><span>长文已折叠：点击各章节标题展开 / 收起</span><button id="foldAll">全部收起</button><button id="openAll">全部展开</button></div>
 
 <!-- ============ 0 ============ -->
-<section class="blk fold-sec open" id="principles">
-  <h2><span class="car">▼</span><span class="num">0</span>设计原则（约束映射）<span class="subhint">约束 → 设计落点对照表</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec open" id="principles" data-cnt="5 条约束">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="true" aria-controls="body-principles"><span class="chev" aria-hidden="true">▾</span><span class="num">0</span><span class="ttl">设计原则（约束映射）</span><span class="subhint">约束 → 设计落点对照表</span><span class="cnt">5 条约束</span><span class="state">已展开</span></h2>
+  <div class="fold-body" id="body-principles" role="region" aria-label="设计原则内容">
   <div class="tbl-scroll"><table>
     <tr><th style="width:34%">约束</th><th>设计落点</th></tr>
     <tr><td>判定必须可解释</td><td>每个引擎输出 <code>evidence[]</code>；融合层结论必须回链证据 ID；报告层只渲染「证据 → 结论」链，抽检可 100% 回链</td></tr>
@@ -175,9 +277,9 @@ footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 1
 </section>
 
 <!-- ============ 1 ============ -->
-<section class="blk fold-sec" id="arch">
-  <h2><span class="car">▼</span><span class="num">1</span>四层架构<span class="subhint">接入解析 → 检测引擎 → 融合决策 → 报告接口 + DocumentIR</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="arch" data-cnt="4 层 + IR">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-arch"><span class="chev" aria-hidden="true">▾</span><span class="num">1</span><span class="ttl">四层架构</span><span class="subhint">接入解析 → 检测引擎 → 融合决策 → 报告接口 + DocumentIR</span><span class="cnt">4 层</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-arch" role="region" aria-label="四层架构内容">
   <div class="arch">
     <div class="layer">
       <h4>④ 报告接口层（同步 HTTP）</h4>
@@ -221,9 +323,9 @@ footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 1
 </section>
 
 <!-- ============ 2 ============ -->
-<section class="blk fold-sec" id="engine">
-  <h2><span class="car">▼</span><span class="num">2</span>检测引擎层 · 统一输出信封<span class="subhint">E1 引用真实性 · E2 文本原创性 · E3 图像完整性 · E4 逻辑与元数据</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="engine" data-cnt="4 个引擎">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-engine"><span class="chev" aria-hidden="true">▾</span><span class="num">2</span><span class="ttl">检测引擎层 · 统一输出信封</span><span class="subhint">E1 引用真实性 · E2 文本原创性 · E3 图像完整性 · E4 逻辑与元数据</span><span class="cnt">4 个引擎</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-engine" role="region" aria-label="检测引擎层内容">
   <p>每个引擎无论内部算法如何，输出统一结构（便于融合层无差别消费）：</p>
 <pre><code>EngineResult = {
   engine: "e1" | "e2_text" | "e2_aigc" | "e3" | "e4",
@@ -326,9 +428,9 @@ footer{color:var(--muted);font-size:12.5px;text-align:center;padding:34px 20px 1
 </section>
 
 <!-- ============ 3 ============ -->
-<section class="blk fold-sec" id="fusion">
-  <h2><span class="car">▼</span><span class="num">3</span>融合决策规则（三级判定）<span class="subhint">证据聚合 → 加权融合 + 硬规则 → 通过 / 复核 / 高风险</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="fusion" data-cnt="3 级判定">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-fusion"><span class="chev" aria-hidden="true">▾</span><span class="num">3</span><span class="ttl">融合决策规则（三级判定）</span><span class="subhint">证据聚合 → 加权融合 + 硬规则 → 通过 / 复核 / 高风险</span><span class="cnt">3 级判定</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-fusion" role="region" aria-label="融合决策规则内容">
 
   <h3>3.1 证据链聚合与分类</h3>
   <ol>
@@ -397,9 +499,9 @@ w(E2 AIGC)     = 0.10    w(E3 图像)     = 0.22    w(E4 逻辑) = 0.10
 </section>
 
 <!-- ============ 4 ============ -->
-<section class="blk fold-sec" id="dm">
-  <h2><span class="car">▼</span><span class="num">4</span>数据模型（PostgreSQL 15 + pgvector）<span class="subhint">11 张核心表 + 3 张向量表</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="dm" data-cnt="14 张表">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-dm"><span class="chev" aria-hidden="true">▾</span><span class="num">4</span><span class="ttl">数据模型（PostgreSQL 15 + pgvector）</span><span class="subhint">核心表 + 向量表结构定义</span><span class="cnt">14 张表</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-dm" role="region" aria-label="数据模型内容">
 <pre><code><span class="kw">documents</span>        (id, owner_id, title, file_uri, file_hash,
                   format(pdf|tex|md|bib), parse_status, domain, created_at)
 
@@ -444,9 +546,9 @@ w(E2 AIGC)     = 0.10    w(E3 图像)     = 0.22    w(E4 逻辑) = 0.10
 </section>
 
 <!-- ============ 5 ============ -->
-<section class="blk fold-sec" id="api">
-  <h2><span class="car">▼</span><span class="num">5</span>API 设计<span class="subhint">提交 / 进度 / 报告 / Webhook / 复核</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="api" data-cnt="5 组端点">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-api"><span class="chev" aria-hidden="true">▾</span><span class="num">5</span><span class="ttl">API 设计</span><span class="subhint">提交 / 进度 / 报告 / Webhook / 复核</span><span class="cnt">5 组端点</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-api" role="region" aria-label="API 设计内容">
   <p>Base：<code>https://api.example.org/v1</code> · 鉴权 <code>Authorization: Bearer &lt;api_key&gt;</code> · 幂等 <code>Idempotency-Key</code> 头。</p>
 
   <h3>5.1 提交检测</h3>
@@ -524,9 +626,9 @@ callback_url=https://client.example/hook
 </section>
 
 <!-- ============ 6 ============ -->
-<section class="blk fold-sec" id="stack">
-  <h2><span class="car">▼</span><span class="num">6</span>技术栈建议<span class="subhint">FastAPI · Celery · GROBID · pgvector · Provider 抽象</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="stack" data-cnt="11 类选型">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-stack"><span class="chev" aria-hidden="true">▾</span><span class="num">6</span><span class="ttl">技术栈建议</span><span class="subhint">FastAPI · Celery · GROBID · pgvector · Provider 抽象</span><span class="cnt">11 类选型</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-stack" role="region" aria-label="技术栈建议内容">
   <div class="tbl-scroll"><table>
     <tr><th style="width:16%">层</th><th style="width:40%">选型</th><th>理由</th></tr>
     <tr><td>后端 API</td><td><b>FastAPI (Python 3.11)</b> + Pydantic v2</td><td>异步、OpenAPI 自动生成、类型化 schema</td></tr>
@@ -554,9 +656,9 @@ provider = registry[config.metadata_provider]          <span class="cmt"># 配�
 </section>
 
 <!-- ============ 7 ============ -->
-<section class="blk fold-sec" id="risk">
-  <h2><span class="car">▼</span><span class="num">7</span>关键风险与缓解措施<span class="subhint">误报 · 隐私合规 · 外部依赖 · AIGC 不确定性 · 解析失败</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="risk" data-cnt="7 项风险">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-risk"><span class="chev" aria-hidden="true">▾</span><span class="num">7</span><span class="ttl">关键风险与缓解措施</span><span class="subhint">误报 · 隐私合规 · 外部依赖 · AIGC 不确定性 · 解析失败</span><span class="cnt">7 项风险</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-risk" role="region" aria-label="风险与缓解内容">
   <div class="tbl-scroll"><table class="risk-tbl">
     <tr><th style="width:14%">风险</th><th style="width:24%">影响</th><th>缓解措施</th></tr>
     <tr><td>误报</td><td>查重误伤合理引用、跨语言同表达、AIGC 误判非母语作者 → 冤枉作者、信任崩塌</td>
@@ -575,9 +677,9 @@ provider = registry[config.metadata_provider]          <span class="cmt"># 配�
 </section>
 
 <!-- ============ 8 ============ -->
-<section class="blk fold-sec" id="accept">
-  <h2><span class="car">▼</span><span class="num">8</span>验收标准<span class="subhint">功能 · 性能 · 可解释性 · 可扩展性</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="accept" data-cnt="4 类验收">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-accept"><span class="chev" aria-hidden="true">▾</span><span class="num">8</span><span class="ttl">验收标准</span><span class="subhint">功能 · 性能 · 可解释性 · 可扩展性</span><span class="cnt">4 类验收</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-accept" role="region" aria-label="验收标准内容">
 
   <h3>8.1 功能</h3>
   <ul class="checklist">
@@ -617,9 +719,9 @@ provider = registry[config.metadata_provider]          <span class="cmt"># 配�
 </section>
 
 <!-- ============ 附录 ============ -->
-<section class="blk fold-sec" id="appendix">
-  <h2><span class="car">▼</span><span class="num">A</span>附录<span class="subhint">端到端时序 · Schema · 分阶段落地路线</span></h2>
-  <div class="fold-body">
+<section class="blk fold-sec" id="appendix" data-cnt="3 节">
+  <h2 class="fold-head" role="button" tabindex="0" aria-expanded="false" aria-controls="body-appendix"><span class="chev" aria-hidden="true">▾</span><span class="num">A</span><span class="ttl">附录</span><span class="subhint">端到端时序 · Schema · 分阶段落地路线</span><span class="cnt">3 节</span><span class="state">已收起</span></h2>
+  <div class="fold-body" id="body-appendix" role="region" aria-label="附录内容">
 
   <h3>A.1 端到端时序</h3>
 <pre><code>Client ──POST /submissions──▶ API 落库 + 入队 ──▶ 202 {task_id}
@@ -655,21 +757,33 @@ Client ──GET /report──▶ 证据链 + 三级结论 + 复核清单</code>
 </main>
 </div>
 <script>
-// 折叠：点击章节标题展开/收起
-document.querySelectorAll('.fold-sec>h2').forEach(h=>{
-  h.addEventListener('click',e=>{
-    if(e.target.tagName==='A')return;
-    h.parentElement.classList.toggle('open');
+// ===== 折叠面板交互：整行 button 触发 + ARIA + 键盘 + 状态标签 =====
+function setFold(sec, open){
+  sec.classList.toggle('open', open);
+  const h=sec.querySelector('.fold-head');
+  if(!h)return;
+  h.setAttribute('aria-expanded', open?'true':'false');
+  const st=h.querySelector('.state');
+  if(st)st.textContent = open?'已展开':'已收起';
+}
+document.querySelectorAll('.fold-sec').forEach(sec=>{
+  const h=sec.querySelector('.fold-head');
+  if(!h)return;
+  h.addEventListener('click',()=>setFold(sec,!sec.classList.contains('open')));
+  h.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){
+      e.preventDefault();
+      setFold(sec,!sec.classList.contains('open'));
+    }
   });
 });
 const foldBtn=document.getElementById('foldAll'),openBtn=document.getElementById('openAll');
-function setAll(open){
-  document.querySelectorAll('.fold-sec').forEach(s=>s.classList.toggle('open',open));
-}
+function setAll(open){document.querySelectorAll('.fold-sec').forEach(s=>setFold(s,open));}
 foldBtn.addEventListener('click',()=>setAll(false));
 openBtn.addEventListener('click',()=>setAll(true));
-// 默认折叠细节章节，保留 0/1 开篇两节
-if(!location.hash||true){setAll(false);document.getElementById('principles').classList.add('open');}
+// 默认折叠细节章节，保留开篇章节
+setAll(false);
+setFold(document.getElementById('principles'),true);
 // scroll-spy 高亮侧栏
 const links=[...document.querySelectorAll('#side a.item')];
 const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
@@ -682,7 +796,7 @@ document.querySelectorAll('section.blk,[id][class]').forEach(s=>{if(map.has(s.id
 links.forEach(a=>a.addEventListener('click',()=>{
   const id=a.getAttribute('href').slice(1);
   const sec=document.getElementById(id);
-  if(sec&&sec.classList.contains('fold-sec'))sec.classList.add('open');
+  if(sec&&sec.classList.contains('fold-sec'))setFold(sec,true);
 }));
 </script>
 </body>
