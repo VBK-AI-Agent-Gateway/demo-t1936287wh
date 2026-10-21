@@ -3,614 +3,348 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>美味餐厅 · 全流程点餐系统</title>
+<title>五子棋</title>
 <style>
-  *{box-sizing:border-box; margin:0; padding:0;}
-  :root{
-    --bg:#faf6f0; --card:#fff; --primary:#e8590c; --primary-d:#d9480f;
-    --green:#2f9e44; --ink:#33261b; --muted:#8a7a6a; --line:#eee2d4;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #eee;
+    padding: 20px;
   }
-  body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh;}
-  header{
-    background:linear-gradient(120deg,#e8590c,#f08c00); color:#fff;
-    padding:14px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-    box-shadow:0 3px 12px rgba(232,89,12,.35); position:sticky; top:0; z-index:20;
+  h1 { margin-bottom: 8px; font-size: 28px; letter-spacing: 4px; }
+  .status {
+    margin-bottom: 14px;
+    font-size: 18px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  header h1{font-size:20px;} header .sub{font-size:12px; opacity:.9;}
-  .steps{display:flex; gap:6px; margin-left:auto; flex-wrap:wrap;}
-  .step{
-    font-size:12px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.5);
-    padding:5px 10px; border-radius:999px; opacity:.65;
+  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .dot.black { background: #111; border: 1px solid #555; }
+  .dot.white { background: #f5f5f5; border: 1px solid #999; }
+  #board {
+    position: relative;
+    background: #dcb35c;
+    background-image: radial-gradient(circle at 30% 20%, #e8c477 0%, #d0a44e 70%);
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5), inset 0 0 30px rgba(0,0,0,.08);
+    padding: 20px;
+    touch-action: manipulation;
   }
-  .step.on{background:#fff; color:var(--primary); font-weight:bold; opacity:1;}
-  .step.done{opacity:1; background:rgba(255,255,255,.85); color:var(--green);}
-  main{max-width:1100px; margin:20px auto; padding:0 16px 60px;}
-  .view{display:none; animation:fade .25s;} .view.on{display:block;}
-  @keyframes fade{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
-  h2{font-size:18px; margin-bottom:14px; display:flex; align-items:center; gap:8px;}
-  h2 .n{background:var(--primary); color:#fff; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:14px;}
-  .panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 4px 14px rgba(0,0,0,.04);}
-  .row{display:flex; gap:14px; flex-wrap:wrap;}
-  .col{flex:1; min-width:260px;}
-  label.f{display:block; font-size:13px; color:var(--muted); margin:10px 0 4px;}
-  input[type=text], select, textarea{
-    width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px;
-    font-size:15px; background:#fffdf9; color:var(--ink);
+  canvas { display: block; cursor: pointer; }
+  .toolbar { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  button {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #eee;
+    padding: 9px 20px;
+    border-radius: 20px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: .2s;
   }
-  input:focus, select:focus, textarea:focus{outline:2px solid #ffd8a8; border-color:var(--primary);}
-  .chips{display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 2px;}
-  .chip{
-    padding:7px 14px; border-radius:999px; border:1.5px solid var(--line); background:#fff;
-    cursor:pointer; font-size:14px; transition:.15s;
-  }
-  .chip.on{background:var(--primary); border-color:var(--primary); color:#fff; font-weight:bold;}
-  .tables{display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:10px;}
-  .tbl{
-    border:2px solid var(--line); border-radius:12px; padding:10px 6px; text-align:center;
-    cursor:pointer; background:#fff; transition:.15s; font-size:14px;
-  }
-  .tbl:hover{border-color:#ffc078; transform:translateY(-2px);}
-  .tbl.busy{background:#ffe3e3; border-color:#ffa8a8; color:#c92a2a; cursor:not-allowed;}
-  .tbl.sel{background:var(--primary); color:#fff; border-color:var(--primary); font-weight:bold;}
-  .tbl .ico{font-size:22px; display:block;}
-  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px;}
-  .dish{
-    background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden;
-    display:flex; flex-direction:column; transition:.15s;
-  }
-  .dish:hover{box-shadow:0 8px 18px rgba(0,0,0,.08); transform:translateY(-2px);}
-  .dish .top{font-size:52px; text-align:center; padding:18px 0 8px; background:linear-gradient(#fff8ec,#fff);}
-  .dish .info{padding:10px 14px 14px; flex:1; display:flex; flex-direction:column;}
-  .dish .nm{font-weight:bold; font-size:15px;}
-  .dish .ds{font-size:12px; color:var(--muted); margin:4px 0 8px; min-height:32px;}
-  .dish .bot{display:flex; align-items:center; justify-content:space-between; margin-top:auto;}
-  .price{color:var(--primary); font-weight:bold; font-size:17px;}
-  .price small{font-size:11px; color:var(--muted);}
-  .qty{display:flex; align-items:center; gap:8px;}
-  .qty button{
-    width:28px; height:28px; border-radius:50%; border:none; font-size:17px; font-weight:bold;
-    cursor:pointer; background:#ffe8cc; color:var(--primary-d); line-height:1;
-  }
-  .qty button:hover{background:var(--primary); color:#fff;}
-  .qty .num{min-width:18px; text-align:center; font-weight:bold; color:var(--primary-d);}
-  .btn{
-    display:inline-block; border:none; border-radius:999px; padding:11px 26px; font-size:15px;
-    font-weight:bold; cursor:pointer; transition:.15s; background:#eee; color:#555;
-  }
-  .btn.pri{background:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(232,89,12,.35);}
-  .btn.pri:hover{background:var(--primary-d); transform:translateY(-1px);}
-  .btn.ok{background:var(--green); color:#fff;} .btn.ok:hover{filter:brightness(1.08);}
-  .btn.ghost{background:#fff; border:1.5px solid var(--line); color:var(--ink);}
-  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
-  .btn.mini{padding:6px 14px; font-size:13px;}
-  table.list{width:100%; border-collapse:collapse; font-size:14px;}
-  table.list th{background:#fff7ec; color:var(--muted); text-align:left; font-size:12px; padding:8px;}
-  table.list td{padding:9px 8px; border-bottom:1px dashed var(--line);}
-  .tot{display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:15px;}
-  .tot b{color:var(--primary); font-size:22px; margin-left:6px;}
-  .badge{display:inline-block; font-size:12px; padding:3px 10px; border-radius:999px; font-weight:bold;}
-  .b-wait{background:#fff3bf; color:#995800;} .b-cook{background:#ffd8a8; color:#b54700;}
-  .b-done{background:#d3f9d8; color:#2b8a3e;} .b-served{background:#d0ebff; color:#1971c2;}
-  .b-paid{background:#e5dbff; color:#5f3dc4;} .b-fail{background:#ffe3e3; color:#c92a2a;}
-  .stat4{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:16px;}
-  .stat{background:#fff; border-radius:14px; padding:14px; border:1px solid var(--line); text-align:center;}
-  .stat .v{font-size:26px; font-weight:bold; color:var(--primary);}
-  .stat .l{font-size:12px; color:var(--muted); margin-top:3px;}
-  .toast{
-    position:fixed; left:50%; bottom:34px; transform:translateX(-50%) translateY(80px);
-    background:#33261b; color:#fff; padding:12px 22px; border-radius:999px; font-size:14px;
-    opacity:0; transition:.3s; z-index:99; pointer-events:none; box-shadow:0 8px 20px rgba(0,0,0,.3);
-  }
-  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
-  .receipt{background:#fffef8; border:1.5px dashed #d8c9b4; border-radius:14px; padding:18px; font-size:14px;}
-  .receipt h3{text-align:center; margin-bottom:4px;}
-  .receipt .rc-sub{text-align:center; color:var(--muted); font-size:12px; margin-bottom:12px;}
-  .receipt .ln{display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dotted #eee;}
-  .receipt .sum{display:flex; justify-content:space-between; font-weight:bold; font-size:17px; color:var(--primary); margin-top:10px;}
-  .empty{text-align:center; color:var(--muted); padding:36px 0; font-size:14px;}
-  .empty .big{font-size:44px; display:block; margin-bottom:8px;}
-  .dash-dot{display:flex; gap:10px; flex-wrap:wrap;}
-  .tag{font-size:12px; background:#f1f0ec; border-radius:6px; padding:3px 8px; color:#777;}
-  @media (max-width:720px){ .steps{display:none;} }
+  button:hover { background: rgba(255,255,255,.22); transform: translateY(-1px); }
+  button.primary { background: #e94560; border-color: #e94560; }
+  button.primary:hover { background: #ff5f7a; }
+  .info { margin-top: 12px; font-size: 13px; color: #999; }
 </style>
 </head>
 <body>
-<header>
-  <div>
-    <h1>🍴 美味餐厅 · 全流程点餐系统</h1>
-    <div class="sub">排队取号 → 桌位选择 → 点餐下单 → 后厨制作 → 用餐 → 结账评价</div>
-  </div>
-  <div class="steps" id="steps">
-    <span class="step on" data-s="1">1 排队取号</span>
-    <span class="step" data-s="2">2 选桌位</span>
-    <span class="step" data-s="3">3 点餐</span>
-    <span class="step" data-s="4">4 后厨</span>
-    <span class="step" data-s="5">5 用餐</span>
-    <span class="step" data-s="6">6 结账</span>
-  </div>
-</header>
 
-<main>
-  <!-- 1 排队取号 -->
-  <section class="view on" id="v-queue">
-    <h2><span class="n">1</span> 排队取号</h2>
-    <div class="panel">
-      <div class="row">
-        <div class="col">
-          <label class="f">您的称呼</label>
-          <input type="text" id="qName" placeholder="如：张先生 / Lucy" maxlength="12">
-          <label class="f">用餐人数</label>
-          <select id="qSize">
-            <option value="1">1 位</option><option value="2" selected>2 位</option>
-            <option value="3">3 位</option><option value="4">4 位</option>
-            <option value="5">5 位</option><option value="6">6 位</option>
-          </select>
-          <label class="f">就餐方式</label>
-          <div class="chips" id="qWay">
-            <span class="chip on" data-v="堂食">堂食 😋</span>
-            <span class="chip" data-v="外带">外带 🛍️</span>
-          </div>
-          <div style="margin-top:18px;">
-            <button class="btn pri" id="btnQueue">🎫 立即取号</button>
-          </div>
-        </div>
-        <div class="col">
-          <div class="panel" style="background:#fff7ec; text-align:center; padding:26px;">
-            <div style="font-size:13px; color:var(--muted);">当前排位状态</div>
-            <div style="font-size:46px; font-weight:bold; color:var(--primary); margin:8px 0;" id="qNow">——</div>
-            <div style="font-size:13px; color:var(--muted);" id="qInfo">今天已有 <b>0</b> 位客人取号</div>
-            <div style="margin-top:14px; font-size:13px; color:#b54700;" id="qTip">取号后请留意叫号，叫到即可选桌入座～</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 2 选桌 -->
-  <section class="view" id="v-table">
-    <h2><span class="n">2</span> 选择桌位 <span style="font-size:13px; color:var(--muted); font-weight:normal;" id="tMyNum"></span></h2>
-    <div class="panel">
-      <div class="dash-dot" style="margin-bottom:14px;">
-        <span class="tag">🟢 空闲可坐</span><span class="tag" style="background:#ffe3e3;color:#c92a2a;">🔴 用餐中</span><span class="tag" style="background:#fff3bf;color:#995800;">🟡 已被预约（您）</span>
-      </div>
-      <div class="tables" id="tables"></div>
-      <div style="margin-top:18px; display:flex; gap:10px;">
-        <button class="btn pri" id="btnSit" disabled>🪑 确认入座并开始点餐</button>
-        <button class="btn ghost" id="btnRequeue">🎫 重新取号</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- 3 点餐 -->
-  <section class="view" id="v-menu">
-    <h2><span class="n">3</span> 点餐 <span style="font-size:13px; color:var(--muted); font-weight:normal;" id="mTable"></span></h2>
-    <div class="row">
-      <div class="col" style="flex:2.4; min-width:320px;">
-        <div class="chips" id="catBar"></div>
-        <div class="grid" id="dishes" style="margin-top:12px;"></div>
-      </div>
-      <div class="col" style="flex:1.2;">
-        <div class="panel" style="position:sticky; top:86px;">
-          <h2 style="font-size:15px;">🛒 购物车 <span id="cartCount" style="font-size:12px; color:var(--muted);"></span></h2>
-          <div id="cartBox" style="max-height:300px; overflow:auto;"></div>
-          <div class="tot">合计<b id="cartSum">¥0</b></div>
-          <label class="f">备注（忌口 / 口味）</label>
-          <input type="text" id="cartNote" placeholder="如：少辣、不要香菜" maxlength="30">
-          <div style="display:flex; gap:8px; margin-top:14px;">
-            <button class="btn pri" id="btnOrder" style="flex:1;">✅ 下单到后厨</button>
-            <button class="btn ghost mini" id="btnClearCart">清空</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 4 后厨 -->
-  <section class="view" id="v-kitchen">
-    <h2><span class="n">4</span> 后厨制作进度</h2>
-    <div class="panel">
-      <div id="kOrders" style="display:grid; gap:14px;"></div>
-      <div style="margin-top:16px; display:flex; gap:10px;">
-        <button class="btn ghost" id="btnBackMenu">🍽️ 继续加菜</button>
-        <button class="btn ok" id="btnAllServed" disabled>🛎️ 菜品全部上齐（进入用餐）</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- 5 用餐 -->
-  <section class="view" id="v-dining">
-    <h2><span class="n">5</span> 用餐中 🍽️</h2>
-    <div class="panel" style="text-align:center; padding:34px;">
-      <div style="font-size:64px;">😋🤤🎉</div>
-      <div style="font-size:18px; font-weight:bold; margin:12px 0 6px;" id="dTitle">请慢用！</div>
-      <div style="font-size:13px; color:var(--muted); margin-bottom:16px;" id="dSub"></div>
-      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-        <button class="btn ghost" id="btnMore">➕ 再加点菜</button>
-        <button class="btn pri" id="btnBill">🧾 请求结账</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- 6 结账+评价 -->
-  <section class="view" id="v-bill">
-    <h2><span class="n">6</span> 结账与评价</h2>
-    <div class="row">
-      <div class="col">
-        <div class="receipt" id="receipt"></div>
-      </div>
-      <div class="col">
-        <div class="panel">
-          <h2 style="font-size:15px;">⭐ 为本次用餐评分</h2>
-          <div class="chips" id="stars" style="font-size:26px;">
-            <span class="chip" data-v="1" style="padding:4px 8px;">⭐</span>
-            <span class="chip" data-v="2" style="padding:4px 8px;">⭐⭐</span>
-            <span class="chip" data-v="3" style="padding:4px 8px;">⭐⭐⭐</span>
-            <span class="chip" data-v="4" style="padding:4px 8px;">⭐⭐⭐⭐</span>
-            <span class="chip" data-v="5" style="padding:4px 8px;">⭐⭐⭐⭐⭐</span>
-          </div>
-          <label class="f">评价内容（选填）</label>
-          <textarea id="fbText" rows="3" placeholder="菜品口味、服务感受…" maxlength="200"></textarea>
-          <div style="display:flex; gap:10px; margin-top:14px;">
-            <button class="btn pri" id="btnPay" style="flex:1;">💳 确认支付</button>
-            <button class="btn ghost" id="btnBackDining">返回用餐</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 完成 -->
-  <section class="view" id="v-done">
-    <div class="panel" style="text-align:center; padding:44px;">
-      <div style="font-size:64px;">🎊</div>
-      <h2 style="justify-content:center; margin-top:10px;">支付成功，期待您再次光临！</h2>
-      <div id="doneMsg" style="color:var(--muted); font-size:14px; margin-bottom:18px;"></div>
-      <button class="btn pri" id="btnRestart">🔄 开始新订单</button>
-    </div>
-  </section>
-</main>
-
-<div class="toast" id="toast"></div>
+<h1>五 子 棋</h1>
+<div class="status" id="status"></div>
+<div id="board"><canvas id="canvas"></canvas></div>
+<div class="toolbar">
+  <button class="primary" id="newGame">新对局</button>
+  <button id="undo">悔棋</button>
+  <button id="aiToggle">AI: 关</button>
+  <button id="swapColor">执子切换</button>
+</div>
+<div class="info">点击交叉点落子 · 五子连珠即获胜</div>
 
 <script>
-/* ================= 菜单数据 ================= */
-const MENU = [
-  {c:"招牌热菜", i:"🍗", n:"招牌脆皮鸡", d:"外酥里嫩，秘制腌料", p:38},
-  {c:"招牌热菜", i:"🍖", n:"红烧狮子头", d:"浓油赤酱，入口即化", p:32},
-  {c:"招牌热菜", i:"🐟", n:"清蒸鲈鱼", d:"鲜嫩少刺，葱香四溢", p:58},
-  {c:"招牌热菜", i:"🍤", n:"油焖大虾", d:"个大饱满，甜咸适口", p:48},
-  {c:"招牌热菜", i:"🥩", n:"黑椒牛柳", d:"现扒嫩牛，黑椒浓香", p:46},
-  {c:"招牌热菜", i:"🍲", n:"番茄牛腩煲", d:"酸甜开胃，牛腩软烂", p:42},
-  {c:"小炒时蔬", i:"🥬", n:"蒜蓉时蔬", d:"当日鲜蔬，清爽解腻", p:18},
-  {c:"小炒时蔬", i:"🥦", n:"干锅花菜", d:"焦香微辣，下饭神器", p:22},
-  {c:"小炒时蔬", i:"🍄", n:"香菇青菜", d:"鲜香菇配上海青", p:20},
-  {c:"小炒时蔬", i:"🥒", n:"凉拌黄瓜", d:"蒜香脆爽，冰镇更佳", p:12},
-  {c:"主食汤羹", i:"🍚", n:"招牌蛋炒饭", d:"粒粒分明，蛋香浓郁", p:16},
-  {c:"主食汤羹", i:"🍜", n:"牛肉拉面", d:"手工拉面，汤头醇厚", p:26},
-  {c:"主食汤羹", i:"🥟", n:"三鲜水饺", d:"皮薄馅大，现包现煮", p:20},
-  {c:"主食汤羹", i:"🥣", n:"酸辣汤", d:"酸辣开胃，饭前一碗", p:14},
-  {c:"甜品饮品", i:"🍮", n:"双皮奶", d:"嫩滑奶香，冷热双选", p:12},
-  {c:"甜品饮品", i:"🍰", n:"提拉米苏", d:"咖啡酒香，绵密细腻", p:18},
-  {c:"甜品饮品", i:"🧋", n:"珍珠奶茶", d:"Q弹珍珠，现煮红茶", p:15},
-  {c:"甜品饮品", i:"🍹", n:"鲜榨橙汁", d:"每日现榨，无添加", p:16},
-  {c:"甜品饮品", i:"🍵", n:"茉莉花茶", d:"清香回甘，免费续杯", p:8},
-];
-const CATS = ["全部", ...new Set(MENU.map(m=>m.c))];
+const N = 15;                 // 15 x 15
+const GAP = 36;                // 格距
+const PAD = 24;                // 内边距
+const SIZE = PAD * 2 + GAP * (N - 1);
 
-/* ================= 全局状态（localStorage 持久化） ================= */
-const DEF = {
-  queueNo: 0, queueTotal: 0, called: false,
-  name: "", size: "2", way: "堂食",
-  table: null,               // 桌号
-  cart: {},                  // name -> qty
-  orders: [],                // {id, items:[{n,p,q}], note, status, served, ts}
-  phase: 1,                  // 1取号 2选桌 3点餐 4后厨 5用餐 6结账
-  rating: 0, feedback: "",
-  billNo: 0,
-  tables: {},                // "A1" -> {busy:true} 持久化占用状态
-  history: [],               // 已完成订单
-};
-let S = load();
-function load(){
-  try{
-    const raw = localStorage.getItem("resto_v1");
-    if(raw) return Object.assign({}, JSON.parse(JSON.stringify(DEF)), JSON.parse(raw));
-  }catch(e){}
-  return JSON.parse(JSON.stringify(DEF));
-}
-function save(){ localStorage.setItem("resto_v1", JSON.stringify(S)); }
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+canvas.width = SIZE * dpr;
+canvas.height = SIZE * dpr;
+canvas.style.width = SIZE + 'px';
+canvas.style.height = SIZE + 'px';
+ctx.scale(dpr, dpr);
 
-const $ = id => document.getElementById(id);
-const money = n => "¥" + n;
-function toast(msg){
-  const t = $("toast");
-  t.textContent = msg; t.classList.add("show");
-  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2200);
+let board, history, current, gameOver, aiOn = false, playerColor = 1; // 1黑 2白
+let hoverPos = null;
+
+function init() {
+  board = Array.from({length: N}, () => Array(N).fill(0));
+  history = [];
+  current = 1;
+  gameOver = false;
+  hoverPos = null;
+  draw();
+  updateStatus();
 }
 
-/* ================= 流程切换 ================= */
-function go(phase){
-  S.phase = phase; save();
-  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
-  const map = {1:"v-queue",2:"v-table",3:"v-menu",4:"v-kitchen",5:"v-dining",6:"v-bill",7:"v-done"};
-  $(map[phase]).classList.add("on");
-  document.querySelectorAll("#steps .step").forEach(el=>{
-    const s = +el.dataset.s;
-    el.classList.toggle("on", s===phase);
-    el.classList.toggle("done", s<phase);
-  });
-  if(phase===1) renderQueue();
-  if(phase===2) renderTables();
-  if(phase===3) renderMenu();
-  if(phase===4) renderKitchen();
-  if(phase===5) renderDining();
-  if(phase===6) renderBill();
-}
+function px(i) { return PAD + i * GAP; }
 
-/* ================= 1 排队取号 ================= */
-document.querySelectorAll("#qWay .chip").forEach(c=>{
-  c.onclick = ()=>{
-    document.querySelectorAll("#qWay .chip").forEach(x=>x.classList.remove("on"));
-    c.classList.add("on"); S.way = c.dataset.v; save();
-  };
-});
-function renderQueue(){
-  $("qNow").textContent = S.called ? ("A" + String(S.queueNo).padStart(3,"0")) : "——";
-  $("qInfo").innerHTML = `今天已有 <b>${S.queueTotal}</b> 位客人取号` + (S.called ? `，您是第 <b>${S.queueTotal-S.queueNo+1}</b> 位候餐` : "");
-  $("qTip").textContent = S.called ? "📢 叫到号啦！请点击下方选桌入座～" : "取号后请留意叫号，叫到即可选桌入座～";
-}
-$("btnQueue").onclick = ()=>{
-  const nm = $("qName").value.trim() || "贵宾";
-  S.name = nm; S.size = $("qSize").value;
-  S.queueTotal++;
-  S.queueNo = S.queueTotal;          // 演示：立即叫号
-  S.called = true;
-  save();
-  toast(`🎫 取号成功！您的号码 A${String(S.queueNo).padStart(3,"0")}，请入座`);
-  go(2);
-};
+function draw() {
+  ctx.clearRect(0, 0, SIZE, SIZE);
 
-/* ================= 2 选桌 ================= */
-const TABLE_IDS = ["A1","A2","A3","A4","B1","B2","B3","B4","C1","C2","C3","C4"];
-let selTable = null;
-function isBusy(t){
-  if(S.tables[t] && S.tables[t].busy) return true;
-  // 其他会话占用（同浏览器多标签演示用）
-  try{
-    const other = JSON.parse(localStorage.getItem("resto_v1")||"{}");
-    return !!(other.tables && other.tables[t] && other.tables[t].busy && other.table!==t);
-  }catch(e){ return false; }
-}
-function renderTables(){
-  $("tMyNum").textContent = S.name ? `· ${S.name}（${S.size}位，${S.way}）` : "";
-  const box = $("tables"); box.innerHTML = "";
-  TABLE_IDS.forEach(t=>{
-    const d = document.createElement("div");
-    const busy = isBusy(t) && S.table !== t;
-    d.className = "tbl" + (busy?" busy":"") + (S.table===t || selTable===t ? " sel":"");
-    d.innerHTML = `<span class="ico">${busy?"🔴":"🟢"}</span>${t}桌`;
-    if(!busy) d.onclick = ()=>{ selTable = t; renderTables(); };
-    box.appendChild(d);
-  });
-  $("btnSit").disabled = !(selTable);
-}
-$("btnSit").onclick = ()=>{
-  if(!selTable) return;
-  S.table = selTable;
-  S.tables[selTable] = {busy:true};
-  save();
-  toast(`🪑 已入座 ${selTable}桌，开始点餐吧！`);
-  go(3);
-};
-$("btnRequeue").onclick = ()=>{ selTable=null; go(1); };
-
-/* ================= 3 点餐 ================= */
-let curCat = "全部";
-function renderMenu(){
-  $("mTable").textContent = S.table ? `· ${S.table}桌（${S.name}，${S.way}）` : "";
-  const bar = $("catBar"); bar.innerHTML = "";
-  CATS.forEach(c=>{
-    const el = document.createElement("span");
-    el.className = "chip" + (c===curCat?" on":"");
-    el.textContent = c;
-    el.onclick = ()=>{ curCat=c; renderMenu(); };
-    bar.appendChild(el);
-  });
-  const box = $("dishes"); box.innerHTML = "";
-  MENU.filter(m=>curCat==="全部"||m.c===curCat).forEach(m=>{
-    const q = S.cart[m.n] || 0;
-    const d = document.createElement("div");
-    d.className = "dish";
-    d.innerHTML = `
-      <div class="top">${m.i}</div>
-      <div class="info">
-        <div class="nm">${m.n}</div>
-        <div class="ds">${m.d}</div>
-        <div class="bot">
-          <div class="price">${money(m.p)} <small>/份</small></div>
-          <div class="qty">
-            ${q>0?`<button data-a="-">−</button><span class="num">${q}</span>`:""}
-            <button data-a="+">＋</button>
-          </div>
-        </div>
-      </div>`;
-    d.querySelectorAll(".qty button").forEach(b=>{
-      b.onclick = (ev)=>{
-        ev.stopPropagation();
-        if(b.dataset.a==="+") S.cart[m.n] = (S.cart[m.n]||0)+1;
-        else { S.cart[m.n] = (S.cart[m.n]||0)-1; if(S.cart[m.n]<=0) delete S.cart[m.n]; }
-        save(); renderMenu();
-      };
-    });
-    box.appendChild(d);
-  });
-  renderCart();
-}
-function cartItems(){
-  return Object.entries(S.cart).map(([n,q])=>{
-    const m = MENU.find(x=>x.n===n);
-    return {n, p:m.p, i:m.i, q};
-  });
-}
-function cartTotal(){ return cartItems().reduce((s,it)=>s+it.p*it.q, 0); }
-function renderCart(){
-  const items = cartItems();
-  $("cartCount").textContent = items.length ? `(${items.reduce((s,i)=>s+i.q,0)} 份)` : "";
-  const box = $("cartBox");
-  if(!items.length){
-    box.innerHTML = `<div class="empty"><span class="big">🛒</span>还没有点菜哦<br>点击左侧 ＋ 加菜</div>`;
-  } else {
-    box.innerHTML = `<table class="list"><tr><th>菜</th><th>份</th><th>小计</th></tr>` +
-      items.map(it=>`<tr><td>${it.i} ${it.n}</td>
-        <td><span class="qty"><button data-n="${it.n}" data-a="-">−</button><span class="num">${it.q}</span><button data-n="${it.n}" data-a="+">＋</button></span></td>
-        <td>${money(it.p*it.q)}</td></tr>`).join("") + "</table>";
-    box.querySelectorAll("button").forEach(b=>{
-      b.onclick = ()=>{
-        const n = b.dataset.n;
-        if(b.dataset.a==="+") S.cart[n]++;
-        else { S.cart[n]--; if(S.cart[n]<=0) delete S.cart[n]; }
-        save(); renderMenu();
-      };
-    });
+  // 棋盘线
+  ctx.strokeStyle = '#5a4520';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < N; i++) {
+    ctx.beginPath();
+    ctx.moveTo(px(0), px(i));
+    ctx.lineTo(px(N-1), px(i));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px(i), px(0));
+    ctx.lineTo(px(i), px(N-1));
+    ctx.stroke();
   }
-  $("cartSum").textContent = money(cartTotal());
-  $("btnOrder").disabled = !items.length;
-}
-$("btnClearCart").onclick = ()=>{ S.cart={}; save(); renderMenu(); };
-$("btnOrder").onclick = ()=>{
-  const items = cartItems();
-  if(!items.length) return;
-  const order = {
-    id: Date.now(), table: S.table, name: S.name, size: S.size, way: S.way,
-    items: items.map(({n,p,q})=>({n,p,q})),
-    note: $("cartNote").value.trim(),
-    status: "wait", served: false, ts: Date.now()
-  };
-  S.orders.push(order);
-  S.cart = {}; $("cartNote").value = "";
-  save();
-  toast(`✅ 已下单，后厨收到 ${items.length} 道菜，开始制作！`);
-  go(4);
-};
 
-/* ================= 4 后厨 ================= */
-const STATUS = {wait:["b-wait","⏳ 待制作"], cook:["b-cook","🔥 制作中"], ready:["b-done","🔔 待上菜"], served:["b-served","🍽️ 已上齐"]};
-let kitchenTimer = null;
-function renderKitchen(){
-  const box = $("kOrders");
-  if(!S.orders.length){
-    box.innerHTML = `<div class="empty"><span class="big">👨‍🍳</span>还没有订单，先去点餐吧</div>`;
-    $("btnAllServed").disabled = true;
+  // 星位
+  ctx.fillStyle = '#5a4520';
+  [[3,3],[3,11],[11,3],[11,11],[7,7]].forEach(([r,c]) => {
+    ctx.beginPath();
+    ctx.arc(px(c), px(r), 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 棋子
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (board[r][c]) drawPiece(r, c, board[r][c]);
+    }
+  }
+
+  // 最后一手标记
+  if (history.length) {
+    const [r, c] = history[history.length - 1];
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px(c), px(r), 8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 悬停预览
+  if (hoverPos && !gameOver && board[hoverPos[0]][hoverPos[1]] === 0) {
+    const [r, c] = hoverPos;
+    ctx.globalAlpha = 0.35;
+    drawPiece(r, c, current);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawPiece(r, c, color) {
+  const x = px(c), y = px(r), rad = GAP / 2 - 2;
+  const grad = ctx.createRadialGradient(x - rad*0.3, y - rad*0.3, rad*0.1, x, y, rad);
+  if (color === 1) {
+    grad.addColorStop(0, '#555');
+    grad.addColorStop(1, '#000');
+  } else {
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(1, '#cfcfcf');
+  }
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(x, y, rad, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function checkWin(r, c, color) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  for (const [dr, dc] of dirs) {
+    let count = 1;
+    for (let s = 1; s < 5; s++) {
+      const nr = r + dr*s, nc = c + dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==color) break;
+      count++;
+    }
+    for (let s = 1; s < 5; s++) {
+      const nr = r - dr*s, nc = c - dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==color) break;
+      count++;
+    }
+    if (count >= 5) return true;
+  }
+  return false;
+}
+
+function place(r, c) {
+  if (gameOver || board[r][c] !== 0) return;
+  board[r][c] = current;
+  history.push([r, c]);
+
+  if (checkWin(r, c, current)) {
+    gameOver = true;
+    draw();
+    updateStatus();
     return;
   }
-  box.innerHTML = S.orders.map((o,oi)=>{
-    const [cls, label] = STATUS[o.status];
-    const qty = o.items.reduce((s,i)=>s+i.q,0);
-    return `<div class="panel" style="background:#fffdf8; padding:14px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <b>订单 #${oi+1} · ${o.table}桌 · ${o.name} · ${qty}份 · ${money(o.items.reduce((s,i)=>s+i.p*i.q,0))}</b>
-        <span class="badge ${cls}">${label}</span>
-      </div>
-      <div style="font-size:13px; color:var(--muted); margin-top:6px;">
-        ${o.items.map(i=>`${i.n}×${i.q}`).join("、")}
-        ${o.note?` <b style="color:#c92a2a;">［备注：${o.note}］</b>`:""}
-      </div>
-      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn ghost mini" data-act="advance" data-i="${oi}">${o.status==="ready"?"🛎️ 标记已上菜":"▶️ " + (o.status==="wait"?"开始制作":"制作完成")}</button>
-        <button class="btn ghost mini" data-act="rush" data-i="${oi}">⚡ 一键完成</button>
-      </div>
-    </div>`;
-  }).join("");
-  box.querySelectorAll("button[data-act]").forEach(b=>{
-    b.onclick = ()=>{
-      const o = S.orders[+b.dataset.i];
-      if(b.dataset.act==="rush"){ o.status="served"; }
-      else if(o.status==="wait") o.status="cook";
-      else if(o.status==="cook") o.status="ready";
-      else if(o.status==="ready"){ o.status="served"; }
-      save(); renderKitchen();
-      checkAllServed();
-    };
-  });
-  checkAllServed();
-  // 自动烹饪：待制作 → 制作中，定时推进
-  if(kitchenTimer) clearTimeout(kitchenTimer);
-  kitchenTimer = setTimeout(()=>{
-    let changed = false;
-    S.orders.forEach(o=>{ if(o.status==="wait"){ o.status="cook"; changed=true; } });
-    if(changed){ save(); if(S.phase===4) renderKitchen(); }
-  }, 4000);
+  if (history.length === N * N) {
+    gameOver = true;
+    draw();
+    updateStatus();
+    return;
+  }
+  current = current === 1 ? 2 : 1;
+  draw();
+  updateStatus();
+
+  if (aiOn && current !== playerColor && !gameOver) {
+    setTimeout(aiMove, 300);
+  }
 }
-function checkAllServed(){
-  const all = S.orders.length && S.orders.every(o=>o.status==="served");
-  $("btnAllServed").disabled = !all;
-  if(all && S.phase===4) toast("🎉 所有菜品已上齐，请慢用！");
+
+function updateStatus() {
+  const el = document.getElementById('status');
+  if (gameOver) {
+    if (history.length === N * N) {
+      el.innerHTML = '平局！';
+    } else {
+      const winner = board[history[history.length-1][0]][history[history.length-1][1]];
+      el.innerHTML = `<span class="dot ${winner===1?'black':'white'}"></span>${winner===1?'黑':'白'}棋获胜！`;
+    }
+    return;
+  }
+  const isAI = aiOn && current !== playerColor;
+  el.innerHTML = `<span class="dot ${current===1?'black':'white'}"></span>${current===1?'黑':'白'}棋走${isAI?'（AI思考中…）':''}`;
 }
-$("btnAllServed").onclick = ()=>{
-  if(!S.orders.every(o=>o.status==="served")) return;
-  toast("🛎️ 菜品全部上齐，请慢用！");
-  go(5);
+
+// ---- 简易 AI：优先堵/冲，其次进攻 ----
+function aiMove() {
+  if (gameOver) return;
+  const me = current, opp = me === 1 ? 2 : 1;
+  let best = null, bestScore = -Infinity;
+
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (board[r][c] !== 0) continue;
+      // 只考虑已有棋子的邻近区域，加速
+      if (!hasNeighbor(r, c, 2)) continue;
+      let score = 0;
+      score += evaluatePoint(r, c, me) * 1.1;   // 进攻
+      score += evaluatePoint(r, c, opp);         // 防守
+      score += Math.random() * 0.5;
+      if (score > bestScore) { bestScore = score; best = [r, c]; }
+    }
+  }
+  if (best) place(best[0], best[1]);
+}
+
+function hasNeighbor(r, c, dist) {
+  for (let i = -dist; i <= dist; i++)
+    for (let j = -dist; j <= dist; j++) {
+      const nr = r+i, nc = c+j;
+      if (nr>=0&&nr<N&&nc>=0&&nc<N&&board[nr][nc]!==0) return true;
+    }
+  return false;
+}
+
+function evaluatePoint(r, c, color) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  let total = 0;
+  for (const [dr, dc] of dirs) {
+    let count = 1, blocked = 0;
+    for (let s = 1; s < 5; s++) {
+      const nr = r+dr*s, nc = c+dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N) { blocked++; break; }
+      if (board[nr][nc] === color) count++;
+      else { if (board[nr][nc] !== 0) blocked++; break; }
+    }
+    for (let s = 1; s < 5; s++) {
+      const nr = r-dr*s, nc = c-dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N) { blocked++; break; }
+      if (board[nr][nc] === color) count++;
+      else { if (board[nr][nc] !== 0) blocked++; break; }
+    }
+    if (count >= 5) total += 100000;
+    else if (count === 4 && blocked === 0) total += 10000;
+    else if (count === 4 && blocked === 1) total += 1000;
+    else if (count === 3 && blocked === 0) total += 800;
+    else if (count === 3 && blocked === 1) total += 100;
+    else if (count === 2 && blocked === 0) total += 60;
+    else if (count === 2 && blocked === 1) total += 10;
+    else if (count === 1 && blocked === 0) total += 2;
+  }
+  return total;
+}
+
+// ---- 交互 ----
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  const c = Math.round((x - PAD) / GAP);
+  const r = Math.round((y - PAD) / GAP);
+  if (r < 0 || r >= N || c < 0 || c >= N) return null;
+  // 距离判定
+  if (Math.abs(px(c) - x) > GAP/2 || Math.abs(px(r) - y) > GAP/2) return null;
+  return [r, c];
+}
+
+canvas.addEventListener('mousemove', e => {
+  const p = getPos(e);
+  if (JSON.stringify(p) !== JSON.stringify(hoverPos)) {
+    hoverPos = p;
+    draw();
+  }
+});
+canvas.addEventListener('mouseleave', () => { hoverPos = null; draw(); });
+canvas.addEventListener('click', e => {
+  const p = getPos(e);
+  if (p) place(p[0], p[1]);
+});
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const p = getPos(e);
+  if (p) place(p[0], p[1]);
+}, {passive: false});
+
+document.getElementById('newGame').onclick = init;
+document.getElementById('undo').onclick = () => {
+  if (!history.length) return;
+  gameOver = false;
+  const steps = (aiOn && history.length >= 2) ? 2 : 1;
+  for (let i = 0; i < steps && history.length; i++) {
+    const [r, c] = history.pop();
+    board[r][c] = 0;
+    current = current === 1 ? 2 : 1;
+  }
+  draw();
+  updateStatus();
 };
-$("btnBackMenu").onclick = ()=>go(3);
-
-/* ================= 5 用餐 ================= */
-function renderDining(){
-  const qty = S.orders.reduce((s,o)=>s+o.items.reduce((a,i)=>a+i.q,0),0);
-  const sum = S.orders.reduce((s,o)=>s+o.items.reduce((a,i)=>a+i.p*i.q,0),0);
-  $("dTitle").textContent = `${S.table}桌 · ${S.name}，祝您用餐愉快！`;
-  $("dSub").textContent = `本桌共 ${qty} 份菜品，当前消费 ${money(sum)}`;
-}
-$("btnMore").onclick = ()=>go(3);
-$("btnBill").onclick = ()=>go(6);
-
-/* ================= 6 结账评价 ================= */
-function billSum(){
-  return S.orders.reduce((s,o)=>s+o.items.reduce((a,i)=>a+i.p*i.q,0),0);
-}
-function renderBill(){
-  const sum = billSum();
-  const qty = S.orders.reduce((s,o)=>s+o.items.reduce((a,i)=>a+i.q,0),0);
-  $("receipt").innerHTML = `
-    <h3>🍴 美味餐厅</h3>
-    <div class="rc-sub">堂食结账单 · ${S.table||""}桌 · ${S.name||"贵宾"} · ${new Date().toLocaleString("zh-CN")}</div>
-    <div class="ln"><span>菜品 ${qty} 份</span><span>${money(sum)}</span></div>
-    <div class="ln"><span>服务费（5%）</span><span>${money(Math.round(sum*0.05))}</span></div>
-    <div class="ln"><span>会员折扣</span><span>-${money(0)}</span></div>
-    <div class="sum"><span>应付合计</span><span>${money(sum + Math.round(sum*0.05))}</span></div>`;
-  document.querySelectorAll("#stars .chip").forEach(c=>{
-    c.classList.toggle("on", +c.dataset.v <= S.rating);
-    c.onclick = ()=>{ S.rating = +c.dataset.v; save(); renderBill(); };
-  });
-}
-$("btnBackDining").onclick = ()=>go(5);
-$("btnPay").onclick = ()=>{
-  const sum = billSum() + Math.round(billSum()*0.05);
-  S.feedback = $("fbText").value.trim();
-  S.billNo = (S.billNo||0)+1;
-  S.history.push({
-    no: S.billNo, table:S.table, name:S.name, sum, rating:S.rating,
-    feedback:S.feedback, at:Date.now(),
-    orders: S.orders.length
-  });
-  // 释放桌位、结束本单
-  if(S.table && S.tables[S.table]) delete S.tables[S.table].busy;
-  const fbTxt = S.rating ? `，评分 ${"⭐".repeat(S.rating)}${S.feedback?"，评价：“"+S.feedback+"”":""}` : "";
-  $("doneMsg").textContent = `订单 #${S.billNo} 已支付 ${money(sum)}${fbTxt}。感谢 ${S.name||"贵宾"} 的光临！`;
-  // 重置会话
-  S.orders = []; S.cart = {}; S.table=null; S.rating=0; S.called=false; S.queueNo=0;
-  save();
-  toast("💳 支付成功，感谢惠顾！");
-  go(7);
+document.getElementById('aiToggle').onclick = function() {
+  aiOn = !aiOn;
+  this.textContent = 'AI: ' + (aiOn ? '开' : '关');
+  updateStatus();
+  if (aiOn && current !== playerColor && !gameOver) setTimeout(aiMove, 300);
 };
-$("btnRestart").onclick = ()=>{ selTable=null; $("qName").value=""; $("fbText").value=""; go(1); };
+document.getElementById('swapColor').onclick = () => {
+  playerColor = playerColor === 1 ? 2 : 1;
+  alert('你已执' + (playerColor === 1 ? '黑' : '白') + '棋');
+  if (aiOn && current !== playerColor && !gameOver) setTimeout(aiMove, 300);
+};
 
-/* ================= 启动 ================= */
-$("qName").value = S.name || "";
-$("qSize").value = S.size || "2";
-document.querySelectorAll("#qWay .chip").forEach(c=>c.classList.toggle("on", c.dataset.v===S.way));
-go(S.phase);
-// 若停在点餐/后厨阶段，恢复自动烹饪
-if(S.phase===4) renderKitchen();
+init();
 </script>
 </body>
 </html>
