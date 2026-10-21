@@ -2,688 +2,125 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>企业协同办公平台 SDD 规格文档 · 对标钉钉</title>
+<title>贪吃蛇</title>
 <style>
-:root{--primary:#1677ff;--bg:#f7f8fa;--side:#fff;--text:#1f2329;--muted:#646a73;--border:#e5e6eb;--code:#f0f2f5;}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font:15px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
-nav{width:250px;background:var(--side);border-right:1px solid var(--border);padding:24px 16px;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0}
-nav h1{font-size:16px;color:var(--primary);margin-bottom:4px}
-nav .sub{font-size:12px;color:var(--muted);margin-bottom:20px}
-nav a{display:block;padding:8px 12px;color:var(--text);text-decoration:none;border-radius:6px;font-size:14px;margin-bottom:2px}
-nav a:hover{background:#e8f3ff;color:var(--primary)}
-nav .grp{font-size:12px;color:var(--muted);margin:16px 0 6px;padding-left:12px}
-main{flex:1;max-width:960px;padding:36px 48px 80px}
-.stage{background:#fff;border:1px solid var(--border);border-radius:10px;padding:28px 32px;margin-bottom:28px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
-.stage h2{font-size:22px;border-bottom:2px solid var(--primary);padding-bottom:10px;margin-bottom:18px;color:var(--primary)}
-.stage h3{font-size:17px;margin:26px 0 12px;color:#000}
-.stage h4{font-size:15px;margin:18px 0 8px}
-p{margin:8px 0}
-table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:14px}
-th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
-th{background:var(--code);font-weight:600;white-space:nowrap}
-tr:nth-child(even) td{background:#fafbfc}
-code{background:var(--code);padding:1px 6px;border-radius:4px;font-size:13px;font-family:Consolas,Menlo,monospace}
-pre{background:#0f172a;color:#e2e8f0;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;margin:12px 0}
-pre code{background:none;color:inherit;padding:0}
-ul,ol{padding-left:22px;margin:8px 0}
-li{margin:4px 0}
-.badge{display:inline-block;background:#e8f3ff;color:var(--primary);border-radius:10px;padding:1px 10px;font-size:12px;margin-right:6px}
-.tip{background:#fffbe6;border-left:4px solid #fadb14;padding:10px 14px;margin:12px 0;border-radius:0 6px 6px 0;font-size:14px}
-@media(max-width:900px){body{flex-direction:column}nav{width:100%;height:auto;position:relative}main{padding:20px}}
+  body { background: #222; color: #eee; font-family: sans-serif; text-align: center; }
+  canvas { background: #111; border: 2px solid #444; }
+  .hud { margin: 10px; font-size: 18px; }
 </style>
 </head>
 <body>
-<nav>
-  <h1>🏢 企业协同平台 SDD</h1>
-  <div class="sub">规格驱动开发 · 对标钉钉 · 多租户</div>
-  <div class="grp">交付阶段</div>
-  <a href="#s1">① 产品定位 &amp; 功能清单</a>
-  <a href="#s2">② 产品需求文档 PRD</a>
-  <a href="#s3">③ 数据库设计</a>
-  <a href="#s4">④ 系统架构</a>
-  <a href="#s5">⑤ API 文档</a>
-  <a href="#s6">⑥ 迭代计划</a>
-  <div class="grp">附录</div>
-  <a href="#multi">多租户隔离（硬性要求）</a>
-</nav>
-<main>
-<section class="stage" id="s1"><h2>阶段① 产品定位 & 功能清单</h2>
-<h2>1.1 产品定位</h2>
-<table>
-<tr><th>维度</th><th>说明</th></tr>
-<tr><td>产品名</td><td>CloudHub 企业协同办公平台（暂定）</td></tr>
-<tr><td>一句话定位</td><td>对标钉钉的多租户企业协同办公平台，一套代码同时支撑 SaaS 公有云与私有化交付</td></tr>
-<tr><td>目标客户</td><td>20-5000 人规模的中大型企业、政企单位、集团多子公司</td></tr>
-<tr><td>核心价值</td><td>组织在线、沟通在线、业务在线：通讯录+IM+OA 三件套打通，审批与考勤数据回流组织资产</td></tr>
-<tr><td>商业模式</td><td>SaaS 订阅（按活跃用户/月阶梯定价）+ 私有化 License（按节点/模块买断+年维保）</td></tr>
-<tr><td>差异化</td><td>① 租户级强隔离（schema/RLS 双保险）② SaaS/私有化同镜像同版本 ③ 模块可插拔按需开通</td></tr>
-<tr><td>竞品对标</td><td>钉钉、企业微信、飞书、华为 WeLink</td></tr>
-</table>
-<h2>1.2 角色与场景</h2>
-<table>
-<tr><th>角色</th><th>核心场景</th><th>关键诉求</th></tr>
-<tr><td>普通员工</td><td>IM 聊天、打卡、提审批、写文档</td><td>移动端流畅、消息必达</td></tr>
-<tr><td>部门主管</td><td>审批处理、团队考勤、任务分派</td><td>审批快、团队数据一目了然</td></tr>
-<tr><td>HR/行政</td><td>通讯录维护、考勤规则、假期管理</td><td>批量导入、规则灵活</td></tr>
-<tr><td>IT 管理员</td><td>租户配置、权限分配、审计、对接集成</td><td>权限精细、审计完整</td></tr>
-<tr><td>企业决策者</td><td>工作台数据大盘</td><td>实时、可信</td></tr>
-<tr><td>平台运营（SaaS）</td><td>租户开通、计费、配额</td><td>租户生命周期管理</td></tr>
-</table>
-<h2>1.3 模块功能清单（7 大模块）</h2>
-<h3>M1 组织通讯录</h3>
-<table>
-<tr><th>功能</th><th>说明</th><th>P0/P1</th></tr>
-<tr><td>组织架构树</td><td>多级部门（≥10 层）、虚拟部门</td><td>P0</td></tr>
-<tr><td>成员管理</td><td>入转调离、离职继承（聊天/文档归属）</td><td>P0</td></tr>
-<tr><td>批量导入导出</td><td>Excel 模板导入、格式校验</td><td>P0</td></tr>
-<tr><td>用户标签</td><td>自定义标签筛选成员</td><td>P1</td></tr>
-<tr><td>互联组织</td><td>跨企业临时协作空间</td><td>P2</td></tr>
-<tr><td>多账号体系</td><td>手机号/邮箱/账号密码/扫码/第三方 IdP</td><td>P0</td></tr>
-<tr><td>组织规模上限</td><td>SaaS 单租户 ≤ 5 万；私有化不限</td><td>—</td></tr>
-</table>
-<h3>M2 IM 即时通讯</h3>
-<table>
-<tr><th>功能</th><th>说明</th><th>P0/P1</th></tr>
-<tr><td>单聊/群聊</td><td>文本、图片、文件、表情、引用回复</td><td>P0</td></tr>
-<tr><td>群管理</td><td>群公告、群主/管理员、禁言、@全员</td><td>P0</td></tr>
-<tr><td>消息必达</td><td>seq 去重、离线拉取、ACK 重发</td><td>P0</td></tr>
-<tr><td>已读回执</td><td>单聊/群聊已读未读</td><td>P1</td></tr>
-<tr><td>消息类型</td><td>卡片消息（审批单、日程）、富文本</td><td>P1</td></tr>
-<tr><td>撤回/删除</td><td>2 分钟内撤回</td><td>P0</td></tr>
-<tr><td>搜索</td><td>消息全文检索（租户内）</td><td>P1</td></tr>
-<tr><td>会话同步</td><td>多端漫游，漫游 30 天</td><td>P0</td></tr>
-<tr><td>音视频通话</td><td>1v1 / 群通话（P2 私有化需 SFU）</td><td>P2</td></tr>
-</table>
-<h3>M3 OA 审批</h3>
-<table>
-<tr><th>功能</th><th>说明</th><th>P0/P1</th></tr>
-<tr><td>模板管理</td><td>可视化表单设计器（单行/多行/日期/明细/关联人）</td><td>P0</td></tr>
-<tr><td>流程引擎</td><td>串行、并行会签、或签、条件分支、抄送</td><td>P0</td></tr>
-<tr><td>审批操作</td><td>同意/拒绝/转交/加签/回退</td><td>P0</td></tr>
-<tr><td>审批触达</td><td>IM 卡片+待办提醒</td><td>P0</td></tr>
-<tr><td>常用审批</td><td>报销、请假、采购、用章、出差</td><td>P0</td></tr>
-<tr><td>审批统计</td><td>时长、通过率、部门维度报表</td><td>P1</td></tr>
-<tr><td>与考勤联动</td><td>请假单自动写入考勤</td><td>P0</td></tr>
-</table>
-<h3>M4 考勤</h3>
-<table>
-<tr><th>功能</th><th>说明</th><th>P0/P1</th></tr>
-<tr><td>班次/排班</td><td>固定班、排班制、自由工时</td><td>P0</td></tr>
-<tr><td>打卡方式</td><td>GPS 围栏、Wi-Fi、二维码、人脸（P2）</td><td>P0</td></tr>
-<tr><td>考勤规则</td><td>迟到早退缺卡判定、弹性工时、加班计算</td><td>P0</td></tr>
-<tr><td>补卡/异常</td><td>补卡申请接入审批流</td><td>P0</td></tr>
-<tr><td>月度报表</td><td>出勤汇总、导出薪资对接</td><td>P0</td></tr>
-<tr><td>假期管理</td><td>年假/调休余额，多种假期类型</td><td>P0</td></tr>
-<tr><td>门禁考勤机对接</td><td>私有化可选</td><td>P2</td></tr>
-</table>
-<h3>M5 云文档</h3>
-<table>
-<tr><th>功能</th><th>说明</th><th>P0/P1</th></tr>
-<tr><td>空间/文件夹</td><td>个人空间、团队空间、知识库</td><td>P0</td></tr>
-<tr><td>在线文档</td><td>文字/表格/思维导图（协同编辑）</td><td>P0</td></tr>
-<tr><td>协同编辑</td><td>CRDT/OT，光标 presence</td><td>P0</td></tr>
-<tr><td>权限</td><td>可读/可评论/可编辑/指定人/租户内</td><td>P0</td></tr>
-<tr><td>版本历史</td><td>版本快照与回滚</td><td>P1</td></tr>
-<tr><td>分享</td><td>链接分享（可设密码/有效期）</td><td>P0</td></tr>
-<tr><td>IM 集成</td><td>聊天中预览/创建文档卡片</td><td>P1</td></tr>
-</table>
-<h3>M6 工作台</h3>
-<table>
-<tr><th>功能</th><th>说明</th><th>P0/P1</th></tr>
-<tr><td>应用门户</td><td>可配置应用图标栅格、分组</td><td>P0</td></tr>
-<tr><td>自定义工作台</td><td>管理员按部门/角色推送不同工作台</td><td>P1</td></tr>
-<tr><td>待办中心</td><td>审批待办、任务、日程聚合</td><td>P0</td></tr>
-<tr><td>数据大盘</td><td>组织活跃、审批量、考勤异常</td><td>P1</td></tr>
-<tr><td>第三方应用</td><td>H5 微应用、OAuth 回调、自定义机器人</td><td>P1</td></tr>
-</table>
-<h3>M7 权限系统</h3>
-<table>
-<tr><th>功能</th><th>说明</th><th>P0/P1</th></tr>
-<tr><td>RBAC</td><td>用户-角色-权限点，租户内置角色</td><td>P0</td></tr>
-<tr><td>数据权限</td><td>部门级/全员范围控制（本人/本部门/全组织）</td><td>P0</td></tr>
-<tr><td>管理后台权限</td><td>超级管理员、模块管理员（HR 管考勤、IT 管集成）</td><td>P0</td></tr>
-<tr><td>操作审计</td><td>登录、导出、权限变更、文档访问日志</td><td>P0</td></tr>
-<tr><td>平台级权限</td><td>SaaS 平台运营与租户权限物理分层</td><td>P0</td></tr>
-<tr><td>SSO/OIDC</td><td>企业 IdP 对接</td><td>P1</td></tr>
-</table></section>
-<section class="stage" id="s2"><h2>阶段② 产品需求文档 PRD</h2>
-<h2>2.1 文档信息</h2>
-<table>
-<tr><th>项</th><th>内容</th></tr>
-<tr><td>版本</td><td>V0.1（规划阶段基线）</td></tr>
-<tr><td>范围</td><td>7 大模块核心 P0 需求</td></tr>
-<tr><td>需求分级</td><td>P0 必须（MVP）、P1 应该（V1.5）、P2 可以（V2.0）</td></tr>
-</table>
-<h2>2.2 目标与度量（北极星指标）</h2>
-<table>
-<tr><th>指标</th><th>目标（上线 6 个月）</th><th>说明</th></tr>
-<tr><td>租户开通→首日激活率</td><td>≥ 60%</td><td>注册后 24h 内成员登录</td></tr>
-<tr><td>周活跃用户率 WAU/TAU</td><td>≥ 70%</td><td>以 IM 为核心抓手</td></tr>
-<tr><td>消息送达率</td><td>≥ 99.9%</td><td>端到端 ACK 统计</td></tr>
-<tr><td>审批平均处理时长</td><td>≤ 8 小时</td><td>提交→终审</td></tr>
-<tr><td>打卡成功率</td><td>≥ 99%</td><td>围栏/WiFi 命中</td></tr>
-<tr><td>私有化部署时长</td><td>≤ 1 人日</td><td>标准 Docker Compose/Helm</td></tr>
-</table>
-<h2>2.3 功能需求（FR 编号）</h2>
-<h3>FR-M1 通讯录</h3>
-<table>
-<tr><th>编号</th><th>需求</th><th>描述</th><th>优先级</th><th>验收标准</th></tr>
-<tr><td>FR-M1-01</td><td>部门树管理</td><td>增删改移部门，最大深度 10 层</td><td>P0</td><td>移动部门后 3s 内全员同步</td></tr>
-<tr><td>FR-M1-02</td><td>成员生命周期</td><td>创建/启用/停用/离职，离职资产继承</td><td>P0</td><td>离职成员会话转交指定人</td></tr>
-<tr><td>FR-M1-03</td><td>批量导入</td><td>Excel 导入，校验手机号/部门唯一</td><td>P0</td><td>1 万行导入 ≤ 30s，错误行报告</td></tr>
-<tr><td>FR-M1-04</td><td>登录</td><td>账号密码/短信/扫码，失败 5 次锁 15 分钟</td><td>P0</td><td>锁定策略生效并提示</td></tr>
-</table>
-<h3>FR-M2 IM</h3>
-<table>
-<tr><th>编号</th><th>需求</th><th>描述</th><th>优先级</th><th>验收标准</th></tr>
-<tr><td>FR-M2-01</td><td>消息可靠投递</td><td>客户端 seq+服务端 ack，断线重连补拉</td><td>P0</td><td>弱网 30% 丢包下无丢消息</td></tr>
-<tr><td>FR-M2-02</td><td>离线消息</td><td>拉取最近 30 天漫游，多端漫游一致</td><td>P0</td><td>换设备登录历史完整</td></tr>
-<tr><td>FR-M2-03</td><td>群聊</td><td>建群/邀请/踢人/群上限 1000 人（内部）</td><td>P0</td><td>@消息触达全员推送</td></tr>
-<tr><td>FR-M2-04</td><td>消息撤回</td><td>本人 2 分钟内撤回，全员同步</td><td>P0</td><td>各端 1s 内收到撤回事件</td></tr>
-<tr><td>FR-M2-05</td><td>审批卡片</td><td>审批动态渲染为可点击卡片</td><td>P1</td><td>卡片直达审批详情</td></tr>
-</table>
-<h3>FR-M3 OA 审批</h3>
-<table>
-<tr><th>编号</th><th>需求</th><th>描述</th><th>优先级</th><th>验收标准</th></tr>
-<tr><td>FR-M3-01</td><td>表单设计器</td><td>拖拽组件、必填校验、手机预览</td><td>P0</td><td>模板保存后 5 分钟内可发起</td></tr>
-<tr><td>FR-M3-02</td><td>流程引擎</td><td>串行/会签/或签/条件分支/抄送</td><td>P0</td><td>50 节点流程执行正确、可回溯</td></tr>
-<tr><td>FR-M3-03</td><td>超时策略</td><td>节点超时自动提醒/自动跳过</td><td>P1</td><td>超时触发准确 ±1min</td></tr>
-<tr><td>FR-M3-04</td><td>数据联动</td><td>请假单写入考勤，报销累计预算</td><td>P0</td><td>聚合数据当日可见</td></tr>
-<tr><td>FR-M3-05</td><td>移动审批</td><td>IM 卡片+待办一键同意/拒绝</td><td>P0</td><td>移动端全流程闭环</td></tr>
-</table>
-<h3>FR-M4 考勤</h3>
-<table>
-<tr><th>编号</th><th>需求</th><th>描述</th><th>优先级</th><th>验收标准</th></tr>
-<tr><td>FR-M4-01</td><td>围栏打卡</td><td>半径 100-2000m 可配，多围栏</td><td>P0</td><td>边界 50m 内误差可接受提示</td></tr>
-<tr><td>FR-M4-02</td><td>规则引擎</td><td>上下班/弹性/综合计算时薪工时</td><td>P0</td><td>异常类型判定 100% 覆盖用例表</td></tr>
-<tr><td>FR-M4-03</td><td>补卡审批</td><td>缺卡触发补卡申请→审批→修正</td><td>P0</td><td>补卡通过后报表自动更新</td></tr>
-<tr><td>FR-M4-04</td><td>月度报表</td><td>出勤/迟到/加班/请假汇总，导出</td><td>P0</td><td>万人月报生成 ≤ 10s</td></tr>
-</table>
-<h3>FR-M5 云文档</h3>
-<table>
-<tr><th>编号</th><th>需求</th><th>描述</th><th>优先级</th><th>验收标准</th></tr>
-<tr><td>FR-M5-01</td><td>协同编辑</td><td>≥ 10 人同时编辑，冲突无损</td><td>P0</td><td>压测 10 人无内容丢失</td></tr>
-<tr><td>FR-M5-02</td><td>文档权限</td><td>4 档权限+链接分享有效期</td><td>P0</td><td>无权用户打开返回 403</td></tr>
-<tr><td>FR-M5-03</td><td>版本历史</td><td>每 5 分钟快照，可回滚</td><td>P1</td><td>回滚后 3s 内生效</td></tr>
-</table>
-<h3>FR-M6 工作台</h3>
-<table>
-<tr><th>编号</th><th>需求</th><th>描述</th><th>优先级</th><th>验收标准</th></tr>
-<tr><td>FR-M6-01</td><td>应用门户</td><td>管理员配置应用与分组</td><td>P0</td><td>配置 1 分钟内全员可见</td></tr>
-<tr><td>FR-M6-02</td><td>待办聚合</td><td>审批/任务/日程统一未读角标</td><td>P0</td><td>角标实时 ≤ 2s</td></tr>
-</table>
-<h3>FR-M7 权限</h3>
-<table>
-<tr><th>编号</th><th>需求</th><th>描述</th><th>优先级</th><th>验收标准</th></tr>
-<tr><td>FR-M7-01</td><td>RBAC</td><td>角色绑定权限点，接口默认拒绝</td><td>P0</td><td>无权限访问返回 403+审计</td></tr>
-<tr><td>FR-M7-02</td><td>数据范围</td><td>本人/指定部门/全组织 3 档</td><td>P0</td><td>跨范围查询结果被强制裁剪</td></tr>
-<tr><td>FR-M7-03</td><td>审计日志</td><td>登录/导出/权限变更留痕，保留 180 天</td><td>P0</td><td>关键操作 100% 可检索</td></tr>
-</table>
-<h2>2.4 非功能需求（NFR）</h2>
-<table>
-<tr><th>类别</th><th>指标</th><th>目标值</th></tr>
-<tr><td>性能</td><td>IM 消息 P99 端到端延迟</td><td>≤ 300ms（同地域）</td></tr>
-<tr><td>性能</td><td>列表/详情接口 P95</td><td>≤ 300ms</td></tr>
-<tr><td>容量</td><td>单租户</td><td>5 万成员 / 群 1000 人</td></tr>
-<tr><td>可用性</td><td>SaaS 核心链路</td><td>99.95%</td></tr>
-<tr><td>安全</td><td>传输</td><td>全站 TLS1.2+</td></tr>
-<tr><td>安全</td><td>密钥</td><td>租户数据密钥 KMS 每租户一钥</td></tr>
-<tr><td>隔离</td><td>多租户</td><td>逻辑+物理双重隔离（见附录）</td></tr>
-<tr><td>兼容</td><td>客户端</td><td>Chrome/Safari/Edge 最新两版 + iOS/Android</td></tr>
-<tr><td>部署</td><td>私有化</td><td>Docker Compose 一键 + K8s Helm 双轨</td></tr>
-<tr><td>降级</td><td>依赖故障</td><td>IM 不依赖文档/考勤，可独立存活</td></tr>
-</table></section>
-<section class="stage" id="s3"><h2>阶段③ 数据库设计</h2>
-<h2>3.1 数据库选型</h2>
-<table>
-<tr><th>组件</th><th>选型</th><th>用途</th></tr>
-<tr><td>主库</td><td>PostgreSQL 15+</td><td>组织/审批/考勤/权限等事务数据（强一致）</td></tr>
-<tr><td>缓存</td><td>Redis 7</td><td>会话、在线状态、消息 seq、验证码</td></tr>
-<tr><td>搜索</td><td>Elasticsearch（可选，私有化可降级 Lucene）</td><td>消息/文档全文检索</td></tr>
-<tr><td>对象存储</td><td>S3 / MinIO</td><td>文件、图片、文档附件</td></tr>
-<tr><td>图/关系库（P2）</td><td>Neo4j 或 PG recursive CTE</td><td>组织树、审批链路查询</td></tr>
-</table>
-<h2>3.2 多租户隔离策略（硬性要求）</h2>
-<table>
-<tr><th>层级</th><th>手段</th><th>说明</th></tr>
-<tr><td>L1 应用层</td><td>所有表强制 <code>tenant_id NOT NULL</code>，MyBatis/JPA 拦截器自动注入 WHERE tenant_id=?</td><td>应用代码禁止手写无租户条件的查询</td></tr>
-<tr><td>L2 ORM 层</td><td>租户插件 + 单测：任何查询缺 tenant_id 直接抛异常</td><td>CI 卡点</td></tr>
-<tr><td>L3 数据库层</td><td>RLS（Row Level Security）：<code>ALTER TABLE t ENABLE ROW LEVEL FORCE</code>，会话变量 <code>SET app.tenant_id</code></td><td>即便应用有 bug 也无法跨租户读</td></tr>
-<tr><td>L4 大客户隔离</td><td>Schema-per-Enterprise：私有化独立库；SaaS 超大租户可迁独立 schema</td><td>弹性策略</td></tr>
-<tr><td>L5 密钥隔离</td><td>每租户独立数据密钥 DEK，KMS 包裹存储</td><td>文件/敏感字段加密</td></tr>
-<tr><td>L6 会话隔离</td><td>JWT 声明 tenant_id，Redis key 前缀 <code>t:{tenant_id}:</code></td><td>缓存不串号</td></tr>
-</table>
-<p>RLS 示例：</p>
-<pre><code>
-ALTER TABLE im_message ENABLE FORCE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON im_message
-  USING (tenant_id = current_setting(&#x27;app.tenant_id&#x27;)::uuid);
--- 业务连接池初始化: SET app.tenant_id = &#x27;&lt;tid&gt;&#x27;;
-</code></pre>
-<h2>3.3 核心实体 ER 概览</h2>
-<pre><code>
-tenant(租户) 1─┬─* org_department 1─* org_user（成员）
-              ├─* im_conversation 1─* im_message
-              ├─* oa_definition 1─* oa_instance 1─* oa_task
-              ├─* att_rule 1─* att_record
-              ├─* doc_space 1─* doc_file 1─* doc_permission
-              └─* sys_role 1─* sys_role_perm
-</code></pre>
-<h2>3.4 表清单（按模块）</h2>
-<h3>通用 / 租户</h3>
-<table>
-<tr><th>表名</th><th>关键字段</th><th>说明</th></tr>
-<tr><td>sys_tenant</td><td>id, name, plan, status, domain, created_at, dek_encrypted</td><td>租户主表；plan 决定模块开通</td></tr>
-<tr><td>sys_tenant_module</td><td>tenant_id, module_code, enabled, expire_at</td><td>模块开关与配额</td></tr>
-<tr><td>sys_audit_log</td><td>tenant_id, actor_id, action, target, ip, created_at</td><td>审计，180 天归档</td></tr>
-<tr><td>sys_region</td><td>tenant_id, code, parent_id, name</td><td>行政区/自定义区域（考勤围栏、通讯录扩展）</td></tr>
-</table>
-<h3>M1 组织通讯录</h3>
-<table>
-<tr><th>表名</th><th>关键字段</th><th>说明</th></tr>
-<tr><td>org_department</td><td>tenant_id, id, parent_id, name, leader_id, path, sort</td><td>path 物化路径加速子树查询</td></tr>
-<tr><td>org_user</td><td>tenant_id, id, emp_no, name, mobile_enc, email, dept_id, status, joined_at</td><td>手机号加密存储；uk(tenant_id, emp_no)</td></tr>
-<tr><td>org_user_ext</td><td>tenant_id, user_id, k, v</td><td>扩展属性 JSONB</td></tr>
-<tr><td>org_user_status_log</td><td>tenant_id, user_id, from, to, reason</td><td>入转调离留痕</td></tr>
-</table>
-<h3>M2 IM</h3>
-<table>
-<tr><th>表名</th><th>关键字段</th><th>说明</th></tr>
-<tr><td>im_conversation</td><td>tenant_id, id, type(single/group), owner_id, last_seq, member_count</td><td>会话头</td></tr>
-<tr><td>im_conv_member</td><td>tenant_id, conv_id, user_id, mute, recv_level, last_read_seq</td><td>成员与已读位点</td></tr>
-<tr><td>im_message</td><td>tenant_id, conv_id, seq, sender_id, type, body(jsonb), created_at</td><td>uk(tenant_id, conv_id, seq)；分区表按月</td></tr>
-<tr><td>im_friend</td><td>tenant_id, user_id, friend_id, remark</td><td>单向关系表，双向行</td></tr>
-</table>
-<h3>M3 OA 审批</h3>
-<table>
-<tr><th>表名</th><th>关键字段</th><th>说明</th></tr>
-<tr><td>oa_form_def</td><td>tenant_id, id, name, version, schema(jsonb), status</td><td>表单定义（版本化）</td></tr>
-<tr><td>oa_flow_def</td><td>tenant_id, form_id, graph(jsonb), current_ver</td><td>流程图：节点+条件表达式</td></tr>
-<tr><td>oa_instance</td><td>tenant_id, id, def_ver, form_data(jsonb), status, initiator, current_node</td><td>实例主表</td></tr>
-<tr><td>oa_task</td><td>tenant_id, instance_id, node_id, approver_id, action, comment, acted_at</td><td>节点任务（同意/拒绝/转交）</td></tr>
-<tr><td>oa_cc</td><td>tenant_id, instance_id, user_id, read_at</td><td>抄送</td></tr>
-<tr><td>oa_counter_budget</td><td>tenant_id, subject, amount_sum</td><td>报销等聚合</td></tr>
-</table>
-<h3>M4 考勤</h3>
-<table>
-<tr><th>表名</th><th>关键字段</th><th>说明</th></tr>
-<tr><td>att_group</td><td>tenant_id, id, name, members(jsonb)</td><td>考勤组</td></tr>
-<tr><td>att_shift</td><td>tenant_id, id, name, periods(jsonb), span</td><td>班次（弹性/综合工时参数）</td></tr>
-<tr><td>att_rule</td><td>tenant_id, shift_id, workdays, late_min, geo_ids</td><td>判定规则</td></tr>
-<tr><td>att_geo</td><td>tenant_id, name, lng, lat, radius</td><td>围栏</td></tr>
-<tr><td>att_punch</td><td>tenant_id, user_id, date, time, method, lng, lat, result</td><td>打卡原始记录</td></tr>
-<tr><td>att_daily</td><td>tenant_id, user_id, date, status, work_min, late_min, exceptions(jsonb)</td><td>日结结果</td></tr>
-<tr><td>att_leave</td><td>tenant_id, user_id, type, start, end, hours, instance_id</td><td>假期流水（关 OA 实例）</td></tr>
-</table>
-<h3>M5 云文档</h3>
-<table>
-<tr><th>表名</th><th>关键字段</th><th>说明</th></tr>
-<tr><td>doc_space</td><td>tenant_id, id, name, type(personal/team/wiki)</td><td>空间</td></tr>
-<tr><td>doc_file</td><td>tenant_id, space_id, parent_id, name, type, owner_id, version, trashed</td><td>文件树</td></tr>
-<tr><td>doc_permission</td><td>tenant_id, file_id, subject_type(user/link), subject_id, role(view/comment/edit)</td><td>权限</td></tr>
-<tr><td>doc_snapshot</td><td>tenant_id, file_id, version, state(bytes/CRDT), created_at</td><td>版本快照</td></tr>
-<tr><td>doc_comment</td><td>tenant_id, file_id, anchor, user_id, body, status</td><td>评论</td></tr>
-</table>
-<h3>M6 工作台 / M7 权限</h3>
-<table>
-<tr><th>表名</th><th>关键字段</th><th>说明</th></tr>
-<tr><td>app_application</td><td>tenant_id, id, name, icon, url, group, sort</td><td>应用门户</td></tr>
-<tr><td>workbench_layout</td><td>tenant_id, scope(dept/role/all), scope_id, widgets(jsonb)</td><td>工作台布局</td></tr>
-<tr><td>sys_role</td><td>tenant_id, id, name, builtin</td><td>角色</td></tr>
-<tr><td>sys_role_perm</td><td>role_id, perm_code</td><td>权限点（perm_code 如 <code>oa:approve</code>、<code>att:export</code>）</td></tr>
-<tr><td>sys_user_role</td><td>tenant_id, user_id, role_id, data_scope(self/dept/all)</td><td>用户-角色-数据范围</td></tr>
-</table>
-<h2>3.5 关键索引与约束（节选）</h2>
-<table>
-<tr><th>表</th><th>索引/约束</th><th>目的</th></tr>
-<tr><td>im_message</td><td>uk(tenant_id, conv_id, seq); idx(conv_id, created_at DESC)</td><td>消息去重+漫游翻页</td></tr>
-<tr><td>org_user</td><td>uk(tenant_id, emp_no); idx(tenant_id, dept_id)</td><td>唯一性+按部门查</td></tr>
-<tr><td>oa_instance</td><td>idx(tenant_id, initiator, created_at); idx(status)</td><td>我发起的/待办</td></tr>
-<tr><td>att_daily</td><td>uk(tenant_id, user_id, date)</td><td>日结幂等</td></tr>
-<tr><td>im_conv_member</td><td>uk(conv_id, user_id); idx(user_id, mute)</td><td>会话列表</td></tr>
-<tr><td>全表</td><td>tenant_id 作为所有 uk/index 首列</td><td>隔离裁剪+分区裁剪</td></tr>
-</table>
-<h2>3.6 分库分表与归档</h2>
-<table>
-<tr><th>场景</th><th>策略</th></tr>
-<tr><td>im_message 增长</td><td>PG 声明式分区，按 (tenant_id hash) 子分区 + 按月时间分区</td></tr>
-<tr><td>私有化超大租户</td><td>消息库独立实例</td></tr>
-<tr><td>审计/消息归档</td><td>冷数据转对象存储 Parquet，保留 1 年在线</td></tr>
-</table></section>
-<section class="stage" id="s4"><h2>阶段④ 系统架构</h2>
-<h2>4.1 总体架构（SaaS / 私有化同构）</h2>
-<pre><code>
-                    ┌──────────────────────────────────────────┐
-   Web(PC)          │            客户端层                       │  iOS/Android
-   cloudhub-web  ───┤  桌面端( Electron P1 )                    │──┐
-                    └───────────────┬──────────────────────────┘   │
-                                    │ HTTPS / WSS                  │
-                    ┌───────────────▼──────────────────────────┐   │
-                    │  接入层: Nginx / SLB  (TLS, 限流, 静态)    │   │
-                    │  API Gateway (租户识别, JWT校验, 配额)      │   │
-                    └───┬───────────┬───────────┬─────────────┘   │
-                        │           │           │                 │
-        ┌───────────────▼──┐ ┌──────▼───────┐ ┌─▼──────────────┐  │
-        │ IM 服务(WebSocket)│ │ 业务微服务群  │ │ 开放平台/回调    │  │
-        │ 连接网关+投递     │ │ org / oa /   │ │ webhook, H5 SDK │  │
-        │ seq/ACK/漫游      │ │ att / doc /  │ └────────────────┘  │
-        └────┬─────────────┘ │ workbench /  │                     │
-             │               │ auth / audit │                    │
-             │               └──────┬───────┘                    │
-   ┌─────────▼────────┐   ┌─────────▼─────────┐  ┌──────────────▼┐
-   │ Redis 集群        │   │  PostgreSQL 主从   │  │ MinIO/S3 对象  │
-   │ 会话/在线/seq/    │   │  RLS 多租户隔离    │  │ 文件/附件      │
-   │ 广播订阅          │   │  + 读写分离        │  └───────────────┘
-   └──────────────────┘   └───────────────────┘
-        Kafka(MQ): 消息投递、审计事件、考勤日结   │ Elasticsearch: 检索
-</code></pre>
-<h2>4.2 技术栈选型</h2>
-<table>
-<tr><th>层</th><th>选型</th><th>理由</th></tr>
-<tr><td>前端 Web</td><td>React 18 + TypeScript + Vite + Ant Design</td><td>生态成熟、组件齐（表单设计器）</td></tr>
-<tr><td>移动端</td><td>Flutter（或 uni-app 快速迭代）</td><td>一套代码双端</td></tr>
-<tr><td>后端框架</td><td>Java 17 + Spring Boot 3 / 或 Go(gin)（二选一，推荐 Java 生态）</td><td>流程引擎、审批生态（Flowable）</td></tr>
-<tr><td>流程引擎</td><td>Flowable 7</td><td>OA 审批省 60% 工作量</td></tr>
-<tr><td>协同编辑</td><td>yjs + Hocuspocus Server</td><td>CRDT 成熟、PG 存储</td></tr>
-<tr><td>IM 连接层</td><td>Netty 自研网关（Go 版亦可）</td><td>百万长连接</td></tr>
-<tr><td>消息队列</td><td>Kafka</td><td>投递解耦、审计事件流</td></tr>
-<tr><td>缓存</td><td>Redis Cluster</td><td>在线状态、序列号</td></tr>
-<tr><td>ORM</td><td>MyBatis-Plus + 多租户插件</td><td>自动注入 tenant_id</td></tr>
-<tr><td>搜索</td><td>Elasticsearch 8</td><td>消息/文档检索</td></tr>
-<tr><td>对象存储</td><td>MinIO(私有化) / S3(SaaS)</td><td>同接口</td></tr>
-<tr><td>鉴权</td><td>JWT(短) + Refresh Token；OIDC 对接 IdP</td><td></td></tr>
-<tr><td>注册配置</td><td>Nacos（私有化可降级为文件）</td><td></td></tr>
-<tr><td>部署</td><td>Docker + K8s(Helm) / Docker Compose 双轨</td><td>同镜像</td></tr>
-<tr><td>CI/CD</td><td>GitHub Actions → 镜像仓库 → Helm</td><td></td></tr>
-<tr><td>可观测</td><td>Prometheus + Grafana + Loki + OpenTelemetry</td><td></td></tr>
-</table>
-<h2>4.3 关键设计</h2>
-<h3>4.3.1 IM 消息链路</h3>
-<table>
-<tr><th>步骤</th><th>动作</th></tr>
-<tr><td>1</td><td>客户端 WSS 连接 → 网关鉴权(JWT 含 tenant_id/user_id) → 绑定连接</td></tr>
-<tr><td>2</td><td>发送带 client_msg_id，网关分配全局 seq（Redis INCR per conv）</td></tr>
-<tr><td>3</td><td>落库 im_message（分区表）→ Kafka 投递事件</td></tr>
-<tr><td>4</td><td>在线成员实时推送；离线写推送队列（FCM/厂商通道）+ 离线消息漫游</td></tr>
-<tr><td>5</td><td>ACK 回执；未 ACK 指数退避重发；client_msg_id 幂等去重</td></tr>
-</table>
-<h3>4.3.2 审批流程执行</h3>
-<table>
-<tr><th>步骤</th><th>动作</th></tr>
-<tr><td>1</td><td>发起：表单校验 → Flowable 启动流程实例（含条件表达式上下文=表单数据）</td></tr>
-<tr><td>2</td><td>生成 oa_task → IM 卡片 + 工作台待办</td></tr>
-<tr><td>3</td><td>审批动作写 oa_task + 流程推进；会签聚合节点等全部完成</td></tr>
-<tr><td>4</td><td>终态回调：请假→att_leave；报销→oa_counter_budget；事件进 Kafka</td></tr>
-<tr><td>5</td><td>全程租户上下文透传，Flowable 任务表加 tenant_id</td></tr>
-</table>
-<h3>4.3.3 权限判定链</h3>
-<pre><code>
-请求 → Gateway(JWT 校验/租户提取/限流)
-     → 业务服务 AOP @PreAuthorize(perm_code)
-     → 数据层 MyBatis 租户拦截器 + data_scope(自动生成部门过滤)
-     → PG RLS 兜底
-     → audit_log 异步落 Kafka
-</code></pre>
-<h3>4.3.4 SaaS 与私有化差异</h3>
-<table>
-<tr><th>维度</th><th>SaaS</th><th>私有化</th></tr>
-<tr><td>镜像</td><td>同一套 K8s 镜像</td><td>同一套镜像</td></tr>
-<tr><td>数据库</td><td>共享 PG + RLS（大客户可独立 schema/实例）</td><td>独立 PG</td></tr>
-<tr><td>对象存储</td><td>S3</td><td>MinIO 内置</td></tr>
-<tr><td>注册中心</td><td>Nacos 集群</td><td>compose 内置单节点/文件配置</td></tr>
-<tr><td>计费/运营模块</td><td>开</td><td>关（模块开关 sys_tenant_module）</td></tr>
-<tr><td>升级</td><td>滚动无感升级</td><td>补丁包 + 回滚脚本</td></tr>
-<tr><td>许可证</td><td>订阅</td><td>License 文件校验节点数/到期</td></tr>
-</table>
-<h2>4.4 容量与高可用</h2>
-<table>
-<tr><th>项</th><th>设计</th></tr>
-<tr><td>IM 网关</td><td>无状态水平扩展，一致性哈希路由会话；单机 50 万长连接</td></tr>
-<tr><td>消息扇出</td><td>群聊广播走网关本地订阅表 + Kafka 分区，避免 DB 轮询</td></tr>
-<tr><td>DB</td><td>主从+流复制，PgBouncer 连接池，每租户连接打标 SET app.tenant_id</td></tr>
-<tr><td>降级开关</td><td>检索、统计、已读回执可独立降级</td></tr>
-<tr><td>备份</td><td>每日全量 + WAL 归档，私有化提供灾备脚本</td></tr>
-</table>
-<h2>4.5 安全架构</h2>
-<table>
-<tr><th>项</th><th>措施</th></tr>
-<tr><td>传输</td><td>TLS1.2+，HSTS</td></tr>
-<tr><td>数据</td><td>手机号/证件号字段级 AES-GCM；文件 SSE-KMS 每租户 DEK</td></tr>
-<tr><td>认证</td><td>短信频率限制、密码 Argon2id、MFA(P1)</td></tr>
-<tr><td>授权</td><td>默认拒绝、最小权限；越权测试用例进 CI</td></tr>
-<tr><td>审计</td><td>登录/导出/权限变更/文档访问，180 天</td></tr>
-<tr><td>合规</td><td>等保 2.0 三级适配清单（私有化交付包）</td></tr>
-</table></section>
-<section class="stage" id="s5"><h2>阶段⑤ API 文档</h2>
-<h2>5.1 通用规范</h2>
-<table>
-<tr><th>项</th><th>约定</th></tr>
-<tr><td>Base URL</td><td><code>https://{host}/api/v1</code></td></tr>
-<tr><td>认证</td><td><code>Authorization: Bearer &lt;access_token&gt;</code>（JWT，含 tenant_id、uid、perms）</td></tr>
-<tr><td>租户标识</td><td>JWT 内嵌 tenant_id；开放平台可加 <code>X-Tenant-Id</code>（需平台级 token 才可切换）</td></tr>
-<tr><td>幂等</td><td>写操作支持 <code>Idempotency-Key</code> 头（尤其审批/消息）</td></tr>
-<tr><td>分页</td><td><code>?page=1&amp;page_size=20</code>，返回 <code>{"code":0,"msg":"ok","data":{...}}</code></td></tr>
-<tr><td>错误码</td><td>0 成功；401 未认证；403 无权限/跨租户；409 冲突；429 限流；500 内部错误</td></tr>
-<tr><td>时间</td><td>ISO8601 UTC（2025-01-01T00:00:00Z）</td></tr>
-</table>
-<p>统一响应：</p>
-<pre><code>
-{&quot;code&quot;:0,&quot;msg&quot;:&quot;ok&quot;,&quot;data&quot;:{&quot;items&quot;:[],&quot;total&quot;:120}}
-</code></pre>
-<h2>5.2 认证 <code>/auth</code></h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>说明</th><th>关键入参</th><th>关键出参</th></tr>
-<tr><td>POST</td><td>/auth/login</td><td>账号密码登录</td><td>tenant_domain, account, password</td><td>access_token, refresh_token, user</td></tr>
-<tr><td>POST</td><td>/auth/sms-code</td><td>短信验证码</td><td>mobile</td><td>code_id</td></tr>
-<tr><td>POST</td><td>/auth/login-sms</td><td>短信登录</td><td>mobile, code</td><td>同上</td></tr>
-<tr><td>POST</td><td>/auth/refresh</td><td>刷新令牌</td><td>refresh_token</td><td>access_token</td></tr>
-<tr><td>POST</td><td>/auth/logout</td><td>退出</td><td>—</td><td>—</td></tr>
-<tr><td>GET</td><td>/auth/me</td><td>当前用户+权限点</td><td>—</td><td>user, roles, perms[]</td></tr>
-</table>
-<h2>5.3 通讯录 <code>/contacts</code></h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>权限点</th><th>说明</th></tr>
-<tr><td>GET</td><td>/departments/tree</td><td>contacts:read</td><td>组织树（含成员数）</td></tr>
-<tr><td>POST</td><td>/departments</td><td>contacts:write</td><td>创建部门</td></tr>
-<tr><td>PUT</td><td>/departments/{id}</td><td>contacts:write</td><td>改名/移动/设负责人</td></tr>
-<tr><td>DELETE</td><td>/departments/{id}</td><td>contacts:write</td><td>删除（成员需先迁出）</td></tr>
-<tr><td>GET</td><td>/users?dept_id=&amp;kw=</td><td>contacts:read</td><td>成员列表（data_scope 裁剪）</td></tr>
-<tr><td>POST</td><td>/users</td><td>contacts:write</td><td>创建成员</td></tr>
-<tr><td>PUT</td><td>/users/{id}</td><td>contacts:write</td><td>修改</td></tr>
-<tr><td>POST</td><td>/users/{id}/disable</td><td>contacts:write</td><td>停用/离职（可带 transfer_to）</td></tr>
-<tr><td>POST</td><td>/contacts/import</td><td>contacts:import</td><td>Excel 批量导入（返回逐行结果）</td></tr>
-<tr><td>GET</td><td>/users/{id}/profile</td><td>contacts:read</td><td>个人资料（按隐私设置脱敏）</td></tr>
-</table>
-<h2>5.4 IM <code>/im</code></h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>说明</th></tr>
-<tr><td>GET</td><td>/conversations</td><td>会话列表（含 last_msg、unread）</td></tr>
-<tr><td>POST</td><td>/conversations</td><td>创建会话 `{type:"single</td><td>group", peer_ids:[]}`</td></tr>
-<tr><td>GET</td><td>/conversations/{id}/messages?before_seq=</td><td>漫游消息（30 天）</td></tr>
-<tr><td>POST</td><td>/conversations/{id}/messages</td><td>发消息（幂等，client_msg_id）</td></tr>
-<tr><td>POST</td><td>/messages/{id}/recall</td><td>撤回（2 分钟内）</td></tr>
-<tr><td>POST</td><td>/conversations/{id}/read</td><td>标记已读 <code>up_to_seq</code></td></tr>
-<tr><td>POST</td><td>/conversations/{id}/members</td><td>拉人/建群</td></tr>
-<tr><td>PUT</td><td>/conversations/{id}/settings</td><td>群公告/禁言/管理</td></tr>
-<tr><td>WS</td><td>/ws/im?token=</td><td>长连接：帧类型 auth/message/ack/ping/sync</td></tr>
-</table>
-<p>消息 body 示例：</p>
-<pre><code>
-{&quot;client_msg_id&quot;:&quot;c-uuid&quot;,&quot;type&quot;:&quot;text&quot;,&quot;content&quot;:&quot;{\\\&quot;text\\\&quot;:\\\&quot;你好\\\&quot;}&quot;,&quot;mention&quot;:[1001]}
-</code></pre>
-<h2>5.5 OA 审批 <code>/oa</code></h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>权限点</th><th>说明</th></tr>
-<tr><td>GET/POST</td><td>/forms</td><td>oa:design</td><td>表单模板 CRUD/发布（版本化）</td></tr>
-<tr><td>GET/POST</td><td>/flows</td><td>oa:design</td><td>流程定义（节点/条件 JSON）</td></tr>
-<tr><td>GET</td><td>/instances/mine</td><td>oa:read</td><td>我发起的</td></tr>
-<tr><td>GET</td><td>/tasks/todo</td><td>oa:approve</td><td>我的待办</td></tr>
-<tr><td>POST</td><td>/instances</td><td>oa:submit</td><td>发起 <code>{form_id, data:{...}}</code></td></tr>
-<tr><td>POST</td><td>/tasks/{id}/action</td><td>oa:approve</td><td>同意/拒绝 `{action:"agree\</td><td>reject\</td><td>transfer", comment, to_user}`</td></tr>
-<tr><td>POST</td><td>/instances/{id}/cc</td><td>oa:approve</td><td>抄送</td></tr>
-<tr><td>GET</td><td>/instances/{id}/trace</td><td>oa:read</td><td>流程轨迹（谁在何时做了什么）</td></tr>
-<tr><td>GET</td><td>/stats/overview</td><td>oa:stats</td><td>时长/通过率统计</td></tr>
-</table>
-<h2>5.6 考勤 <code>/attendance</code></h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>权限点</th><th>说明</th></tr>
-<tr><td>GET/POST</td><td>/shifts, /rules, /geos</td><td>att:config</td><td>班次/规则/围栏配置</td></tr>
-<tr><td>POST</td><td>/punch</td><td>att:punch</td><td>打卡 <code>{lng,lat,method,geo_id}</code> → 返回判定</td></tr>
-<tr><td>GET</td><td>/daily?month=</td><td>att:read</td><td>个人日结果</td></tr>
-<tr><td>GET</td><td>/reports/monthly?dept=</td><td>att:export</td><td>部门月报（导出 Excel）</td></tr>
-<tr><td>POST</td><td>/corrections</td><td>att:approve</td><td>补卡（内部走 OA）</td></tr>
-<tr><td>GET/POST</td><td>/leaves/balance</td><td>att:read</td><td>假期余额</td></tr>
-</table>
-<h2>5.7 云文档 <code>/docs</code></h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>权限点</th><th>说明</th></tr>
-<tr><td>GET</td><td>/spaces</td><td>doc:read</td><td>空间列表</td></tr>
-<tr><td>GET</td><td>/files?space_id=</td><td>doc:read</td><td>文件树</td></tr>
-<tr><td>POST</td><td>/files</td><td>doc:write</td><td>新建文档/上传（multipart→MinIO）</td></tr>
-<tr><td>GET/PUT</td><td>/files/{id}/content</td><td>doc:write</td><td>读写（协同走 Yjs WebSocket）</td></tr>
-<tr><td>POST</td><td>/files/{id}/permissions</td><td>doc:share</td><td>授权 <code>{subject_type, subject_id, role}</code></td></tr>
-<tr><td>POST</td><td>/files/{id}/share-link</td><td>doc:share</td><td>链接分享（密码/有效期）</td></tr>
-<tr><td>GET</td><td>/files/{id}/versions</td><td>doc:read</td><td>版本历史；POST …/rollback 回滚</td></tr>
-<tr><td>WS</td><td>/ws/docs/{id}?token=</td><td>—</td><td>Yjs 协同同步</td></tr>
-</table>
-<h2>5.8 工作台与开放 <code>/workbench</code>、<code>/open</code></h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>说明</th></tr>
-<tr><td>GET</td><td>/workbench/layout</td><td>当前用户生效布局（按角色/部门）</td></tr>
-<tr><td>PUT</td><td>/workbench/layout</td><td>管理员配置 widgets</td></tr>
-<tr><td>GET</td><td>/todos</td><td>待办聚合（审批/任务/日程 + 未读角标）</td></tr>
-<tr><td>GET</td><td>/apps</td><td>应用门户列表</td></tr>
-<tr><td>POST</td><td>/open/webhooks</td><td>注册事件回调（message.created、task.approved…）</td></tr>
-<tr><td>POST</td><td>/open/bots/messages</td><td>自定义机器人推送群消息</td></tr>
-</table>
-<h2>5.9 权限与管理 <code>/admin</code></h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>权限点</th><th>说明</th></tr>
-<tr><td>GET/POST</td><td>/admin/roles</td><td>perm:role</td><td>角色 CRUD（内置角色只读）</td></tr>
-<tr><td>PUT</td><td>/admin/roles/{id}/perms</td><td>perm:role</td><td>绑定权限点</td></tr>
-<tr><td>PUT</td><td>/admin/users/{id}/roles</td><td>perm:assign</td><td>分配角色 + data_scope</td></tr>
-<tr><td>GET</td><td>/admin/audit-logs?action=&amp;from=</td><td>perm:audit</td><td>审计检索</td></tr>
-<tr><td>GET/PUT</td><td>/admin/tenant/modules</td><td>tenant:setting</td><td>模块开通/配额</td></tr>
-</table>
-<h2>5.10 开放平台（租户外）</h2>
-<table>
-<tr><th>方法</th><th>路径</th><th>说明</th></tr>
-<tr><td>POST</td><td>/open/v1/token</td><td>app_id+app_secret 换 tenant 级 token</td></tr>
-<tr><td>POST</td><td>/open/v1/messages</td><td>应用向会话推消息</td></tr>
-<tr><td>GET</td><td>/open/v1/users</td><td>读通讯录（需 scope:contacts.read）</td></tr>
-<tr><td>回调</td><td>POST {your_url}</td><td>签名 <code>X-Signature: HMAC-SHA256(body, app_secret)</code></td></tr>
-</table>
-<p>权限点命名规范：<code>{module}:{resource}:{action}</code>，如 <code>oa:approve</code>、<code>att:export</code>、<code>doc:share</code>。</p></section>
-<section class="stage" id="s6"><h2>阶段⑥ 迭代计划</h2>
-<h2>6.1 里程碑总览（5 个版本，约 30 周）</h2>
-<table>
-<tr><th>版本</th><th>周期</th><th>目标</th><th>出口标准（DoD）</th></tr>
-<tr><td>V0.1 规划</td><td>W0-W1</td><td>SDD 六件套定稿</td><td>本文档评审通过</td></tr>
-<tr><td>V0.5 内测 Alpha</td><td>W2-W10</td><td>通讯录+IM+登录+权限骨架</td><td>内部 200 人公司跑通日常沟通</td></tr>
-<tr><td>V1.0 MVP</td><td>W11-W18</td><td>OA+考勤+工作台（SaaS 可注册）</td><td>首个种子客户 500 人上线</td></tr>
-<tr><td>V1.5 协作增强</td><td>W19-W24</td><td>云文档协同、消息检索、开放平台</td><td>文档 10 人协同压测通过</td></tr>
-<tr><td>V2.0 商业化</td><td>W25-W30</td><td>私有化交付包、License、音视频</td><td>1 单私有化 ≤ 1 人日部署</td></tr>
-</table>
-<h2>6.2 迭代明细（双周 Sprint）</h2>
-<h3>Sprint 0-1（W2-W5）：地基</h3>
-<table>
-<tr><th>任务</th><th>模块</th><th>产出</th><th>验收</th></tr>
-<tr><td>多租户底座</td><td>架构</td><td>MyBatis 租户插件 + PG RLS + 连接池注入</td><td>跨租户越权自动化用例 100% 拦截</td></tr>
-<tr><td>认证中心</td><td>权限</td><td>登录/短信/JWT/刷新</td><td>压测 1000 QPS 登录</td></tr>
-<tr><td>组织通讯录</td><td>M1</td><td>部门树/成员 CRUD/Excel 导入</td><td>1 万行导入 ≤ 30s</td></tr>
-<tr><td>RBAC+审计</td><td>M7</td><td>角色/权限点/AOP 默认拒绝</td><td>越权测试进 CI</td></tr>
-</table>
-<h3>Sprint 2-3（W6-W9）：IM</h3>
-<table>
-<tr><th>任务</th><th>模块</th><th>产出</th><th>验收</th></tr>
-<tr><td>IM 网关</td><td>M2</td><td>Netty 长连接/鉴权/心跳</td><td>单机 50 万连接压测</td></tr>
-<tr><td>消息链路</td><td>M2</td><td>seq/ACK/漫游/撤回/离线</td><td>弱网 30% 丢包不丢消息</td></tr>
-<tr><td>群管理</td><td>M2</td><td>建群/邀请/公告/@</td><td>千人群扇出 P99 ≤ 300ms</td></tr>
-<tr><td>Web/移动 IM UI</td><td>M2</td><td>会话列表/聊天窗/多端同步</td><td>多端漫游一致</td></tr>
-</table>
-<h3>Sprint 4-5（W10-W13）：OA + 考勤</h3>
-<table>
-<tr><th>任务</th><th>模块</th><th>产出</th><th>验收</th></tr>
-<tr><td>表单设计器</td><td>M3</td><td>拖拽组件/校验</td><td>10 分钟搭好报销单</td></tr>
-<tr><td>流程引擎</td><td>M3</td><td>Flowable 接入/串并联/会签/条件</td><td>50 节点用例全绿</td></tr>
-<tr><td>审批触达</td><td>M3</td><td>IM 卡片+待办+移动端闭环</td><td>端到端用例通过</td></tr>
-<tr><td>考勤规则引擎</td><td>M4</td><td>班次/围栏/判定/日结</td><td>判定用例表 100% 覆盖</td></tr>
-<tr><td>考勤报表</td><td>M4</td><td>月报/补卡/假期余额</td><td>万人月报 ≤ 10s</td></tr>
-</table>
-<h3>Sprint 6（W14-W15）：工作台 + 打磨</h3>
-<table>
-<tr><th>任务</th><th>模块</th><th>产出</th><th>验收</th></tr>
-<tr><td>应用门户/待办聚合</td><td>M6</td><td>布局配置+角标</td><td>角标实时 ≤ 2s</td></tr>
-<tr><td>大盘统计</td><td>M6</td><td>活跃/审批/考勤看板</td><td>数据与明细对账一致</td></tr>
-<tr><td>安全加固</td><td>M7</td><td>字段加密/限流/MFA(P1)/等保自查</td><td>渗透扫描高危 0</td></tr>
-</table>
-<h3>Sprint 7（W16-W18）：V1.0 收口</h3>
-<table>
-<tr><th>任务</th><th>产出</th><th>验收</th></tr>
-<tr><td>种子客户灰度</td><td>500 人真实组织入驻</td><td>WAU ≥ 50%，P0 故障 0</td></tr>
-<tr><td>性能压测</td><td>全链路压测报告</td><td>NFR 指标全达标</td></tr>
-<tr><td>文档/帮助中心</td><td>用户手册+管理员手册</td><td>客服可自助解答</td></tr>
-</table>
-<h3>Sprint 8-9（W19-W24）：V1.5 协作增强</h3>
-<table>
-<tr><th>任务</th><th>模块</th><th>验收</th></tr>
-<tr><td>Yjs 协同编辑+版本历史</td><td>M5</td><td>10 人并发编辑无丢失</td></tr>
-<tr><td>文档权限/分享</td><td>M5</td><td>越权访问 403 用例</td></tr>
-<tr><td>消息/文档全文检索</td><td>M2/M5</td><td>租户隔离检索（ES filter tenant_id）</td></tr>
-<tr><td>开放平台+机器人</td><td>M6</td><td>Webhook 签名校验通过</td></tr>
-</table>
-<h3>Sprint 10-12（W25-W30）：V2.0 商业化</h3>
-<table>
-<tr><th>任务</th><th>产出</th><th>验收</th></tr>
-<tr><td>私有化交付包</td><td>Helm + Compose + 离线镜像包</td><td>演示环境 1 人日装完</td></tr>
-<tr><td>License 模块</td><td>节点数/到期校验</td><td>断网可校验</td></tr>
-<tr><td>音视频通话 P2</td><td>1v1/群通话（SFU 可选）</td><td>私有化 SFU 一键启用</td></tr>
-<tr><td>计费/运营</td><td>套餐配额、账单</td><td>SaaS 订阅闭环</td></tr>
-</table>
-<h2>6.3 团队与分工（建议 8-10 人）</h2>
-<table>
-<tr><th>角色</th><th>人数</th><th>职责</th></tr>
-<tr><td>产品</td><td>1</td><td>需求/PRD/验收</td></tr>
-<tr><td>TL/架构</td><td>1</td><td>底座、IM 网关、评审</td></tr>
-<tr><td>后端</td><td>3</td><td>org/oa/att、doc/workbench、auth/audit</td></tr>
-<tr><td>前端 Web</td><td>2</td><td>管理后台 + 工作台 + 文档编辑器</td></tr>
-<tr><td>移动端</td><td>1-2</td><td>Flutter 双端</td></tr>
-<tr><td>测试</td><td>1</td><td>用例/压测/越权专项</td></tr>
-<tr><td>SRE(兼)</td><td>1</td><td>CI/CD、可观测、私有化脚本</td></tr>
-</table>
-<h2>6.4 风险与应对</h2>
-<table>
-<tr><th>风险</th><th>等级</th><th>应对</th></tr>
-<tr><td>跨租户数据泄漏</td><td>高</td><td>RLS 兜底 + CI 越权用例 + 渗透测试</td></tr>
-<tr><td>IM 网关性能不达标</td><td>高</td><td>W6 起持续压测，预留 Go 备选方案</td></tr>
-<tr><td>Flowable 与租户隔离冲突</td><td>中</td><td>任务表补 tenant_id，自定义数据 session</td></tr>
-<tr><td>协同编辑复杂度超预期</td><td>中</td><td>V1.5 先文档、表格后置；预案用第三方 SDK</td></tr>
-<tr><td>私有化环境碎片化</td><td>中</td><td>交付前兼容性矩阵（OS/K8s 版本）</td></tr>
-</table>
-<h2>6.5 SDD 流程说明（本文交付顺序）</h2>
-<table>
-<tr><th>阶段</th><th>产物</th><th>状态</th></tr>
-<tr><td>① 产品定位&amp;功能清单</td><td>s1-positioning.md</td><td>✅</td></tr>
-<tr><td>② PRD</td><td>s2-prd.md</td><td>✅</td></tr>
-<tr><td>③ 数据库设计</td><td>s3-db.md</td><td>✅</td></tr>
-<tr><td>④ 系统架构</td><td>s4-arch.md</td><td>✅</td></tr>
-<tr><td>⑤ API 文档</td><td>s5-api.md</td><td>✅</td></tr>
-<tr><td>⑥ 迭代计划</td><td>s6-iteration.md</td><td>✅</td></tr>
-</table></section>
-<section class="stage" id="multi"><h2>附录 · 多租户隔离（硬性要求）</h2>
-<div class="tip">五层防线：应用注入 → ORM 拦截 → PG RLS 强制 → 大客户独立 schema → 每租户独立密钥。任一层失效仍有下一层兜底。</div>
-<h3>六层隔离矩阵</h3>
-<table>
-<tr><th>层级</th><th>手段</th><th>兜底价值</th></tr>
-<tr><td>L1 应用层</td><td>tenant_id NOT NULL + 拦截器自动 WHERE</td><td>主防线</td></tr>
-<tr><td>L2 ORM/CI</td><td>缺租户条件即抛异常，CI 卡点</td><td>防代码回归</td></tr>
-<tr><td>L3 PG RLS</td><td>FORCE ROW LEVEL SECURITY + SET app.tenant_id</td><td>库级兜底</td></tr>
-<tr><td>L4 Schema/实例</td><td>超大租户、私有化独立 schema/库</td><td>物理隔离</td></tr>
-<tr><td>L5 密钥</td><td>每租户 DEK，KMS 包裹</td><td>泄漏不可解密</td></tr>
-<tr><td>L6 会话/缓存</td><td>JWT 含 tenant_id，Redis key 加租户前缀</td><td>缓存不串号</td></tr>
-</table></section>
-</main>
+<div class="hud">得分: <span id="score">0</span> — 方向键 / WASD 控制，空格暂停 / 重开</div>
+<canvas id="board" width="400" height="400"></canvas>
+<script>
+const cvs = document.getElementById('board');
+const ctx = cvs.getContext('2d');
+const CELL = 20;
+const COLS = cvs.width / CELL;
+const ROWS = cvs.height / CELL;
+
+let snake, dir, nextDir, food, score, dead, paused;
+
+function reset() {
+  snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
+  dir = {x: 1, y: 0};
+  nextDir = dir;
+  score = 0;
+  dead = false;
+  paused = false;
+  spawnFood();
+  updateScore();
+}
+
+function spawnFood() {
+  do {
+    food = {x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS)};
+  } while (snake.some(s => s.x === food.x && s.y === food.y));
+}
+
+function updateScore() {
+  document.getElementById('score').textContent = score;
+}
+
+function step() {
+  if (dead || paused) return;
+  dir = nextDir;
+  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS ||
+      snake.some(s => s.x === head.x && s.y === head.y)) {
+    dead = true;
+    return;
+  }
+
+  snake.unshift(head);
+  if (head.x === food.x && head.y === food.y) {
+    score += 10;
+    updateScore();
+    spawnFood();
+  } else {
+    snake.pop();
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+  // food
+  ctx.fillStyle = '#e74c3c';
+  ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
+
+  // snake
+  snake.forEach((s, i) => {
+    ctx.fillStyle = i === 0 ? '#2ecc71' : '#27ae60';
+    ctx.fillRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2);
+  });
+
+  if (dead) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('游戏结束', cvs.width / 2, cvs.height / 2 - 10);
+    ctx.font = '16px sans-serif';
+    ctx.fillText('按空格重新开始', cvs.width / 2, cvs.height / 2 + 24);
+  } else if (paused) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('已暂停', cvs.width / 2, cvs.height / 2);
+  }
+}
+
+const KEYS = {
+  ArrowUp:    {x: 0, y: -1}, KeyW: {x: 0, y: -1},
+  ArrowDown:  {x: 0, y: 1},  KeyS: {x: 0, y: 1},
+  ArrowLeft:  {x: -1, y: 0}, KeyA: {x: -1, y: 0},
+  ArrowRight: {x: 1, y: 0},  KeyD: {x: 1, y: 0},
+};
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (dead) reset();
+    else paused = !paused;
+    draw();
+    return;
+  }
+  const nd = KEYS[e.code];
+  if (!nd) return;
+  e.preventDefault();
+  // 不能直接掉头
+  if (nd.x === -dir.x && nd.y === -dir.y) return;
+  nextDir = nd;
+});
+
+reset();
+draw();
+setInterval(() => { step(); draw(); }, 120);
+</script>
 </body>
 </html>
