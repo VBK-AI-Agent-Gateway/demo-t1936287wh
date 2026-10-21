@@ -2,125 +2,407 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>贪吃蛇</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中医诊所管理软件</title>
 <style>
-  body { background: #222; color: #eee; font-family: sans-serif; text-align: center; }
-  canvas { background: #111; border: 2px solid #444; }
-  .hud { margin: 10px; font-size: 18px; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f7f6;color:#2c3e35;min-height:100vh;display:flex}
+aside{width:210px;background:#2f6f5e;color:#eaf4f0;padding:20px 0;flex-shrink:0}
+aside h1{font-size:19px;padding:0 20px 18px;letter-spacing:2px;border-bottom:1px solid rgba(255,255,255,.15)}
+aside nav button{display:block;width:100%;text-align:left;background:none;border:none;color:#cfe6df;padding:13px 24px;font-size:15px;cursor:pointer;transition:.15s}
+aside nav button:hover{background:rgba(255,255,255,.08)}
+aside nav button.active{background:#e9a13b;color:#fff;border-radius:0 22px 22px 0}
+main{flex:1;padding:24px 30px;max-width:1100px}
+.card{background:#fff;border-radius:10px;padding:20px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+h2{font-size:17px;color:#2f6f5e;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input,select,textarea{padding:8px 10px;border:1px solid #cbd5d1;border-radius:6px;font-size:14px;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2f6f5e}
+button.act{background:#2f6f5e;color:#fff;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-size:14px}
+button.act:hover{background:#3a8571}
+button.ghost{background:#eef2f0;color:#2c3e35;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 8px;border-bottom:1px solid #edf1ef;text-align:left}
+th{color:#6b8078;font-weight:600;background:#f8faf9}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.stat{background:linear-gradient(135deg,#2f6f5e,#3f8a75);border-radius:10px;padding:16px;color:#fff}
+.stat b{display:block;font-size:26px;margin-top:6px}
+.stat.amber{background:linear-gradient(135deg,#d9902f,#e9a13b)}
+.muted{color:#8aa097;font-size:13px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;background:#eef2f0}
+.badge.low{background:#fdecea;color:#c0563e}
+.badge.ok{background:#e8f5ee;color:#2f6f5e}
+.rx-item{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.rx-item input.g{width:150px}.rx-item input.q{width:70px}
+.hidden{display:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label.f{font-size:13px;color:#6b8078;display:block;margin-bottom:4px}
+footer{color:#9db2aa;font-size:12px;text-align:center;margin-top:20px}
+@media (max-width:760px){body{flex-direction:column}aside{width:100%;display:flex;overflow-x:auto;padding:0}aside h1{display:none}aside nav{display:flex}aside nav button{white-space:nowrap;border-radius:0!important}.grid2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="hud">得分: <span id="score">0</span> — 方向键 / WASD 控制，空格暂停 / 重开</div>
-<canvas id="board" width="400" height="400"></canvas>
+<aside>
+  <h1>杏林堂中医诊所</h1>
+  <nav id="nav">
+    <button data-v="dash" class="active">工作台</button>
+    <button data-v="patients">患者管理</button>
+    <button data-v="appoint">预约挂号</button>
+    <button data-v="visit">门诊接诊</button>
+    <button data-v="rx">中药方剂</button>
+    <button data-v="herbs">药品库存</button>
+    <button data-v="charge">收费结算</button>
+    <button data-v="stats">经营统计</button>
+  </nav>
+</aside>
+<main>
+
+<section id="v-dash">
+  <div class="card">
+    <h2>今日工作台</h2>
+    <div class="stat-grid">
+      <div class="stat">今日预约<b id="s-appt">0</b></div>
+      <div class="stat">待接诊<b id="s-wait">0</b></div>
+      <div class="stat amber">今日收费(元)<b id="s-money">0</b></div>
+      <div class="stat">库存预警<b id="s-low">0</b></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>今日预约队列</h2>
+    <table><thead><tr><th>时间</th><th>患者</th><th>科室/医生</th><th>状态</th></tr></thead><tbody id="dash-appt"></tbody></table>
+  </div>
+</section>
+
+<section id="v-patients" class="hidden">
+  <div class="card">
+    <h2>患者建档</h2>
+    <div class="row">
+      <input id="p-name" placeholder="姓名*">
+      <select id="p-sex"><option>男</option><option>女</option></select>
+      <input id="p-age" placeholder="年龄" type="number" min="0" max="120">
+      <input id="p-phone" placeholder="手机号">
+      <input id="p-tag" placeholder="标签：如 老慢支">
+      <button class="act" onclick="addPatient()">建档</button>
+    </div>
+    <div class="row"><input id="p-search" placeholder="搜索姓名/手机/标签" oninput="renderPatients()"></div>
+    <table><thead><tr><th>档案号</th><th>姓名</th><th>性别</th><th>年龄</th><th>手机</th><th>标签</th><th>就诊次数</th><th></th></tr></thead><tbody id="p-list"></tbody></table>
+  </div>
+</section>
+
+<section id="v-appoint" class="hidden">
+  <div class="card">
+    <h2>预约挂号</h2>
+    <div class="row">
+      <select id="a-pid"></select>
+      <input id="a-time" type="time">
+      <select id="a-doc"><option>张仲景 · 内科</option><option>孙思邈 · 针灸科</option><option>叶天士 · 儿科</option><option>李时珍 · 外科/膏方</option></select>
+      <button class="act" onclick="addAppt()">挂号</button>
+    </div>
+    <table><thead><tr><th>时间</th><th>患者</th><th>医生</th><th>状态</th><th></th></tr></thead><tbody id="a-list"></tbody></table>
+  </div>
+</section>
+
+<section id="v-visit" class="hidden">
+  <div class="card">
+    <h2>门诊接诊（辨证论治）</h2>
+    <div class="row">
+      <select id="v-pid"></select>
+      <button class="act" onclick="startVisit()">开始接诊</button>
+    </div>
+    <div class="grid2">
+      <div><label class="f">主诉</label><textarea id="v-cc" rows="2" style="width:100%"></textarea></div>
+      <div><label class="f">四诊摘要（望闻问切）</label><textarea id="v-tcm" rows="2" style="width:100%"></textarea></div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div><label class="f">辨证</label><input id="v-syn" style="width:100%" placeholder="如：肝郁脾虚证"></div>
+      <div><label class="f">治法</label><input id="v-mth" style="width:100%" placeholder="如：疏肝健脾"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="act" onclick="saveVisit()">保存病历</button>
+      <span class="muted">保存后可在「中药方剂」为该患者开方</span>
+    </div>
+    <table style="margin-top:10px"><thead><tr><th>日期</th><th>患者</th><th>主诉</th><th>辨证</th><th>治法</th></tr></thead><tbody id="v-list"></tbody></table>
+  </div>
+</section>
+
+<section id="v-rx" class="hidden">
+  <div class="card">
+    <h2>中药方剂开方</h2>
+    <div class="row">
+      <select id="rx-pid"></select>
+      <input id="rx-name" placeholder="方名">
+      <span class="muted">剂量单位：g（克）</span>
+    </div>
+    <div id="rx-items"></div>
+    <div class="row">
+      <button class="ghost" onclick="addRxRow()">+ 加药味</button>
+      <button class="act" onclick="loadClassic()">经典方模板</button>
+    </div>
+    <div class="row">
+      <input id="rx-dose" placeholder="煎服法：水煎服，日一剂，分早晚温服" style="flex:1;min-width:260px">
+      <button class="act" onclick="saveRx()">保存处方</button>
+    </div>
+    <table><thead><tr><th>编号</th><th>日期</th><th>患者</th><th>方名</th><th>组成</th><th>剂数金额</th></tr></thead><tbody id="rx-list"></tbody></table>
+  </div>
+</section>
+
+<section id="v-herbs" class="hidden">
+  <div class="card">
+    <h2>药品（中药饮片）库存</h2>
+    <div class="row">
+      <input id="h-name" placeholder="药名*">
+      <input id="h-stock" type="number" placeholder="库存(g)" min="0">
+      <input id="h-thr" type="number" placeholder="预警阈值(g)" min="0">
+      <input id="h-price" type="number" placeholder="单价(元/g)" step="0.01" min="0">
+      <button class="act" onclick="addHerb()">入库/新增</button>
+    </div>
+    <div class="row"><input id="h-search" placeholder="搜索药名" oninput="renderHerbs()"></div>
+    <table><thead><tr><th>药名</th><th>库存(g)</th><th>状态</th><th>单价</th><th>库存货值</th><th></th></tr></thead><tbody id="h-list"></tbody></table>
+  </div>
+</section>
+
+<section id="v-charge" class="hidden">
+  <div class="card">
+    <h2>收费结算</h2>
+    <table><thead><tr><th>处方号</th><th>患者</th><th>方名</th><th>金额(元)</th><th>状态</th><th></th></tr></thead><tbody id="c-list"></tbody></table>
+  </div>
+</section>
+
+<section id="v-stats" class="hidden">
+  <div class="card">
+    <h2>经营统计</h2>
+    <div class="stat-grid">
+      <div class="stat">累计患者<b id="st-p">0</b></div>
+      <div class="stat">累计处方<b id="st-rx">0</b></div>
+      <div class="stat amber">累计营收(元)<b id="st-money">0</b></div>
+      <div class="stat">平均客单价(元)<b id="st-avg">0</b></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>近 7 日处方量</h2>
+    <table><thead><tr><th>日期</th><th>处方数</th><th>收入(元)</th></tr></thead><tbody id="st-trend"></tbody></table>
+  </div>
+</section>
+
+<footer>杏林堂中医诊所管理软件 · 数据本地持久化(localStorage) · 单机演示版</footer>
+</main>
+
 <script>
-const cvs = document.getElementById('board');
-const ctx = cvs.getContext('2d');
-const CELL = 20;
-const COLS = cvs.width / CELL;
-const ROWS = cvs.height / CELL;
+'use strict';
+const DB_KEY='tcm_clinic_db_v1';
+const today=()=>new Date().toISOString().slice(0,10);
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const $=id=>document.getElementById(id);
 
-let snake, dir, nextDir, food, score, dead, paused;
-
-function reset() {
-  snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
-  dir = {x: 1, y: 0};
-  nextDir = dir;
-  score = 0;
-  dead = false;
-  paused = false;
-  spawnFood();
-  updateScore();
+let DB=load();
+function load(){try{const d=JSON.parse(localStorage.getItem(DB_KEY));if(d&&d.patients)return d;}catch(e){}return seed();}
+function save(){localStorage.setItem(DB_KEY,JSON.stringify(DB));}
+function seed(){
+  const p=[
+    {id:'P1001',name:'王文山',sex:'男',age:58,phone:'13800001111',tag:'老慢支',visits:3},
+    {id:'P1002',name:'李秀兰',sex:'女',age:45,phone:'13900002222',tag:'失眠',visits:1},
+    {id:'P1003',name:'陈小满',sex:'男',age:7,phone:'13700003333',tag:'小儿反复咳嗽',visits:2}
+  ];
+  const herbs=[
+    {name:'黄芪',stock:2000,thr:500,price:.03},{name:'当归',stock:1500,thr:500,price:.05},
+    {name:'党参',stock:1200,thr:500,price:.04},{name:'白术',stock:900,thr:400,price:.03},
+    {name:'茯苓',stock:800,thr:400,price:.02},{name:'甘草',stock:600,thr:400,price:.02},
+    {name:'柴胡',stock:300,thr:400,price:.06},{name:'酸枣仁',stock:500,thr:300,price:.12},
+    {name:'陈皮',stock:700,thr:300,price:.04},{name:'半夏',stock:450,thr:300,price:.05},
+    {name:'川芎',stock:380,thr:300,price:.05},{name:'生地黄',stock:620,thr:300,price:.03}
+  ];
+  const appts=[
+    {id:uid('A'),pid:'P1001',time:'09:00',doc:'张仲景 · 内科',date:today(),status:'待诊'},
+    {id:uid('A'),pid:'P1002',time:'09:30',doc:'孙思邈 · 针灸科',date:today(),status:'待诊'},
+    {id:uid('A'),pid:'P1003',time:'10:15',doc:'叶天士 · 儿科',date:today(),status:'已到'}
+  ];
+  return {patients:p,herbs,appts,visits:[],rx:[],seq:{rx:1}};
 }
 
-function spawnFood() {
-  do {
-    food = {x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS)};
-  } while (snake.some(s => s.x === food.x && s.y === food.y));
-}
-
-function updateScore() {
-  document.getElementById('score').textContent = score;
-}
-
-function step() {
-  if (dead || paused) return;
-  dir = nextDir;
-  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
-
-  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS ||
-      snake.some(s => s.x === head.x && s.y === head.y)) {
-    dead = true;
-    return;
-  }
-
-  snake.unshift(head);
-  if (head.x === food.x && head.y === food.y) {
-    score += 10;
-    updateScore();
-    spawnFood();
-  } else {
-    snake.pop();
-  }
-}
-
-function draw() {
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
-
-  // food
-  ctx.fillStyle = '#e74c3c';
-  ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
-
-  // snake
-  snake.forEach((s, i) => {
-    ctx.fillStyle = i === 0 ? '#2ecc71' : '#27ae60';
-    ctx.fillRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2);
-  });
-
-  if (dead) {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, cvs.width, cvs.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '28px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('游戏结束', cvs.width / 2, cvs.height / 2 - 10);
-    ctx.font = '16px sans-serif';
-    ctx.fillText('按空格重新开始', cvs.width / 2, cvs.height / 2 + 24);
-  } else if (paused) {
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(0, 0, cvs.width, cvs.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('已暂停', cvs.width / 2, cvs.height / 2);
-  }
-}
-
-const KEYS = {
-  ArrowUp:    {x: 0, y: -1}, KeyW: {x: 0, y: -1},
-  ArrowDown:  {x: 0, y: 1},  KeyS: {x: 0, y: 1},
-  ArrowLeft:  {x: -1, y: 0}, KeyA: {x: -1, y: 0},
-  ArrowRight: {x: 1, y: 0},  KeyD: {x: 1, y: 0},
-};
-
-document.addEventListener('keydown', e => {
-  if (e.code === 'Space') {
-    e.preventDefault();
-    if (dead) reset();
-    else paused = !paused;
-    draw();
-    return;
-  }
-  const nd = KEYS[e.code];
-  if (!nd) return;
-  e.preventDefault();
-  // 不能直接掉头
-  if (nd.x === -dir.x && nd.y === -dir.y) return;
-  nextDir = nd;
+document.getElementById('nav').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('main > section').forEach(s=>s.classList.add('hidden'));
+  $('v-'+b.dataset.v).classList.remove('hidden');
+  renderAll();
 });
 
-reset();
-draw();
-setInterval(() => { step(); draw(); }, 120);
+function renderDash(){
+  const appts=DB.appts.filter(a=>a.date===today());
+  $('s-appt').textContent=appts.length;
+  $('s-wait').textContent=appts.filter(a=>a.status==='待诊').length;
+  $('s-money').textContent=DB.rx.filter(r=>r.paid).reduce((s,r)=>s+r.fee,0);
+  $('s-low').textContent=DB.herbs.filter(h=>h.stock<=h.thr).length;
+  $('dash-appt').innerHTML=appts.map(a=>{
+    const p=DB.patients.find(x=>x.id===a.pid);
+    return '<tr><td>'+a.time+'</td><td>'+(p?p.name:'-')+'</td><td>'+a.doc+'</td><td><span class="badge">'+a.status+'</span></td></tr>';
+  }).join('')||'<tr><td colspan="4" class="muted">今日暂无预约</td></tr>';
+}
+
+function addPatient(){
+  const name=$('p-name').value.trim();
+  if(!name){alert('请填写姓名');return;}
+  DB.patients.unshift({id:'P'+(1001+DB.patients.length),name,sex:$('p-sex').value,
+    age:+$('p-age').value||'',phone:$('p-phone').value.trim(),tag:$('p-tag').value.trim(),visits:0});
+  save();$('p-name').value='';$('p-age').value='';$('p-phone').value='';$('p-tag').value='';
+  renderPatients();fillPids();renderDash();
+}
+function delPatient(id){
+  if(!confirm('删除该患者档案？'))return;
+  DB.patients=DB.patients.filter(p=>p.id!==id);save();renderPatients();fillPids();
+}
+function renderPatients(){
+  const q=($('p-search').value||'').trim();
+  const list=DB.patients.filter(p=>!q||p.name.includes(q)||p.phone.includes(q)||(p.tag||'').includes(q));
+  $('p-list').innerHTML=list.map(p=>
+    '<tr><td>'+p.id+'</td><td>'+p.name+'</td><td>'+p.sex+'</td><td>'+p.age+'</td><td>'+p.phone+'</td><td><span class="badge">'+(p.tag||'-')+'</span></td><td>'+p.visits+'</td><td><button class="ghost" onclick="delPatient(\''+p.id+'\')">删除</button></td></tr>'
+  ).join('')||'<tr><td colspan="8" class="muted">暂无患者</td></tr>';
+}
+
+function addAppt(){
+  const pid=$('a-pid').value,time=$('a-time').value;
+  if(!pid){alert('请先建档患者');return;}
+  if(!time){alert('请选择时间');return;}
+  DB.appts.push({id:uid('A'),pid,time,doc:$('a-doc').value,date:today(),status:'待诊'});
+  save();renderAppts();renderDash();
+}
+function apptState(id,st){const a=DB.appts.find(x=>x.id===id);if(a){a.status=st;save();renderAppts();renderDash();}}
+function renderAppts(){
+  $('a-list').innerHTML=DB.appts.map(a=>{
+    const p=DB.patients.find(x=>x.id===a.pid);
+    const acts=a.status==='待诊'?'<button class="ghost" onclick="apptState(\''+a.id+'\',\'已到\')">签到</button>':
+      a.status==='已到'?'<button class="act" onclick="apptState(\''+a.id+'\',\'已完成\')">完成</button>':
+      '<button class="ghost" onclick="apptState(\''+a.id+'\',\'待诊\')">重置</button>';
+    return '<tr><td>'+a.date+' '+a.time+'</td><td>'+(p?p.name:'-')+'</td><td>'+a.doc+'</td><td><span class="badge">'+a.status+'</span></td><td>'+acts+'</td></tr>';
+  }).join('')||'<tr><td colspan="5" class="muted">暂无预约</td></tr>';
+}
+
+function startVisit(){
+  const p=DB.patients.find(x=>x.id===$('v-pid').value);
+  if(!p){alert('请选择患者');return;}
+  $('v-cc').value='';$('v-tcm').value='';$('v-syn').value='';$('v-mth').value='';
+  toast('开始接诊：'+p.name);
+}
+function saveVisit(){
+  const pid=$('v-pid').value;
+  const p=DB.patients.find(x=>x.id===pid);
+  if(!p){alert('请选择患者');return;}
+  if(!$('v-cc').value.trim()){alert('请填写主诉');return;}
+  DB.visits.unshift({id:uid('V'),date:today(),pid,cc:$('v-cc').value.trim(),
+    tcm:$('v-tcm').value.trim(),syn:$('v-syn').value.trim(),mth:$('v-mth').value.trim()});
+  p.visits++;save();renderVisits();toast('病历已保存');
+}
+
+function addRxRow(g,q){
+  const div=document.createElement('div');div.className='rx-item';
+  div.innerHTML='<input class="g" placeholder="药名" value="'+(g||'')+'"><input class="q" type="number" min="1" placeholder="剂量g" value="'+(q||'')+'"><input class="m" type="number" min="1" value="7" title="剂数" style="width:60px"><span class="muted">剂</span><button class="ghost" onclick="this.parentNode.remove()">删</button>';
+  $('rx-items').appendChild(div);
+}
+const CLASSICS=[
+  {n:'四君子汤',items:[['党参',9],['白术',9],['茯苓',9],['甘草',6]]},
+  {n:'四物汤',items:[['当归',9],['川芎',6],['白芍',9],['生地黄',12]]},
+  {n:'逍遥散',items:[['柴胡',9],['当归',9],['白芍',9],['白术',9],['茯苓',9],['甘草',6]]},
+  {n:'桂枝汤',items:[['桂枝',9],['白芍',9],['甘草',6],['生姜',3],['大枣',4]]}
+];
+function loadClassic(){
+  const pick=prompt('经典方模板：\n1 四君子汤\n2 四物汤\n3 逍遥散\n4 桂枝汤\n输入序号：','1');
+  const c=CLASSICS[(+pick||1)-1];if(!c)return;
+  $('rx-name').value=c.n;$('rx-items').innerHTML='';
+  c.items.forEach(it=>addRxRow(it[0],it[1]));
+}
+function saveRx(){
+  const pid=$('rx-pid').value;
+  const p=DB.patients.find(x=>x.id===pid);
+  if(!p){alert('请选择患者');return;}
+  const rows=Array.prototype.slice.call($('rx-items').querySelectorAll('.rx-item'));
+  const items=rows.map(r=>({g:r.querySelector('.g').value.trim(),q:+r.querySelector('.q').value||0})).filter(x=>x.g&&x.q>0);
+  if(!items.length){alert('请添加药味');return;}
+  const dose=+rows[0].querySelector('.m').value||7;
+  const fee=items.reduce((s,x)=>{
+    const h=DB.herbs.find(h=>h.name===x.g);return s+(h?h.price*x.q*dose:.1*x.q*dose);
+  },0);
+  DB.rx.unshift({id:'RX'+String(DB.seq.rx++).padStart(4,'0'),date:today(),pid,
+    name:$('rx-name').value.trim()||'自拟方',items,dose,fee:Math.round(fee*100)/100,paid:false,
+    sig:$('rx-dose').value.trim()||'水煎服，日一剂，分早晚温服'});
+  items.forEach(x=>{const h=DB.herbs.find(h=>h.name===x.g);if(h)h.stock=Math.max(0,h.stock-x.q*dose);});
+  save();$('rx-items').innerHTML='';addRxRow();renderRx();renderHerbs();renderDash();toast('处方已保存，药材已扣库');
+}
+
+function addHerb(){
+  const name=$('h-name').value.trim();
+  if(!name){alert('请填药名');return;}
+  let h=DB.herbs.find(x=>x.name===name);
+  const add=+$('h-stock').value||0,thr=+$('h-thr').value||100,price=+$('h-price').value||.05;
+  if(h){h.stock+=add;h.thr=thr;h.price=price;}else DB.herbs.push({name,stock:add,thr,price});
+  save();$('h-name').value='';$('h-stock').value='';$('h-thr').value='';$('h-price').value='';
+  renderHerbs();renderDash();
+}
+function restock(name){const h=DB.herbs.find(x=>x.name===name);const n=prompt('【'+name+'】补货量(g):','500');if(n>0){h.stock+=+n;save();renderHerbs();renderDash();}}
+function delHerb(name){if(!confirm('删除 '+name+'？'))return;DB.herbs=DB.herbs.filter(x=>x.name!==name);save();renderHerbs();renderDash();}
+function renderHerbs(){
+  const q=($('h-search').value||'').trim();
+  const list=DB.herbs.filter(h=>!q||h.name.includes(q));
+  $('h-list').innerHTML=list.map(h=>{
+    const low=h.stock<=h.thr;
+    return '<tr><td>'+h.name+'</td><td>'+h.stock+'</td><td><span class="badge '+(low?'low':'ok')+'">'+(low?'预警':'充足')+'</span></td><td>'+h.price+' 元/g</td><td>'+(h.stock*h.price).toFixed(2)+' 元</td><td><button class="ghost" onclick="restock(\''+h.name+'\')">补货</button> <button class="ghost" onclick="delHerb(\''+h.name+'\')">删除</button></td></tr>';
+  }).join('')||'<tr><td colspan="6" class="muted">暂无药品</td></tr>';
+}
+
+function payRx(id){const r=DB.rx.find(x=>x.id===id);if(r){r.paid=true;save();renderCharge();renderDash();renderStats();toast('收款成功 '+r.fee+' 元');}}
+function renderCharge(){
+  $('c-list').innerHTML=DB.rx.map(r=>{
+    const p=DB.patients.find(x=>x.id===r.pid);
+    return '<tr><td>'+r.id+'</td><td>'+(p?p.name:'-')+'</td><td>'+r.name+'</td><td>'+r.fee+'</td><td><span class="badge '+(r.paid?'ok':'low')+'">'+(r.paid?'已收费':'待收费')+'</span></td><td>'+(r.paid?'':'<button class="act" onclick="payRx(\''+r.id+'\')">收款</button>')+'</td></tr>';
+  }).join('')||'<tr><td colspan="6" class="muted">暂无处方</td></tr>';
+}
+
+function renderStats(){
+  const paid=DB.rx.filter(r=>r.paid);
+  const money=paid.reduce((s,r)=>s+r.fee,0);
+  $('st-p').textContent=DB.patients.length;
+  $('st-rx').textContent=DB.rx.length;
+  $('st-money').textContent=money.toFixed(2);
+  $('st-avg').textContent=paid.length?(money/paid.length).toFixed(2):'0';
+  const days=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(Date.now()-i*86400000).toISOString().slice(0,10);
+    const rs=DB.rx.filter(r=>r.date===d);
+    days.push('<tr><td>'+d+'</td><td>'+rs.length+'</td><td>'+rs.filter(r=>r.paid).reduce((s,r)=>s+r.fee,0).toFixed(2)+'</td></tr>');
+  }
+  $('st-trend').innerHTML=days.join('');
+}
+
+function fillPids(){
+  const opts=DB.patients.map(p=>'<option value="'+p.id+'">'+p.name+'（'+p.sex+' '+p.age+'岁）</option>').join('');
+  ['a-pid','v-pid','rx-pid'].forEach(id=>{
+    const el=$(id),cur=el.value;el.innerHTML=opts;
+    if(Array.prototype.some.call(el.options,o=>o.value===cur))el.value=cur;
+  });
+}
+function toast(msg){
+  const d=document.createElement('div');d.textContent=msg;
+  d.style.cssText='position:fixed;right:24px;top:24px;background:#2f6f5e;color:#fff;padding:10px 18px;border-radius:8px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+  document.body.appendChild(d);setTimeout(()=>d.remove(),2200);
+}
+function renderVisits(){
+  $('v-list').innerHTML=DB.visits.map(v=>{
+    const p=DB.patients.find(x=>x.id===v.pid);
+    return '<tr><td>'+v.date+'</td><td>'+(p?p.name:'-')+'</td><td>'+v.cc+'</td><td>'+v.syn+'</td><td>'+v.mth+'</td></tr>';
+  }).join('')||'<tr><td colspan="5" class="muted">暂无病历</td></tr>';
+}
+function renderRx(){
+  $('rx-list').innerHTML=DB.rx.map(r=>{
+    const p=DB.patients.find(x=>x.id===r.pid);
+    const comp=r.items.map(i=>i.g+' '+i.q+'g').join('、');
+    return '<tr><td>'+r.id+'</td><td>'+r.date+'</td><td>'+(p?p.name:'-')+'</td><td>'+r.name+'</td><td class="muted">'+comp+' · '+r.dose+'剂</td><td>'+r.fee+'元</td></tr>';
+  }).join('')||'<tr><td colspan="6" class="muted">暂无处方</td></tr>';
+}
+function renderAll(){renderDash();renderPatients();renderAppts();renderVisits();renderRx();renderHerbs();renderCharge();renderStats();}
+
+const now=new Date();
+$('a-time').value=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+fillPids();addRxRow();renderAll();
 </script>
 </body>
 </html>
