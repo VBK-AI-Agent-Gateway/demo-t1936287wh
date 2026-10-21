@@ -3,348 +3,114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>五子棋</title>
+<title>杏林堂 · 中医诊所管理系统</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #eee;
-    padding: 20px;
-  }
-  h1 { margin-bottom: 8px; font-size: 28px; letter-spacing: 4px; }
-  .status {
-    margin-bottom: 14px;
-    font-size: 18px;
-    height: 26px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
-  .dot.black { background: #111; border: 1px solid #555; }
-  .dot.white { background: #f5f5f5; border: 1px solid #999; }
-  #board {
-    position: relative;
-    background: #dcb35c;
-    background-image: radial-gradient(circle at 30% 20%, #e8c477 0%, #d0a44e 70%);
-    border-radius: 8px;
-    box-shadow: 0 12px 40px rgba(0,0,0,.5), inset 0 0 30px rgba(0,0,0,.08);
-    padding: 20px;
-    touch-action: manipulation;
-  }
-  canvas { display: block; cursor: pointer; }
-  .toolbar { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-  button {
-    background: rgba(255,255,255,.1);
-    border: 1px solid rgba(255,255,255,.25);
-    color: #eee;
-    padding: 9px 20px;
-    border-radius: 20px;
-    font-size: 15px;
-    cursor: pointer;
-    transition: .2s;
-  }
-  button:hover { background: rgba(255,255,255,.22); transform: translateY(-1px); }
-  button.primary { background: #e94560; border-color: #e94560; }
-  button.primary:hover { background: #ff5f7a; }
-  .info { margin-top: 12px; font-size: 13px; color: #999; }
+:root{
+  --brand:#1f6f5c; --brand-d:#14574a; --brand-l:#e6f2ee;
+  --gold:#b98a2f; --bg:#f4f6f5; --card:#fff; --line:#e2e8e6;
+  --txt:#22302c; --sub:#71807b; --red:#c0392b; --blue:#2a6f97;
+  --shadow:0 1px 3px rgba(20,50,40,.08),0 4px 16px rgba(20,50,40,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:210px;background:linear-gradient(180deg,#173f35,#1f6f5c 60%,#14574a);color:#dfece8;display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.logo b{font-size:20px;letter-spacing:4px;color:#fff;display:block}
+.logo span{font-size:11px;color:#9fc4ba;letter-spacing:2px}
+nav{flex:1;overflow:auto;padding:10px 0}
+nav .grp{font-size:11px;color:#7fa89d;padding:12px 18px 6px;letter-spacing:2px}
+nav a{display:flex;align-items:center;gap:10px;padding:11px 20px;color:#cfe3dd;text-decoration:none;font-size:14px;border-left:3px solid transparent;cursor:pointer;transition:.15s}
+nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+nav a.on{background:rgba(255,255,255,.12);color:#ffd98a;border-left-color:#ffd98a}
+nav a .ico{width:18px;text-align:center}
+.side-foot{padding:14px 18px;font-size:12px;color:#9fc4ba;border-top:1px solid rgba(255,255,255,.12)}
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#topbar{height:54px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 22px;gap:16px;flex-shrink:0}
+#topbar h1{font-size:17px;font-weight:600}
+#topbar .date{margin-left:auto;color:var(--sub);font-size:13px}
+#content{flex:1;overflow:auto;padding:20px 22px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
+.card .t{font-size:12px;color:var(--sub);margin-bottom:6px}
+.card .v{font-size:26px;font-weight:700;color:var(--brand)}
+.card .v small{font-size:13px;font-weight:400;color:var(--sub);margin-left:4px}
+.card.gold .v{color:var(--gold)} .card.blue .v{color:var(--blue)} .card.red .v{color:var(--red)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+.panel>.hd{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);font-weight:600}
+.panel>.hd .right{margin-left:auto;display:flex;gap:8px;align-items:center;font-weight:400}
+.panel>.bd{padding:16px 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:#f7faf9;color:var(--sub);font-weight:600;font-size:12px;position:sticky;top:0}
+tr:hover td{background:#f9fcfb}
+tbody tr:last-child td{border-bottom:none}
+.num{text-align:right}
+.muted{color:var(--sub)} .sm{font-size:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--brand);color:#fff;border:none;border-radius:7px;padding:8px 15px;font-size:13px;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--brand-d)}
+.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+.btn.ghost:hover{background:var(--brand-l)}
+.btn.gold{background:var(--gold)} .btn.gold:hover{background:#9a7224}
+.btn.red{background:var(--red)} .btn.red:hover{background:#96291d}
+.btn.sm{padding:4px 10px;font-size:12px;border-radius:5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{border:1px solid #ccd6d3;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;background:#fff;color:var(--txt);width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(31,111,92,.12)}
+label{font-size:12px;color:var(--sub);display:block;margin-bottom:4px}
+.fld{margin-bottom:12px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px}
+.tag.g{background:#e6f2ee;color:#1f6f5c}.tag.y{background:#fdf3dd;color:#9a7224}
+.tag.b{background:#e3eff7;color:#2a6f97}.tag.r{background:#fdeae7;color:#c0392b}
+.tag.gray{background:#eef1f0;color:#71807b}
+.mask{position:fixed;inset:0;background:rgba(15,35,30,.45);display:flex;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:40px 16px}
+.modal{background:#fff;border-radius:12px;width:560px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:pop .18s ease}
+.modal.wide{width:860px}
+@keyframes pop{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.modal .mh{padding:15px 20px;border-bottom:1px solid var(--line);font-weight:600;font-size:15px;display:flex;align-items:center}
+.modal .mh .x{margin-left:auto;cursor:pointer;color:var(--sub);font-size:18px;line-height:1;padding:2px 6px;border-radius:5px}
+.modal .mh .x:hover{background:#f0f3f2}
+.modal .mb{padding:18px 20px;max-height:70vh;overflow:auto}
+.modal .mf{padding:13px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.rx-item{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.rx-item input.dose{width:90px}
+.rx-item .rm{cursor:pointer;color:var(--red);padding:4px}
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#22302c;color:#fff;padding:10px 22px;border-radius:8px;z-index:99;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:pop .2s}
+.bars{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:8px}
+.bars .b{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.bars .b i{width:70%;background:linear-gradient(180deg,#2f9b82,#1f6f5c);border-radius:4px 4px 0 0;display:block;min-height:3px}
+.bars .b span{font-size:11px;color:var(--sub)}
+.bars .b em{font-style:normal;font-size:11px;color:var(--brand);font-weight:600}
+.quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.quick button{border:1px dashed var(--brand);background:#fff;color:var(--brand);border-radius:9px;padding:14px 8px;cursor:pointer;font-size:13.5px;transition:.15s}
+.quick button:hover{background:var(--brand-l);border-style:solid}
+.list-item{padding:10px 4px;border-bottom:1px dashed var(--line);display:flex;gap:10px;align-items:center}
+.list-item:last-child{border:none}
+.empty{padding:34px;text-align:center;color:var(--sub)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs button{background:none;border:none;padding:9px 16px;cursor:pointer;font-size:14px;color:var(--sub);border-bottom:2px solid transparent}
+.tabs button.on{color:var(--brand);border-color:var(--brand);font-weight:600}
+.kv{display:grid;grid-template-columns:88px 1fr;gap:6px 10px;font-size:13.5px}
+.kv .k{color:var(--sub)}
+@media print{#sidebar,#topbar,.noprint{display:none!important}#content{padding:0}}
 </style>
 </head>
 <body>
-
-<h1>五 子 棋</h1>
-<div class="status" id="status"></div>
-<div id="board"><canvas id="canvas"></canvas></div>
-<div class="toolbar">
-  <button class="primary" id="newGame">新对局</button>
-  <button id="undo">悔棋</button>
-  <button id="aiToggle">AI: 关</button>
-  <button id="swapColor">执子切换</button>
+<div id="app">
+  <aside id="sidebar">
+    <div class="logo"><b>杏林堂</b><span>TCM CLINIC MANAGER</span></div>
+    <nav id="nav"></nav>
+    <div class="side-foot">数据本地存储 · 可导出备份</div>
+  </aside>
+  <div id="main">
+    <div id="topbar"><h1 id="pageTitle">工作台</h1><div class="date" id="today"></div></div>
+    <div id="content"></div>
+  </div>
 </div>
-<div class="info">点击交叉点落子 · 五子连珠即获胜</div>
-
-<script>
-const N = 15;                 // 15 x 15
-const GAP = 36;                // 格距
-const PAD = 24;                // 内边距
-const SIZE = PAD * 2 + GAP * (N - 1);
-
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const dpr = window.devicePixelRatio || 1;
-canvas.width = SIZE * dpr;
-canvas.height = SIZE * dpr;
-canvas.style.width = SIZE + 'px';
-canvas.style.height = SIZE + 'px';
-ctx.scale(dpr, dpr);
-
-let board, history, current, gameOver, aiOn = false, playerColor = 1; // 1黑 2白
-let hoverPos = null;
-
-function init() {
-  board = Array.from({length: N}, () => Array(N).fill(0));
-  history = [];
-  current = 1;
-  gameOver = false;
-  hoverPos = null;
-  draw();
-  updateStatus();
-}
-
-function px(i) { return PAD + i * GAP; }
-
-function draw() {
-  ctx.clearRect(0, 0, SIZE, SIZE);
-
-  // 棋盘线
-  ctx.strokeStyle = '#5a4520';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < N; i++) {
-    ctx.beginPath();
-    ctx.moveTo(px(0), px(i));
-    ctx.lineTo(px(N-1), px(i));
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(px(i), px(0));
-    ctx.lineTo(px(i), px(N-1));
-    ctx.stroke();
-  }
-
-  // 星位
-  ctx.fillStyle = '#5a4520';
-  [[3,3],[3,11],[11,3],[11,11],[7,7]].forEach(([r,c]) => {
-    ctx.beginPath();
-    ctx.arc(px(c), px(r), 3.5, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // 棋子
-  for (let r = 0; r < N; r++) {
-    for (let c = 0; c < N; c++) {
-      if (board[r][c]) drawPiece(r, c, board[r][c]);
-    }
-  }
-
-  // 最后一手标记
-  if (history.length) {
-    const [r, c] = history[history.length - 1];
-    ctx.strokeStyle = '#e94560';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(px(c), px(r), 8, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // 悬停预览
-  if (hoverPos && !gameOver && board[hoverPos[0]][hoverPos[1]] === 0) {
-    const [r, c] = hoverPos;
-    ctx.globalAlpha = 0.35;
-    drawPiece(r, c, current);
-    ctx.globalAlpha = 1;
-  }
-}
-
-function drawPiece(r, c, color) {
-  const x = px(c), y = px(r), rad = GAP / 2 - 2;
-  const grad = ctx.createRadialGradient(x - rad*0.3, y - rad*0.3, rad*0.1, x, y, rad);
-  if (color === 1) {
-    grad.addColorStop(0, '#555');
-    grad.addColorStop(1, '#000');
-  } else {
-    grad.addColorStop(0, '#fff');
-    grad.addColorStop(1, '#cfcfcf');
-  }
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(x, y, rad, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,.35)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-}
-
-function checkWin(r, c, color) {
-  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
-  for (const [dr, dc] of dirs) {
-    let count = 1;
-    for (let s = 1; s < 5; s++) {
-      const nr = r + dr*s, nc = c + dc*s;
-      if (nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==color) break;
-      count++;
-    }
-    for (let s = 1; s < 5; s++) {
-      const nr = r - dr*s, nc = c - dc*s;
-      if (nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==color) break;
-      count++;
-    }
-    if (count >= 5) return true;
-  }
-  return false;
-}
-
-function place(r, c) {
-  if (gameOver || board[r][c] !== 0) return;
-  board[r][c] = current;
-  history.push([r, c]);
-
-  if (checkWin(r, c, current)) {
-    gameOver = true;
-    draw();
-    updateStatus();
-    return;
-  }
-  if (history.length === N * N) {
-    gameOver = true;
-    draw();
-    updateStatus();
-    return;
-  }
-  current = current === 1 ? 2 : 1;
-  draw();
-  updateStatus();
-
-  if (aiOn && current !== playerColor && !gameOver) {
-    setTimeout(aiMove, 300);
-  }
-}
-
-function updateStatus() {
-  const el = document.getElementById('status');
-  if (gameOver) {
-    if (history.length === N * N) {
-      el.innerHTML = '平局！';
-    } else {
-      const winner = board[history[history.length-1][0]][history[history.length-1][1]];
-      el.innerHTML = `<span class="dot ${winner===1?'black':'white'}"></span>${winner===1?'黑':'白'}棋获胜！`;
-    }
-    return;
-  }
-  const isAI = aiOn && current !== playerColor;
-  el.innerHTML = `<span class="dot ${current===1?'black':'white'}"></span>${current===1?'黑':'白'}棋走${isAI?'（AI思考中…）':''}`;
-}
-
-// ---- 简易 AI：优先堵/冲，其次进攻 ----
-function aiMove() {
-  if (gameOver) return;
-  const me = current, opp = me === 1 ? 2 : 1;
-  let best = null, bestScore = -Infinity;
-
-  for (let r = 0; r < N; r++) {
-    for (let c = 0; c < N; c++) {
-      if (board[r][c] !== 0) continue;
-      // 只考虑已有棋子的邻近区域，加速
-      if (!hasNeighbor(r, c, 2)) continue;
-      let score = 0;
-      score += evaluatePoint(r, c, me) * 1.1;   // 进攻
-      score += evaluatePoint(r, c, opp);         // 防守
-      score += Math.random() * 0.5;
-      if (score > bestScore) { bestScore = score; best = [r, c]; }
-    }
-  }
-  if (best) place(best[0], best[1]);
-}
-
-function hasNeighbor(r, c, dist) {
-  for (let i = -dist; i <= dist; i++)
-    for (let j = -dist; j <= dist; j++) {
-      const nr = r+i, nc = c+j;
-      if (nr>=0&&nr<N&&nc>=0&&nc<N&&board[nr][nc]!==0) return true;
-    }
-  return false;
-}
-
-function evaluatePoint(r, c, color) {
-  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
-  let total = 0;
-  for (const [dr, dc] of dirs) {
-    let count = 1, blocked = 0;
-    for (let s = 1; s < 5; s++) {
-      const nr = r+dr*s, nc = c+dc*s;
-      if (nr<0||nr>=N||nc<0||nc>=N) { blocked++; break; }
-      if (board[nr][nc] === color) count++;
-      else { if (board[nr][nc] !== 0) blocked++; break; }
-    }
-    for (let s = 1; s < 5; s++) {
-      const nr = r-dr*s, nc = c-dc*s;
-      if (nr<0||nr>=N||nc<0||nc>=N) { blocked++; break; }
-      if (board[nr][nc] === color) count++;
-      else { if (board[nr][nc] !== 0) blocked++; break; }
-    }
-    if (count >= 5) total += 100000;
-    else if (count === 4 && blocked === 0) total += 10000;
-    else if (count === 4 && blocked === 1) total += 1000;
-    else if (count === 3 && blocked === 0) total += 800;
-    else if (count === 3 && blocked === 1) total += 100;
-    else if (count === 2 && blocked === 0) total += 60;
-    else if (count === 2 && blocked === 1) total += 10;
-    else if (count === 1 && blocked === 0) total += 2;
-  }
-  return total;
-}
-
-// ---- 交互 ----
-function getPos(e) {
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-  const c = Math.round((x - PAD) / GAP);
-  const r = Math.round((y - PAD) / GAP);
-  if (r < 0 || r >= N || c < 0 || c >= N) return null;
-  // 距离判定
-  if (Math.abs(px(c) - x) > GAP/2 || Math.abs(px(r) - y) > GAP/2) return null;
-  return [r, c];
-}
-
-canvas.addEventListener('mousemove', e => {
-  const p = getPos(e);
-  if (JSON.stringify(p) !== JSON.stringify(hoverPos)) {
-    hoverPos = p;
-    draw();
-  }
-});
-canvas.addEventListener('mouseleave', () => { hoverPos = null; draw(); });
-canvas.addEventListener('click', e => {
-  const p = getPos(e);
-  if (p) place(p[0], p[1]);
-});
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  const p = getPos(e);
-  if (p) place(p[0], p[1]);
-}, {passive: false});
-
-document.getElementById('newGame').onclick = init;
-document.getElementById('undo').onclick = () => {
-  if (!history.length) return;
-  gameOver = false;
-  const steps = (aiOn && history.length >= 2) ? 2 : 1;
-  for (let i = 0; i < steps && history.length; i++) {
-    const [r, c] = history.pop();
-    board[r][c] = 0;
-    current = current === 1 ? 2 : 1;
-  }
-  draw();
-  updateStatus();
-};
-document.getElementById('aiToggle').onclick = function() {
-  aiOn = !aiOn;
-  this.textContent = 'AI: ' + (aiOn ? '开' : '关');
-  updateStatus();
-  if (aiOn && current !== playerColor && !gameOver) setTimeout(aiMove, 300);
-};
-document.getElementById('swapColor').onclick = () => {
-  playerColor = playerColor === 1 ? 2 : 1;
-  alert('你已执' + (playerColor === 1 ? '黑' : '白') + '棋');
-  if (aiOn && current !== playerColor && !gameOver) setTimeout(aiMove, 300);
-};
-
-init();
-</script>
+<div id="modalRoot"></div>
+<script src="app.js"></script>
 </body>
 </html>
