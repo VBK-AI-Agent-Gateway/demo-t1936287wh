@@ -3,689 +3,310 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>杏林堂 · 中医诊所管理系统</title>
+<title>打地鼠游戏</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--green:#2f6f5e;--green2:#3f8a75;--amber:#e9a13b;--ink:#243b33;--bg:#f4f7f5;--line:#e6ece9}
-body{font-family:-apple-system,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex}
-button{font-family:inherit}
-aside{width:224px;background:linear-gradient(180deg,#2c6857,#245a4b);color:#eaf4f0;padding:22px 0 16px;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
-aside .brand{padding:0 22px 16px;border-bottom:1px solid rgba(255,255,255,.14)}
-aside .brand h1{font-size:20px;letter-spacing:3px}
-aside .brand p{font-size:11px;color:#a9cfc2;margin-top:5px;letter-spacing:1px}
-aside nav{flex:1;overflow-y:auto;padding-top:10px}
-aside nav button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:#cfe6df;padding:12px 22px;font-size:14.5px;cursor:pointer;transition:.15s}
-aside nav button:hover{background:rgba(255,255,255,.08)}
-aside nav button.active{background:var(--amber);color:#fff;font-weight:600}
-aside nav .sec{font-size:11px;color:#7fae9f;padding:14px 22px 4px;letter-spacing:2px}
-aside .who{padding:12px 22px 0;border-top:1px solid rgba(255,255,255,.14);font-size:12px;color:#a9cfc2}
-main{flex:1;padding:24px 30px 40px;max-width:1240px;min-width:0}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
-.topbar h2{font-size:21px;color:var(--green);letter-spacing:1px}
-.topbar .date{color:#8aa097;font-size:13px}
-.card{background:#fff;border-radius:12px;padding:20px 22px;margin-bottom:18px;box-shadow:0 1px 5px rgba(36,59,51,.07)}
-.card h3{font-size:15.5px;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.card h3::before{content:"";width:4px;height:15px;background:var(--amber);border-radius:2px;display:inline-block}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-input,select,textarea{padding:8px 10px;border:1px solid #ccd6d1;border-radius:7px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(47,111,94,.12)}
-input[type=number]{width:110px}
-button.act{background:var(--green);color:#fff;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:14px;transition:.15s}
-button.act:hover{background:var(--green2)}
-button.warn{background:var(--amber);color:#fff;border:none;padding:9px 18px;border-radius:7px;cursor:pointer;font-size:14px}
-button.ghost{background:#eef2f0;color:#39544a;border:none;padding:6px 11px;border-radius:6px;cursor:pointer;font-size:12.5px}
-button.ghost:hover{background:#e0e7e3}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
-th{color:#6b8078;font-weight:600;background:#f8faf9;position:sticky;top:0}
-tbody tr:hover{background:#f6faf8}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px}
-.stat{background:linear-gradient(135deg,var(--green),var(--green2));border-radius:12px;padding:15px 17px;color:#fff}
-.stat b{display:block;font-size:26px;margin-top:6px;font-variant-numeric:tabular-nums}
-.stat span{font-size:12.5px;opacity:.9}
-.stat.amber{background:linear-gradient(135deg,#d9902f,var(--amber))}
-.stat.dark{background:linear-gradient(135deg,#3b4f47,#57695f)}
-.muted{color:#8aa097;font-size:12.5px}
-.badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;background:#eef2f0;white-space:nowrap}
-.badge.low{background:#fdecea;color:#c0563e}
-.badge.ok{background:#e8f5ee;color:#2f6f5e}
-.badge.wait{background:#fdf3e3;color:#b57b1f}
-.rx-item{display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
-.rx-item input.g{width:150px}.rx-item input.q{width:74px}
-.hidden{display:none}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-label.f{font-size:13px;color:#6b8078;display:block;margin-bottom:4px}
-textarea{width:100%;resize:vertical}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.chip{border:1px solid #ccd6d1;background:#fff;border-radius:16px;padding:5px 13px;font-size:12.5px;cursor:pointer;color:#4a635a}
-.chip.on{background:var(--green);border-color:var(--green);color:#fff}
-.hint{background:#f0f7f3;border:1px dashed #b9d4c9;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#4f6f63;margin-bottom:12px;line-height:1.7}
-footer{color:#9db2aa;font-size:12px;text-align:center;margin-top:26px}
-.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.pcard{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fbfdfc}
-.pcard h4{font-size:15px;color:var(--ink);margin-bottom:4px}
-.pcard .meta{font-size:12.5px;color:#7d948b;margin-bottom:8px}
-.diag{font-size:13px;line-height:2}
-.kpi-line{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:6px}
-.kpi-line div{font-size:13px;color:#6b8078}
-.kpi-line b{color:var(--ink);font-size:17px;margin-left:6px}
-.mtabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-.mtab{border:1px solid #ccd6d1;background:#fff;padding:6px 14px;border-radius:7px;cursor:pointer;font-size:13px;color:#4a635a}
-.mtab.on{background:var(--green);border-color:var(--green);color:#fff}
-.bar-wrap{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:10px}
-.bar{flex:1;background:linear-gradient(180deg,var(--green2),var(--green));border-radius:5px 5px 0 0;min-height:4px;position:relative;transition:.3s}
-.bar i{position:absolute;top:-19px;left:0;right:0;text-align:center;font-size:11.5px;font-style:normal;color:#5c7269}
-.bar s{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:11px;text-decoration:none;color:#8aa097}
-@media (max-width:820px){
-  body{flex-direction:column}
-  aside{width:100%;height:auto;position:static;flex-direction:row;align-items:center;padding:0;overflow-x:auto}
-  aside .brand{border:none;padding:12px 16px;flex-shrink:0}
-  aside .brand p,aside .who{display:none}
-  aside nav{display:flex;padding:0;overflow-x:auto}
-  aside nav .sec{display:none}
-  aside nav button{white-space:nowrap;padding:14px 15px}
-  .grid2{grid-template-columns:1fr}
-  main{padding:16px 14px 30px}
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #87CEEB 0%, #5CB85C 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    user-select: none;
+  }
+  h1 {
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,.3);
+    margin-bottom: 16px;
+    font-size: 2rem;
+  }
+  .panel {
+    background: rgba(255,255,255,.9);
+    border-radius: 16px;
+    padding: 12px 24px;
+    display: flex;
+    gap: 28px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    font-weight: bold;
+    color: #333;
+    font-size: 1.05rem;
+  }
+  .panel span b { color: #e67e22; font-size: 1.2rem; }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 120px);
+    gap: 18px;
+    background: #8B5A2B;
+    padding: 24px;
+    border-radius: 24px;
+    box-shadow: inset 0 0 30px rgba(0,0,0,.4), 0 8px 20px rgba(0,0,0,.3);
+  }
+  .hole {
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(ellipse at center, #2b1a0e 60%, #4a2f1a 100%);
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: inset 0 8px 16px rgba(0,0,0,.7);
+  }
+  .mole {
+    position: absolute;
+    left: 50%;
+    bottom: -100px;
+    transform: translateX(-50%);
+    width: 86px;
+    height: 96px;
+    transition: bottom .15s ease-out;
+    pointer-events: none;
+  }
+  .hole.up .mole { bottom: 8px; }
+  .mole .body {
+    width: 86px; height: 86px;
+    background: radial-gradient(circle at 35% 30%, #b0794a, #7a4a22);
+    border-radius: 50% 50% 45% 45%;
+    position: relative;
+  }
+  .mole .body::before, .mole .body::after {
+    content: ""; position: absolute;
+    width: 24px; height: 24px;
+    background: #7a4a22; border-radius: 50%;
+    top: -6px;
+  }
+  .mole .body::before { left: 6px; }
+  .mole .body::after { right: 6px; }
+  .mole .face {
+    position: absolute; top: 26px; left: 0; right: 0;
+    text-align: center; font-size: 34px; line-height: 1;
+  }
+  .mole .whack {
+    position: absolute; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    font-size: 48px;
+    background: rgba(255,255,255,.35);
+    border-radius: 50%;
+  }
+  .hole.hit .mole .whack { display: flex; }
+  .hole.hit .mole .face { display: none; }
+  .bomb .body { background: radial-gradient(circle at 35% 30%, #555, #111); }
+  .bomb .face::after { content: "💣"; }
+  .controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  button {
+    padding: 10px 26px;
+    border: none;
+    border-radius: 999px;
+    background: #e67e22;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #b9600f;
+    transition: transform .1s;
+  }
+  button:active { transform: translateY(3px); box-shadow: 0 1px 0 #b9600f; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  select {
+    padding: 10px;
+    border-radius: 999px;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.65);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 10;
+  }
+  .overlay.show { display: flex; }
+  .dialog {
+    background: #fff;
+    padding: 36px 48px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,.4);
+  }
+  .dialog h2 { color: #e67e22; margin-bottom: 14px; font-size: 1.7rem; }
+  .dialog p { color: #555; margin-bottom: 20px; font-size: 1.1rem; }
+  .tips { color: rgba(255,255,255,.9); margin-top: 14px; font-size: .9rem; }
 </style>
 </head>
 <body>
-<aside>
-  <div class="brand"><h1>杏林堂</h1><p>中医诊所管理系统 v2.0</p></div>
-  <nav id="nav">
-    <div class="sec">日常诊疗</div>
-    <button data-v="dash" class="active">▦ 工作台</button>
-    <button data-v="appoint">◷ 预约挂号</button>
-    <button data-v="visit">✚ 门诊接诊</button>
-    <button data-v="rx">🌿 中药方剂</button>
-    <button data-v="charge">¥ 收费结算</button>
-    <div class="sec">档案管理</div>
-    <button data-v="patients">☰ 患者管理</button>
-    <button data-v="record">▤ 病历浏览</button>
-    <div class="sec">药房进销存</div>
-    <button data-v="herbs">⚗ 药品库存</button>
-    <button data-v="inout">⇅ 出入库明细</button>
-    <div class="sec">运营</div>
-    <button data-v="stats">◫ 经营统计</button>
-  </nav>
-  <div class="who">当前操作员：张医师（馆长）</div>
-</aside>
-<main>
+  <h1>🐹 打地鼠 🌭</h1>
+  <div class="panel">
+    <span>得分：<b id="score">0</b></span>
+    <span>时间：<b id="time">30</b>s</span>
+    <span>连击：<b id="combo">0</b></span>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="controls">
+    <button id="startBtn">开始游戏</button>
+    <select id="difficulty">
+      <option value="easy">简单</option>
+      <option value="normal" selected>普通</option>
+      <option value="hard">困难</option>
+    </select>
+  </div>
+  <p class="tips">规则：点地鼠 +10 分（连击加成），点到 💣 扣 20 分</p>
 
-<!-- ============ 工作台 ============ -->
-<section id="v-dash">
-  <div class="topbar"><h2>今日工作台</h2><span class="date" id="dash-date"></span></div>
-  <div class="card">
-    <div class="stat-grid">
-      <div class="stat"><span>今日预约</span><b id="s-appt">0</b></div>
-      <div class="stat"><span>待接诊</span><b id="s-wait">0</b></div>
-      <div class="stat amber"><span>今日收费（元）</span><b id="s-money">0</b></div>
-      <div class="stat dark"><span>库存预警</span><b id="s-low">0</b></div>
-      <div class="stat"><span>建档患者</span><b id="s-pt">0</b></div>
+  <div class="overlay" id="overlay">
+    <div class="dialog">
+      <h2 id="dlgTitle">时间到！</h2>
+      <p id="dlgText"></p>
+      <button id="againBtn">再来一局</button>
     </div>
   </div>
-  <div class="grid2">
-    <div class="card">
-      <h3>今日预约队列</h3>
-      <table><thead><tr><th>时间</th><th>患者</th><th>医生</th><th>状态</th></tr></thead><tbody id="dash-appt"></tbody></table>
-    </div>
-    <div class="card">
-      <h3>待办与提醒</h3>
-      <div id="dash-todo" class="diag"></div>
-      <h3 style="margin-top:16px">库存预警</h3>
-      <div id="dash-low" class="diag"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ 预约挂号 ============ -->
-<section id="v-appoint" class="hidden">
-  <div class="topbar"><h2>预约挂号</h2><span class="date">支持当日/预约挂号 · 签到 · 完成闭环</span></div>
-  <div class class="card">
-    <div class="row">
-      <select id="a-pid"></select>
-      <input id="a-date" type="date">
-      <input id="a-time" type="time">
-      <select id="a-doc"><option>张仲景 · 内科</option><option>孙思邈 · 针灸科</option><option>叶天士 · 儿科</option><option>李时珍 · 外科/膏方</option></select>
-      <button class="act" onclick="addAppt()">挂号</button>
-    </div>
-    <div class="row" style="margin-top:2px">
-      <span class="muted">快捷：</span>
-      <button class="ghost" onclick="quickAppt('09:00')">09:00</button>
-      <button class="ghost" onclick="quickAppt('10:00')">10:00</button>
-      <button class="ghost" onclick="quickAppt('14:00')">14:00</button>
-      <button class="ghost" onclick="quickAppt('16:00')">16:00</button>
-      <span class="chip" id="a-future" onclick="toggleFuture()">仅看未来/今日</span>
-    </div>
-    <table><thead><tr><th>日期</th><th>时间</th><th>患者</th><th>医生</th><th>状态</th><th>操作</th></tr></thead><tbody id="a-list"></tbody></table>
-  </div>
-</section>
-
-<!-- ============ 门诊接诊 ============ -->
-<section id="v-visit" class="hidden">
-  <div class="topbar"><h2>门诊接诊（辨证论治）</h2><span class="date">望 · 闻 · 问 · 切</span></div>
-  <div class="card">
-    <div class="row">
-      <select id="v-pid"></select>
-      <button class="act" onclick="startVisit()">开始接诊</button>
-      <span class="muted" id="v-hint">接诊前请先完成建档/挂号</span>
-    </div>
-    <div class="grid2">
-      <div><label class="f">主诉</label><textarea id="v-cc" rows="2" placeholder="如：反复咳嗽两月余，遇寒加重"></textarea></div>
-      <div><label class="f">四诊摘要（望闻问切）</label><textarea id="v-tcm" rows="2" placeholder="望：面色㿠白；闻：声低懒言；问：纳差便溏；切：脉缓弱"></textarea></div>
-    </div>
-    <div class="grid2" style="margin-top:12px">
-      <div><label class="f">辨证（证型）</label><input id="v-syn" style="width:100%" placeholder="如：肺脾气虚证"></div>
-      <div><label class="f">治法</label><input id="v-mth" style="width:100%" placeholder="如：培土生金，益气健脾"></div>
-    </div>
-    <div class="row" style="margin-top:12px">
-      <button class="act" onclick="saveVisit()">保存病历</button>
-      <span class="muted">保存后可开方，收患儿自动进入待收费队列</span>
-    </div>
-    <table style="margin-top:10px"><thead><tr><th>日期</th><th>患者</th><th>主诉</th><th>辨证</th><th>治法</th><th></th></tr></thead><tbody id="v-list"></tbody></table>
-  </div>
-</section>
-
-<!-- ============ 中药方剂 ============ -->
-<section id="v-rx" class="hidden">
-  <div class="topbar"><h2>中药方剂开方</h2><span class="date">支持经典方一键调用 · 自动扣库 · 自动计价</span></div>
-  <div class="card">
-    <div class="chips" id="classic-chips"></div>
-    <div class="row">
-      <select id="rx-pid"></select>
-      <input id="rx-name" placeholder="方名（如：补中益气汤）">
-      <input id="rx-dose" type="number" value="7" min="1" title="剂数">
-      <span class="muted">剂</span>
-      <span class="muted">剂量单位：g · 价格按库存单价自动核算</span>
-    </div>
-    <div id="rx-items"></div>
-    <div class="row">
-      <button class="ghost" onclick="addRxRow()">+ 加药味</button>
-      <button class="act" onclick="saveRx()">保存处方并扣库</button>
-      <span class="muted" id="rx-total"></span>
-    </div>
-    <div><label class="f">煎服法</label><input id="rx-sig" style="width:100%" placeholder="水煎服，日一剂，分早晚温服"></div>
-  </div>
-  <div class="card">
-    <h3>处方台账</h3>
-    <div class="row"><input id="rx-search" placeholder="搜索处方号/患者/方名" oninput="renderRx()"></div>
-    <table><thead><tr><th>处方号</th><th>日期</th><th>患者</th><th>方名</th><th>组成</th><th>金额</th><th>状态</th><th></th></tr></thead><tbody id="rx-list"></tbody></table>
-  </div>
-</section>
-
-<!-- ============ 收费结算 ============ -->
-<section id="v-charge" class="hidden">
-  <div class="topbar"><h2>收费结算</h2><span class="date">收款 · 退方 · 日终结账</span></div>
-  <div class="card">
-    <div class="kpi-line">
-      <div>待收费单<b id="c-n-wait">0</b></div>
-      <div>已收费单<b id="c-n-paid">0</b></div>
-      <div>今日实收（元）<b id="c-money">0</b></div>
-    </div>
-  </div>
-  <div class="card">
-    <table><thead><tr><th>处方号</th><th>日期</th><th>患者</th><th>方名</th><th>金额</th><th>状态</th><th>操作</th></tr></thead><tbody id="c-list"></tbody></table>
-  </div>
-</section>
-
-<!-- ============ 患者管理 ============ -->
-<section id="v-patients" class="hidden">
-  <div class="topbar"><h2>患者管理</h2><span class="date">建档 · 检索 · 档案详情</span></div>
-  <div class="card">
-    <div class="row">
-      <input id="p-name" placeholder="姓名*">
-      <select id="p-sex"><option>男</option><option>女</option></select>
-      <input id="p-age" type="number" placeholder="年龄" min="0" max="120">
-      <input id="p-phone" placeholder="手机号">
-      <input id="p-tag" placeholder="标签：如 慢性胃炎">
-      <button class="act" onclick="addPatient()">建档</button>
-    </div>
-    <div class="row"><input id="p-search" placeholder="搜索姓名 / 手机号 / 标签" oninput="renderPatients()"></div>
-    <div class="grid-cards" id="p-list"></div>
-  </div>
-</section>
-
-<!-- ============ 病历浏览 ============ -->
-<section id="v-record" class="hidden">
-  <div class="topbar"><h2>病历浏览</h2><span class="date">按患者查看历次诊疗记录与处方</span></div>
-  <div class="card">
-    <div class="row">
-      <select id="r-pid" onchange="renderRecord()"></select>
-      <span class="muted" id="r-summary"></span>
-    </div>
-    <div id="r-body"></div>
-  </div>
-</section>
-
-<!-- ============ 药品库存 ============ -->
-<section id="v-herbs" class="hidden">
-  <div class="topbar"><h2>药品（中药饮片）库存</h2><span class="date">入库 · 预警 · 货值核算</span></div>
-  <div class="card">
-    <div class="row">
-      <input id="h-name" placeholder="药名*">
-      <input id="h-stock" type="number" placeholder="库存(g)" min="0">
-      <input id="h-thr" type="number" placeholder="预警阈值(g)" min="0">
-      <input id="h-price" type="number" placeholder="单价(元/g)" step="0.01" min="0">
-      <button class="act" onclick="addHerb()">入库 / 新增药品</button>
-    </div>
-    <div class="row"><input id="h-search" placeholder="搜索药名" oninput="renderHerbs()"><span class="badge ok" id="h-cnt"></span></div>
-    <table><thead><tr><th>药名</th><th>库存(g)</th><th>状态</th><th>单价</th><th>库存货值</th><th>操作</th></tr></thead><tbody id="h-list"></tbody></table>
-  </div>
-</section>
-
-<!-- ============ 出入库明细 ============ -->
-<section id="v-inout" class="hidden">
-  <div class="topbar"><h2>出入库明细（药品流水）</h2><span class="date">入库 / 出库（处方扣减）全记录</span></div>
-  <div class="card">
-    <div class="chips">
-      <span class="chip on" data-f="all" onclick="ioFilter(this)">全部</span>
-      <span class="chip" data-f="in" onclick="ioFilter(this)">仅入库</span>
-      <span class="chip" data-f="out" onclick="ioFilter(this)">仅出库</span>
-    </div>
-    <table><thead><tr><th>时间</th><th>类型</th><th>药名</th><th>数量(g)</th><th>关联单据</th><th>操作人</th></tr></thead><tbody id="io-list"></tbody></table>
-  </div>
-</section>
-
-<!-- ============ 经营统计 ============ -->
-<section id="v-stats" class="hidden">
-  <div class="topbar"><h2>经营统计</h2><span class="date">营收 · 处方 · 客单价 · 药品动销</span></div>
-  <div class="card">
-    <div class="stat-grid">
-      <div class="stat"><span>累计患者</span><b id="st-p">0</b></div>
-      <div class="stat"><span>累计处方</span><b id="st-rx">0</b></div>
-      <div class="stat amber"><span>累计营收（元）</span><b id="st-money">0</b></div>
-      <div class="stat dark"><span>平均客单价（元）</span><b id="st-avg">0</b></div>
-    </div>
-  </div>
-  <div class="card">
-    <h3>近 14 日处方与收入（柱状图 = 处方数）</h3>
-    <div class="bar-wrap" id="st-bars"></div>
-    <div style="height:24px"></div>
-  </div>
-  <div class="card">
-    <h3>近 14 日明细</h3>
-    <table><thead><tr><th>日期</th><th>处方数</th><th>收入（元）</th></tr></thead><tbody id="st-trend"></tbody></table>
-  </div>
-  <div class="card">
-    <h3>药品动销排行（按出库金额）</h3>
-    <table><thead><tr><th>药名</th><th>出库量(g)</th><th>出库金额(元)</th><th>当前库存</th></tr></thead><tbody id="st-herb"></tbody></table>
-  </div>
-</section>
-
-<footer>杏林堂中医诊所管理系统 · 单机演示版 · 数据保存在浏览器 localStorage，刷新不丢失</footer>
-</main>
 
 <script>
-'use strict';
-const DB_KEY='tcm_clinic_db_v2';
-const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-const $=id=>document.getElementById(id);
-const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const nowStr=()=>{const d=new Date();return today()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-
-let DB=load();
-function load(){try{const d=JSON.parse(localStorage.getItem(DB_KEY));if(d&&d.patients&&d.io)return d;}catch(e){}return seed();}
-function save(){try{localStorage.setItem(DB_KEY,JSON.stringify(DB));}catch(e){}}
-
-function seed(){
-  const patients=[
-    {id:'P1001',name:'王文山',sex:'男',age:58,phone:'13800001111',tag:'老慢支',visits:3,created:'2024-05-02'},
-    {id:'P1002',name:'李秀兰',sex:'女',age:45,phone:'13900002222',tag:'失眠',visits:1,created:'2024-06-11'},
-    {id:'P1003',name:'陈小满',sex:'男',age:7,phone:'13700003333',tag:'小儿反复咳嗽',visits:2,created:'2024-08-20'},
-    {id:'P1004',name:'赵敏行',sex:'男',age:34,phone:'13600004444',tag:'颈椎病',visits:0,created:today()}
-  ];
-  const herbs=[
-    {name:'黄芪',stock:2000,thr:500,price:.03},{name:'当归',stock:1500,thr:500,price:.05},
-    {name:'党参',stock:1200,thr:500,price:.04},{name:'白术',stock:900,thr:400,price:.03},
-    {name:'茯苓',stock:800,thr:400,price:.02},{name:'甘草',stock:600,thr:400,price:.02},
-    {name:'柴胡',stock:300,thr:400,price:.06},{name:'酸枣仁',stock:500,thr:300,price:.12},
-    {name:'陈皮',stock:700,thr:300,price:.04},{name:'半夏',stock:450,thr:300,price:.05},
-    {name:'川芎',stock:380,thr:300,price:.05},{name:'生地黄',stock:620,thr:300,price:.03},
-    {name:'白芍',stock:860,thr:300,price:.04},{name:'桂枝',stock:540,thr:200,price:.05},
-    {name:'生姜',stock:400,thr:150,price:.01},{name:'大枣',stock:460,thr:150,price:.03}
-  ];
-  const t=today();
-  const appts=[
-    {id:uid('A'),pid:'P1001',date:t,time:'09:00',doc:'张仲景 · 内科',status:'待诊'},
-    {id:uid('A'),pid:'P1002',date:t,time:'09:30',doc:'孙思邈 · 针灸科',status:'待诊'},
-    {id:uid('A'),pid:'P1003',date:t,time:'10:15',doc:'叶天士 · 儿科',status:'已到'},
-    {id:uid('A'),pid:'P1004',date:t,time:'14:30',doc:'李时珍 · 外科/膏方',status:'待诊'}
-  ];
-  const visits=[
-    {id:uid('V'),date:today(),pid:'P1001',cc:'反复咳嗽两月余，遇寒加重，气短乏力',tcm:'面色㿠白，声低懒言，纳差便溏，脉缓弱',syn:'肺脾气虚证',mth:'培土生金，益气健脾'},
-    {id:uid('V'),date:today(),pid:'P1002',cc:'入睡困难三月，多梦易醒',tcm:'舌尖红，苔薄黄，脉弦细',syn:'肝郁化火，心神不宁',mth:'疏肝泻火，养心安神'}
-  ];
-  const io=[];
-  herbs.forEach(h=>io.push({t:nowStr(),type:'in',name:h.name,qty:h.stock,ref:'期初建账',op:'系统'}));
-  const rx=[];
-  const mkRx=(pid,name,items,sig)=>{
-    const dose=7;
-    let fee=0;
-    const its=items.map(([g,q])=>{const h=herbs.find(x=>x.name===g);fee+=(h?h.price:.1)*q*dose;return{g,q}});
-    rx.push({id:'RX'+String(rx.length+1).padStart(4,'0'),date:t,pid,name,items:its,dose,fee:Math.round(fee*100)/100,paid:true,sig});
-    its.forEach(x=>{const h=herbs.find(y=>y.name===x.g);if(h){io.push({t:nowStr(),type:'out',name:x.g,qty:x.q*dose,ref:rx[rx.length-1].id,op:'张医师'});}});
+(function () {
+  const HOLES = 9;
+  const ROUND_TIME = 30;
+  const CONFIG = {
+    easy:   { up: 1100, spawn: 700, maxUp: 1, bombRate: 0.10 },
+    normal: { up: 850,  spawn: 520, maxUp: 2, bombRate: 0.15 },
+    hard:   { up: 650,  spawn: 380, maxUp: 3, bombRate: 0.22 },
   };
-  mkRx('P1001','培土生金方',[['黄芪',15],['党参',10],['白术',9],['茯苓',10],['甘草',5],['陈皮',6]],'水煎服，日一剂，分早晚温服');
-  mkRx('P1002','酸枣仁汤加减',[['酸枣仁',15],['茯苓',10],['川芎',6],['甘草',3],['柴胡',6]],'睡前一小时温服，日一剂');
-  rx[0].paid=false;rx[1].paid=true;
-  return {patients,herbs,appts,visits,rx,io,seq:{rx:rx.length+1,pt:1005}};
-}
 
-/* ---------- 导航 ---------- */
-const VIEW_TITLES={dash:'今日工作台',appoint:'预约挂号',visit:'门诊接诊',rx:'中药方剂开方',charge:'收费结算',patients:'患者管理',record:'病历浏览',herbs:'药品库存',inout:'出入库明细',stats:'经营统计'};
-let curView='dash';
-$('nav').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  go(b.dataset.v);
-});
-function go(v){
-  if(!VIEW_TITLES[v])return;
-  curView=v;
-  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));
-  document.querySelectorAll('main > section').forEach(s=>s.classList.add('hidden'));
-  $('v-'+v).classList.remove('hidden');
-  renderAll();
-}
-window.go=go;
+  const board = document.getElementById('board');
+  const scoreEl = document.getElementById('score');
+  const timeEl = document.getElementById('time');
+  const comboEl = document.getElementById('combo');
+  const startBtn = document.getElementById('startBtn');
+  const difficultySel = document.getElementById('difficulty');
+  const overlay = document.getElementById('overlay');
+  const dlgTitle = document.getElementById('dlgTitle');
+  const dlgText = document.getElementById('dlgText');
+  const againBtn = document.getElementById('againBtn');
 
-/* ---------- 工作台 ---------- */
-function renderDash(){
-  $('dash-date').textContent='今天是 '+nowStr();
-  const appts=DB.appts.filter(a=>a.date===today()).sort((a,b)=>a.time.localeCompare(b.time));
-  $('s-appt').textContent=appts.length;
-  $('s-wait').textContent=appts.filter(a=>a.status==='待诊'||a.status==='已到').length;
-  $('s-money').textContent=DB.rx.filter(r=>r.paid&&r.date===today()).reduce((s,r)=>s+r.fee,0).toFixed(0);
-  $('s-low').textContent=DB.herbs.filter(h=>h.stock<=h.thr).length;
-  $('s-pt').textContent=DB.patients.length;
-  $('dash-appt').innerHTML=appts.map(a=>{
-    const p=DB.patients.find(x=>x.id===a.pid);
-    const cls=a.status==='待诊'?'wait':(a.status==='已完成'?'ok':'');
-    return '<tr><td>'+esc(a.time)+'</td><td>'+esc(p?p.name:'-')+'</td><td>'+esc(a.doc)+'</td><td><span class="badge '+cls+'">'+esc(a.status)+'</span></td></tr>';
-  }).join('')||'<tr><td colspan="4" class="muted">今日暂无预约</td></tr>';
-  const low=DB.herbs.filter(h=>h.stock<=h.thr);
-  $('dash-low').innerHTML=low.length?low.map(h=>'<div>⚠ <b>'+esc(h.name)+'</b> 仅剩 '+h.stock+'g（阈值 '+h.thr+'g）<button class="ghost" style="margin-left:8px" onclick="go(\'herbs\');restock(\''+esc(h.name)+'\')">去补货</button></div>').join(''):'<div class="muted">全部药品库存充足 ✔</div>';
-  const waitPay=DB.rx.filter(r=>!r.paid).length;
-  $('dash-todo').innerHTML=[
-    '<div>'+ (appts.filter(a=>a.status==='待诊').length?'● <b>'+appts.filter(a=>a.status==='待诊').length+'</b> 位患者候诊中':'● 无候诊患者')+'</div>',
-    '<div>'+ (waitPay?'● <b>'+waitPay+'</b> 张处方待收费 <button class="ghost" style="margin-left:8px" onclick="go(\'charge\')">去收款</button>':'● 无待收费处方')+'</div>',
-    '<div>'+ (low.length?'● <b>'+low.length+'</b> 种药品低于预警线':'● 药品库存正常')+'</div>'
-  ].join('');
-}
+  const holes = [];
+  for (let i = 0; i < HOLES; i++) {
+    const hole = document.createElement('div');
+    hole.className = 'hole';
+    hole.innerHTML =
+      '<div class="mole">' +
+        '<div class="body"><div class="face">🐹</div><div class="whack">💥</div></div>' +
+      '</div>';
+    hole.addEventListener('mousedown', whack);
+    board.appendChild(hole);
+    holes.push({ el: hole, active: false, timer: null, isBomb: false });
+  }
 
-/* ---------- 患者 ---------- */
-function addPatient(){
-  const name=$('p-name').value.trim();
-  if(!name){alert('请填写姓名');return;}
-  DB.patients.unshift({id:'P'+(DB.seq.pt++),name,sex:$('p-sex').value,
-    age:+$('p-age').value||'',phone:$('p-phone').value.trim(),tag:$('p-tag').value.trim(),visits:0,created:today()});
-  save();['p-name','p-age','p-phone','p-tag'].forEach(i=>$(i).value='');
-  renderPatients();fillPids();renderDash();toast('建档成功');
-}
-function delPatient(id){
-  if(!confirm('删除该患者档案？其病历与处方仍会保留。'))return;
-  DB.patients=DB.patients.filter(p=>p.id!==id);save();renderPatients();fillPids();
-}
-function renderPatients(){
-  const q=($('p-search').value||'').trim();
-  const list=DB.patients.filter(p=>!q||p.name.includes(q)||p.phone.includes(q)||(p.tag||'').includes(q));
-  $('p-list').innerHTML=list.map(p=>{
-    const lastV=DB.visits.filter(v=>v.pid===p.id).slice(-1)[0];
-    const rxN=DB.rx.filter(r=>r.pid===p.id).length;
-    return '<div class="pcard"><h4>'+esc(p.name)+' <span class="badge">'+esc(p.sex)+' '+esc(p.age)+'岁</span></h4>'+
-      '<div class="meta">档案号 '+esc(p.id)+' · 建档 '+esc(p.created||'-')+' · 就诊 '+p.visits+' 次 · 处方 '+rxN+' 张</div>'+
-      '<div class="meta">📱 '+esc(p.phone||'-')+' ｜ 标签：'+esc(p.tag||'无')+'</div>'+
-      '<div class="meta">最近辨证：'+(lastV?esc(lastV.syn):'暂无病历')+'</div>'+
-      '<div class="row" style="margin:8px 0 0"><button class="ghost" onclick="openRecord(\''+esc(p.id)+'\')">查看病历</button>'+
-      '<button class="ghost" onclick="delPatient(\''+esc(p.id)+'\')">删除</button></div></div>';
-  }).join('')||'<div class="muted">未找到患者</div>';
-}
+  let score = 0, combo = 0, timeLeft = ROUND_TIME;
+  let running = false;
+  let tickTimer = null, spawnTimer = null;
 
-/* ---------- 预约 ---------- */
-function quickAppt(t){$('a-time').value=t;}
-function toggleFuture(){$('a-future').classList.toggle('on');renderAppts();}
-function addAppt(){
-  const pid=$('a-pid').value,date=$('a-date').value||today(),time=$('a-time').value;
-  if(!pid){alert('请先建档患者');return;}
-  if(!time){alert('请选择时间');return;}
-  DB.appts.push({id:uid('A'),pid,date,time,doc:$('a-doc').value,status:'待诊'});
-  save();renderAppts();renderDash();toast('挂号成功');
-}
-function apptState(id,st){const a=DB.appts.find(x=>x.id===id);if(a){a.status=st;save();renderAppts();renderDash();}}
-function renderAppts(){
-  let list=DB.appts.slice().sort((a,b)=>(b.date+a.time).localeCompare(a.date+b.time)||b.time.localeCompare(a.time));
-  if($('a-future').classList.contains('on'))list=list.filter(a=>a.date>=today());
-  list.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-  if($('a-future').classList.contains('on'))list=list.sort((a,b)=>0);
-  $('a-list').innerHTML=list.map(a=>{
-    const p=DB.patients.find(x=>x.id===a.pid);
-    const acts=a.status==='待诊'?'<button class="ghost" onclick="apptState(\''+a.id+'\',\'已到\')">签到</button><button class="ghost" onclick="apptState(\''+a.id+'\',\'已完成\')">完成</button>':
-      a.status==='已到'?'<button class="act" onclick="apptState(\''+a.id+'\',\'已完成\')">完成</button><button class="ghost" onclick="apptState(\''+a.id+'\',\'待诊\')">撤签</button>':
-      '<button class="ghost" onclick="apptState(\''+a.id+'\',\'待诊\')">重置</button>';
-    const cls=a.status==='待诊'?'wait':(a.status==='已完成'?'ok':'');
-    return '<tr><td>'+esc(a.date)+'</td><td>'+esc(a.time)+'</td><td>'+esc(p?p.name:'-')+'</td><td>'+esc(a.doc)+'</td><td><span class="badge '+cls+'">'+esc(a.status)+'</span></td><td>'+acts+'</td></tr>';
-  }).join('')||'<tr><td colspan="6" class="muted">暂无预约</td></tr>';
-}
+  function randomUp() {
+    if (!running) return;
+    const cfg = CONFIG[difficultySel.value];
+    const idle = holes.filter(h => !h.active);
+    const upCount = holes.filter(h => h.active && !h.isBomb).length;
+    if (idle.length && upCount < cfg.maxUp) {
+      const h = idle[Math.floor(Math.random() * idle.length)];
+      h.active = true;
+      h.isBomb = Math.random() < cfg.bombRate;
+      h.el.classList.toggle('bomb', h.isBomb);
+      h.el.classList.add('up');
+      h.timer = setTimeout(() => hide(h), cfg.up + Math.random() * 400);
+    }
+    spawnTimer = setTimeout(randomUp, cfg.spawn * (0.6 + Math.random() * 0.9));
+  }
 
-/* ---------- 接诊 ---------- */
-function startVisit(){
-  const p=DB.patients.find(x=>x.id===$('v-pid').value);
-  if(!p){alert('请选择患者');return;}
-  ['v-cc','v-tcm','v-syn','v-mth'].forEach(i=>$(i).value='');
-  $('v-hint').textContent='接诊中：'+p.name+'（'+p.id+'）· '+nowStr();
-  toast('开始接诊：'+p.name);
-}
-function saveVisit(){
-  const pid=$('v-pid').value;
-  const p=DB.patients.find(x=>x.id===pid);
-  if(!p){alert('请选择患者');return;}
-  if(!$('v-cc').value.trim()){alert('请填写主诉');return;}
-  DB.visits.unshift({id:uid('V'),date:today(),pid,cc:$('v-cc').value.trim(),
-    tcm:$('v-tcm').value.trim(),syn:$('v-syn').value.trim(),mth:$('v-mth').value.trim()});
-  p.visits++;save();renderVisits();toast('病历已保存');
-}
-function delVisit(id){if(!confirm('删除该病历？'))return;DB.visits=DB.visits.filter(v=>v.id!==id);save();renderVisits();renderPatients();}
-function renderVisits(){
-  $('v-list').innerHTML=DB.visits.map(v=>{
-    const p=DB.patients.find(x=>x.id===v.pid);
-    return '<tr><td>'+esc(v.date)+'</td><td>'+esc(p?p.name:'-')+'</td><td>'+esc(v.cc)+'</td><td>'+esc(v.syn)+'</td><td>'+esc(v.mth)+'</td><td><button class="ghost" onclick="delVisit(\''+esc(v.id)+'\')">删除</button></td></tr>';
-  }).join('')||'<tr><td colspan="6" class="muted">暂无病历</td></tr>';
-}
+  function hide(h) {
+    h.el.classList.remove('up', 'hit', 'bomb');
+    h.active = false;
+    h.isBomb = false;
+    clearTimeout(h.timer);
+    h.timer = null;
+  }
 
-/* ---------- 病历浏览 ---------- */
-function openRecord(pid){go('record');$('r-pid').value=pid;renderRecord();}
-function renderRecord(){
-  const pid=$('r-pid').value;
-  const p=DB.patients.find(x=>x.id===pid);
-  if(!p){$('r-body').innerHTML='<div class="muted">请选择患者</div>';return;}
-  const vs=DB.visits.filter(v=>v.pid===pid);
-  const rs=DB.rx.filter(r=>r.pid===pid);
-  const as=DB.appts.filter(a=>a.pid===pid);
-  $('r-summary').textContent=p.name+' · '+p.sex+' '+p.age+'岁 · 共就诊 '+p.visits+' 次 · 病历 '+vs.length+' 份 · 处方 '+rs.length+' 张';
-  let html='<div class="grid2"><div class="pcard"><h4>📋 病历（'+vs.length+'）</h4>';
-  html+=vs.length?vs.map(v=>'<div class="diag" style="border-bottom:1px dashed var(--line);padding-bottom:8px;margin-bottom:8px"><b>'+esc(v.date)+'</b> · 主诉：'+esc(v.cc)+'<br>四诊：'+esc(v.tcm||'-')+'<br>辨证：<b>'+esc(v.syn||'-')+'</b> ｜ 治法：'+esc(v.mth||'-')+'</div>').join(''):'<div class="muted">暂无病历</div>';
-  html+='</div><div class="pcard"><h4>💊 处方（'+rs.length+'）</h4>';
-  html+=rs.length?rs.map(r=>'<div class="diag" style="border-bottom:1px dashed var(--line);padding-bottom:8px;margin-bottom:8px"><b>'+esc(r.id)+'</b> '+esc(r.date)+' · '+esc(r.name)+'<br>'+esc(r.items.map(i=>i.g+' '+i.q+'g').join('、'))+' × '+r.dose+'剂<br><span class="muted">'+esc(r.sig)+'</span> ｜ '+(r.paid?'<span class="badge ok">已收费</span>':'<span class="badge low">待收费</span>')+' ¥'+r.fee+'</div>').join(''):'<div class="muted">暂无处方</div>';
-  html+='</div></div>';
-  html+='<div class="card" style="margin-top:14px"><h3>预约历史（'+as.length+'）</h3><table><thead><tr><th>日期</th><th>时间</th><th>医生</th><th>状态</th></tr></thead><tbody>';
-  html+=as.length?as.map(a=>'<tr><td>'+esc(a.date)+'</td><td>'+esc(a.time)+'</td><td>'+esc(a.doc)+'</td><td><span class="badge">'+esc(a.status)+'</span></td></tr>').join(''):'<tr><td colspan="4" class="muted">暂无预约</td></tr>';
-  html+='</tbody></table></div>';
-  $('r-body').innerHTML=html;
-}
+  function whack(e) {
+    if (!running) return;
+    const h = holes.find(x => x.el === e.currentTarget);
+    if (!h || !h.active) return;
 
-/* ---------- 方剂 ---------- */
-const CLASSICS=[
-  {n:'四君子汤',items:[['党参',9],['白术',9],['茯苓',9],['甘草',6]]},
-  {n:'四物汤',items:[['当归',9],['川芎',6],['白芍',9],['生地黄',12]]},
-  {n:'逍遥散',items:[['柴胡',9],['当归',9],['白芍',9],['白术',9],['茯苓',9],['甘草',6]]},
-  {n:'桂枝汤',items:[['桂枝',9],['白芍',9],['甘草',6],['生姜',3],['大枣',4]]},
-  {n:'补中益气汤',items:[['黄芪',18],['党参',9],['白术',9],['甘草',5],['当归',6],['陈皮',6]]},
-  {n:'酸枣仁汤',items:[['酸枣仁',15],['茯苓',10],['川芎',6],['甘草',3],['柴胡',6]]}
-];
-function renderClassicChips(){
-  $('classic-chips').innerHTML='<span class="muted" style="align-self:center">经典方：</span>'+CLASSICS.map((c,i)=>'<span class="chip" onclick="loadClassic('+i+')">'+c.n+'</span>').join('');
-}
-function loadClassic(i){
-  const c=CLASSICS[i];if(!c)return;
-  $('rx-name').value=c.n;$('rx-items').innerHTML='';
-  c.items.forEach(it=>addRxRow(it[0],it[1]));
-  updateRxTotal();toast('已载入经典方：'+c.n);
-}
-function addRxRow(g,q){
-  const div=document.createElement('div');div.className='rx-item';
-  div.innerHTML='<input class="g" placeholder="药名" value="'+esc(g||'')+'" list="herb-dl"><input class="q" type="number" min="1" placeholder="剂量g" value="'+(q||'')+'" oninput="updateRxTotal()"><button class="ghost" onclick="this.parentNode.remove();updateRxTotal()">删</button>';
-  $('rx-items').appendChild(div);updateRxTotal();
-}
-function herbDatalist(){
-  let dl=$('herb-dl');
-  if(!dl){dl=document.createElement('datalist');dl.id='herb-dl';document.body.appendChild(dl);}
-  dl.innerHTML=DB.herbs.map(h=>'<option value="'+esc(h.name)+'">').join('');
-}
-function readRxRows(){
-  const rows=Array.prototype.slice.call($('rx-items').querySelectorAll('.rx-item'));
-  return rows.map(r=>({g:r.querySelector('.g').value.trim(),q:+r.querySelector('.q').value||0})).filter(x=>x.g&&x.q>0);
-}
-function updateRxTotal(){
-  const dose=+$('rx-dose').value||1;
-  const items=readRxRows();
-  let fee=0,miss=[];
-  items.forEach(x=>{const h=DB.herbs.find(h=>h.name===x.g);if(h)fee+=h.price*x.q*dose;else miss.push(x.g);});
-  $('rx-total').innerHTML='预计金额 ¥<b style="color:var(--amber)">'+fee.toFixed(2)+'</b>'+(miss.length?' <span class="badge low">未定价：'+esc(miss.join('、'))+'</span>':'');
-}
-function saveRx(){
-  const pid=$('rx-pid').value;
-  const p=DB.patients.find(x=>x.id===pid);
-  if(!p){alert('请选择患者');return;}
-  const items=readRxRows();
-  if(!items.length){alert('请添加药味');return;}
-  const dose=+$('rx-dose').value||7;
-  const lack=items.filter(x=>{const h=DB.herbs.find(h=>h.name===x.g);return !h||h.stock<x.q*dose;});
-  if(lack.length){alert('库存不足或药品不存在：'+lack.map(x=>x.g).join('、')+'，请先入库');return;}
-  let fee=0;
-  items.forEach(x=>{const h=DB.herbs.find(h=>h.name===x.g);fee+=h.price*x.q*dose;});
-  const rxObj={id:'RX'+String(DB.seq.rx++).padStart(4,'0'),date:today(),pid,
-    name:$('rx-name').value.trim()||'自拟方',items,dose,fee:Math.round(fee*100)/100,paid:false,
-    sig:$('rx-sig').value.trim()||'水煎服，日一剂，分早晚温服'};
-  DB.rx.unshift(rxObj);
-  items.forEach(x=>{const h=DB.herbs.find(h=>h.name===x.g);h.stock-=x.q*dose;DB.io.push({t:nowStr(),type:'out',name:x.g,qty:x.q*dose,ref:rxObj.id,op:'张医师'});});
-  save();$('rx-items').innerHTML='';addRxRow();
-  herbDatalist();renderRx();renderHerbs();renderIo();renderDash();renderCharge();renderRecord();
-  toast('处方 '+rxObj.id+' 已保存，自动扣库 ¥'+rxObj.fee);
-}
-function delRx(id){
-  if(!confirm('删除该处方？药材将回库（不会自动退费）。'))return;
-  const r=DB.rx.find(x=>x.id===id);if(!r)return;
-  r.items.forEach(x=>{const h=DB.herbs.find(h=>h.name===x.g);if(h){h.stock+=x.q*r.dose;DB.io.push({t:nowStr(),type:'in',name:x.g,qty:x.q*r.dose,ref:'退方 '+r.id,op:'张医师'});}});
-  DB.rx=DB.rx.filter(x=>x.id!==id);save();
-  renderRx();renderHerbs();renderIo();renderCharge();renderDash();toast('处方已删除并回库');
-}
-function renderRx(){
-  const q=($('rx-search').value||'').trim().toLowerCase();
-  const list=DB.rx.filter(r=>{
-    if(!q)return true;
-    const p=DB.patients.find(x=>x.id===r.pid);
-    return r.id.toLowerCase().includes(q)||(p&&p.name.includes(q))||r.name.includes(q);
-  });
-  $('rx-list').innerHTML=list.map(r=>{
-    const p=DB.patients.find(x=>x.id===r.pid);
-    const comp=r.items.map(i=>esc(i.g)+' '+i.q+'g').join('、');
-    return '<tr><td>'+esc(r.id)+'</td><td>'+esc(r.date)+'</td><td>'+esc(p?p.name:'-')+'</td><td>'+esc(r.name)+'</td><td class="muted">'+comp+' × '+r.dose+'剂</td><td>¥'+r.fee.toFixed(2)+'</td><td><span class="badge '+(r.paid?'ok':'low')+'">'+(r.paid?'已收费':'待收费')+'</span></td><td>'+(r.paid?'':'<button class="ghost" onclick="payRx(\''+esc(r.id)+'\')">收款</button> ')+'<button class="ghost" onclick="delRx(\''+esc(r.id)+'\')">删除</button></td></tr>';
-  }).join('')||'<tr><td colspan="8" class="muted">暂无处方</td></tr>';
-}
+    if (h.isBomb) {
+      score = Math.max(0, score - 20);
+      combo = 0;
+      h.el.classList.add('hit');
+      beep(120, .18);
+      setTimeout(() => hide(h), 350);
+    } else {
+      combo++;
+      score += 10 + Math.min(combo - 1, 5) * 2;
+      h.el.classList.add('hit');
+      beep(660, .08);
+      setTimeout(() => hide(h), 300);
+    }
+    render();
+  }
 
-/* ---------- 库存 ---------- */
-function addHerb(){
-  const name=$('h-name').value.trim();
-  if(!name){alert('请填药名');return;}
-  let h=DB.herbs.find(x=>x.name===name);
-  const add=+$('h-stock').value||0,thr=+$('h-thr').value||100,price=+$('h-price').value||.05;
-  if(h){h.stock+=add;h.thr=thr;h.price=price;}else DB.herbs.push({name,stock:add,thr,price});
-  DB.io.push({t:nowStr(),type:'in',name,qty:add,ref:h?'手动入库':'期初新增',op:'张医师'});
-  save();['h-name','h-stock','h-thr','h-price'].forEach(i=>$(i).value='');
-  herbDatalist();renderHerbs();renderIo();renderDash();
-}
-function restock(name){const h=DB.herbs.find(x=>x.name===name);const n=prompt('【'+name+'】补货量(g):','500');if(n!==null&&+n>0){h.stock+=+n;DB.io.push({t:nowStr(),type:'in',name,qty:+n,ref:'补货',op:'张医师'});save();renderHerbs();renderIo();renderDash();}}
-function delHerb(name){if(!confirm('删除 '+name+'？'))return;DB.herbs=DB.herbs.filter(x=>x.name!==name);save();herbDatalist();renderHerbs();renderDash();}
-function renderHerbs(){
-  const q=($('h-search').value||'').trim();
-  const list=DB.herbs.filter(h=>!q||h.name.includes(q));
-  $('h-cnt').textContent='共 '+DB.herbs.length+' 种药品';
-  $('h-list').innerHTML=list.map(h=>{
-    const low=h.stock<=h.thr;
-    return '<tr><td><b>'+esc(h.name)+'</b></td><td>'+h.stock+'</td><td><span class="badge '+(low?'low':'ok')+'">'+(low?'预警':'充足')+'</span></td><td>'+h.price+' 元/g</td><td>'+(h.stock*h.price).toFixed(2)+' 元</td><td><button class="ghost" onclick="restock(\''+esc(h.name)+'\')">补货</button> <button class="ghost" onclick="delHerb(\''+esc(h.name)+'\')">删除</button></td></tr>';
-  }).join('')||'<tr><td colspan="6" class="muted">暂无药品</td></tr>';
-}
+  let audioCtx = null;
+  function beep(freq, dur) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = freq;
+      o.type = 'square';
+      g.gain.setValueAtTime(0.06, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      o.start();
+      o.stop(audioCtx.currentTime + dur);
+    } catch (e) {}
+  }
 
-/* ---------- 出入库流水 ---------- */
-let ioFilterVal='all';
-function ioFilter(el){document.querySelectorAll('#v-inout .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');ioFilterVal=el.dataset.f;renderIo();}
-function renderIo(){
-  let list=DB.io.slice().reverse();
-  if(ioFilterVal!=='all')list=list.filter(x=>x.type===ioFilterVal);
-  $('io-list').innerHTML=list.slice(0,200).map(x=>{
-    const isIn=x.type==='in';
-    return '<tr><td>'+esc(x.t)+'</td><td><span class="badge '+(isIn?'ok':'low')+'">'+(isIn?'入库':'出库')+'</span></td><td>'+esc(x.name)+'</td><td>'+(isIn?'+':'−')+x.qty+'</td><td>'+esc(x.ref)+'</td><td>'+esc(x.op)+'</td></tr>';
-  }).join('')||'<tr><td colspan="6" class="muted">暂无流水</td></tr>';
-}
+  function render() {
+    scoreEl.textContent = score;
+    timeEl.textContent = timeLeft;
+    comboEl.textContent = combo;
+  }
 
-/* ---------- 收费 ---------- */
-function payRx(id){const r=DB.rx.find(x=>x.id===id);if(r&&!r.paid){r.paid=true;save();renderCharge();renderDash();renderStats();renderRx();toast('收款成功 ¥'+r.fee.toFixed(2));}}
-function renderCharge(){
-  const t=today();
-  $('c-n-wait').textContent=DB.rx.filter(r=>!r.paid).length;
-  $('c-n-paid').textContent=DB.rx.filter(r=>r.paid).length;
-  $('c-money').textContent=DB.rx.filter(r=>r.paid&&r.date===t).reduce((s,r)=>s+r.fee,0).toFixed(2);
-  $('c-list').innerHTML=DB.rx.map(r=>{
-    const p=DB.patients.find(x=>x.id===r.pid);
-    return '<tr><td>'+esc(r.id)+'</td><td>'+esc(r.date)+'</td><td>'+esc(p?p.name:'-')+'</td><td>'+esc(r.name)+'</td><td>¥'+r.fee.toFixed(2)+'</td><td><span class="badge '+(r.paid?'ok':'low')+'">'+(r.paid?'已收费':'待收费')+'</span></td><td>'+(r.paid?'<button class="ghost" onclick="undoPay(\''+esc(r.id)+'\')">撤销收费</button>':'<button class="act" onclick="payRx(\''+esc(r.id)+'\')">收款</button>')+'</td></tr>';
-  }).join('')||'<tr><td colspan="7" class="muted">暂无处方</td></tr>';
-}
-function undoPay(id){const r=DB.rx.find(x=>x.id===id);if(r){r.paid=false;save();renderCharge();renderDash();renderRx();}}
+  function start() {
+    clearInterval(tickTimer);
+    clearTimeout(spawnTimer);
+    holes.forEach(hide);
+    score = 0; combo = 0; timeLeft = ROUND_TIME;
+    running = true;
+    overlay.classList.remove('show');
+    startBtn.disabled = true;
+    difficultySel.disabled = true;
+    render();
+    randomUp();
+    tickTimer = setInterval(() => {
+      timeLeft--;
+      if (timeLeft <= 0) return end();
+      render();
+    }, 1000);
+  }
 
-/* ---------- 统计 ---------- */
-function dayStr(offset){const d=new Date();d.setDate(d.getDate()-offset);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-function renderStats(){
-  const paid=DB.rx.filter(r=>r.paid);
-  const money=paid.reduce((s,r)=>s+r.fee,0);
-  $('st-p').textContent=DB.patients.length;
-  $('st-rx').textContent=DB.rx.length;
-  $('st-money').textContent=money.toFixed(2);
-  $('st-avg').textContent=paid.length?(money/paid.length).toFixed(2):'0';
-  const days=[];
-  for(let i=13;i>=0;i--)days.push(dayStr(i));
-  const counts=days.map(d=>DB.rx.filter(r=>r.date===d).length);
-  const incs=days.map(d=>DB.rx.filter(r=>r.date===d&&r.paid).reduce((s,r)=>s+r.fee,0));
-  const max=Math.max(1,...counts);
-  $('st-bars').innerHTML=days.map((d,i)=>'<div class="bar" style="height:'+(counts[i]/max*100)+'%"><i>'+counts[i]+'</i><s>'+d.slice(5)+'</s></div>').join('');
-  $('st-trend').innerHTML=days.slice().reverse().map((d,i)=>{
-    const idx=days.indexOf(d);
-    return '<tr><td>'+d+'</td><td>'+counts[idx]+'</td><td>'+incs[idx].toFixed(2)+'</td></tr>';
-  }).join('');
-  const agg={};
-  DB.io.filter(x=>x.type==='out').forEach(x=>{if(!agg[x.name])agg[x.name]={name:x.name,qty:0,fee:0};const h=DB.herbs.find(y=>y.name===x.name)||{price:0};agg[x.name].qty+=x.qty;agg[x.name].fee+=x.qty*h.price;});
-  const rows=Object.values(agg).sort((a,b)=>b.fee-a.fee).slice(0,8);
-  $('st-herb').innerHTML=rows.map(x=>{const h=DB.herbs.find(y=>y.name===x.name);return '<tr><td>'+esc(x.name)+'</td><td>'+x.qty+'</td><td>'+x.fee.toFixed(2)+'</td><td>'+(h?h.stock:'-')+'g</td></tr>';}).join('')||'<tr><td colspan="4" class="muted">暂无出库记录</td></tr>';
-}
+  function end() {
+    running = false;
+    clearInterval(tickTimer);
+    clearTimeout(spawnTimer);
+    holes.forEach(hide);
+    startBtn.disabled = false;
+    difficultySel.disabled = false;
+    dlgTitle.textContent = '⏰ 时间到！';
+    dlgText.textContent = '本局得分：' + score + ' 分';
+    overlay.classList.add('show');
+  }
 
-/* ---------- 公共 ---------- */
-function fillPids(){
-  const opts=DB.patients.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'（'+esc(p.sex)+' '+esc(p.age)+'岁）</option>').join('');
-  ['a-pid','v-pid','rx-pid','r-pid'].forEach(id=>{
-    const el=$(id),cur=el.value;el.innerHTML=opts;
-    if(Array.prototype.some.call(el.options,o=>o.value===cur))el.value=cur;
-  });
-}
-function toast(msg){
-  const d=document.createElement('div');d.textContent=msg;
-  d.style.cssText='position:fixed;right:24px;top:24px;background:#2f6f5e;color:#fff;padding:11px 20px;border-radius:9px;z-index:99;box-shadow:0 6px 18px rgba(0,0,0,.22);font-size:14px';
-  document.body.appendChild(d);setTimeout(()=>d.remove(),2400);
-}
-function renderAll(){renderDash();renderPatients();renderAppts();renderVisits();renderRx();renderHerbs();renderCharge();renderStats();renderIo();renderRecord();}
-
-const now=new Date();
-$('a-time').value=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-$('a-date').value=today();
-fillPids();renderClassicChips();herbDatalist();addRxRow();renderAll();
+  startBtn.addEventListener('click', start);
+  againBtn.addEventListener('click', start);
+  render();
+})();
 </script>
 </body>
 </html>
