@@ -3,51 +3,463 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>月饼换足球 · 图像替换结果</title>
+<title>拼音乐园 - 小学二年级趣味拼音学习</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f4f6f8;color:#1f2937;min-height:100vh}
-header{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;padding:26px 24px;text-align:center}
-header h1{font-size:22px;letter-spacing:1px}
-header p{color:#93c5fd;margin-top:8px;font-size:14px}
-.wrap{max-width:1100px;margin:0 auto;padding:24px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-@media(max-width:760px){.grid{grid-template-columns:1fr}}
-.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07)}
-.card .t{padding:12px 16px;font-size:15px;font-weight:600;border-bottom:1px solid #eef1f4;display:flex;justify-content:space-between;align-items:center}
-.tag{font-size:12px;font-weight:400;padding:2px 10px;border-radius:999px}
-.tag.old{background:#fdecea;color:#c0563e}
-.tag.new{background:#e8f5ee;color:#2f6f5e}
-.card img{width:100%;display:block}
-.info{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-top:18px;font-size:14px;line-height:1.9;color:#4b5563}
-.info b{color:#1f2937}
-footer{text-align:center;color:#9ca3af;font-size:12px;padding:22px 0}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%);
+    min-height: 100vh; color: #333;
+  }
+  header { text-align: center; padding: 20px; color: #fff; }
+  header h1 { font-size: 2.2em; text-shadow: 2px 2px 4px rgba(0,0,0,.3); }
+  header p { font-size: 1.1em; opacity: .9; margin-top: 5px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 16px 40px; }
+  .tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 10px 22px; border: none; border-radius: 25px;
+    background: rgba(255,255,255,.85); cursor: pointer;
+    font-size: 1em; font-weight: bold; color: #2e7d32; transition: all .2s;
+  }
+  .tab-btn.active, .tab-btn:hover {
+    background: #ff9800; color: #fff; transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,.2);
+  }
+  .panel {
+    display: none; background: #fff; border-radius: 20px;
+    padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,.15);
+  }
+  .panel.active { display: block; }
+  h2 { color: #2e7d32; margin-bottom: 14px; font-size: 1.4em; }
+  .grade-toggle { display: flex; gap: 10px; margin-bottom: 16px; }
+  .grade-btn {
+    padding: 6px 16px; border: 2px solid #43a047; background: #fff;
+    border-radius: 20px; cursor: pointer; color: #2e7d32; font-weight: bold;
+  }
+  .grade-btn.active { background: #43a047; color: #fff; }
+  .pinyin-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 10px; margin-bottom: 16px;
+  }
+  .pinyin-card {
+    aspect-ratio: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #fff9c4, #fff176);
+    border: 2px solid #fbc02d; border-radius: 14px;
+    cursor: pointer; font-size: 1.3em; font-weight: bold; color: #e65100;
+    transition: all .15s;
+  }
+  .pinyin-card:hover { transform: scale(1.08); background: #ffe082; }
+  .pinyin-card .tone { font-size: .55em; color: #ef6c00; }
+  .learn-detail {
+    background: #e8f5e9; border-radius: 14px; padding: 20px;
+    text-align: center; min-height: 150px;
+  }
+  .learn-detail .big { font-size: 3.2em; font-weight: bold; color: #d84315; }
+  .learn-detail .word { font-size: 1.4em; margin-top: 6px; }
+  .learn-detail .tip { color: #555; margin-top: 8px; font-size: .95em; }
+  .speak-btn {
+    margin-top: 12px; padding: 10px 26px; border: none; border-radius: 25px;
+    background: #43a047; color: #fff; font-size: 1em; cursor: pointer;
+  }
+  .speak-btn:hover { background: #2e7d32; }
+  .game-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+  }
+  .score { font-weight: bold; color: #e65100; font-size: 1.1em; }
+  .question-box {
+    background: #fff3e0; border-radius: 14px; padding: 20px;
+    text-align: center; margin-bottom: 16px;
+  }
+  .question-box .q-word { font-size: 3em; font-weight: bold; color: #d84315; }
+  .question-box .q-hint { color: #777; margin-top: 6px; }
+  .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .opt-btn {
+    padding: 16px; font-size: 1.3em; border: 3px solid #90caf9;
+    background: #e3f2fd; border-radius: 14px; cursor: pointer;
+    transition: all .15s; color: #1565c0; font-weight: bold;
+  }
+  .opt-btn:hover { background: #bbdefb; transform: translateY(-2px); }
+  .opt-btn.correct { background: #c8e6c9; border-color: #43a047; color: #2e7d32; }
+  .opt-btn.wrong { background: #ffcdd2; border-color: #e53935; color: #c62828; }
+  .feedback { text-align: center; margin-top: 14px; font-size: 1.15em; min-height: 28px; font-weight: bold; }
+  .feedback.ok { color: #2e7d32; }
+  .feedback.no { color: #c62828; }
+  .next-btn {
+    display: block; margin: 16px auto 0; padding: 10px 30px;
+    background: #ff9800; color: #fff; border: none; border-radius: 25px;
+    font-size: 1em; cursor: pointer;
+  }
+  .listen-word { font-size: 2.6em; font-weight: bold; margin-top: 10px; }
+  .play-btn {
+    padding: 12px 30px; background: #1e88e5; color: #fff; border: none;
+    border-radius: 25px; font-size: 1.1em; cursor: pointer;
+  }
+  .play-btn:hover { background: #1565c0; }
+  .combine-area { text-align: center; }
+  .slots { display: flex; gap: 14px; justify-content: center; margin: 16px 0; }
+  .slot {
+    width: 86px; height: 86px; border: 3px dashed #90caf9;
+    border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    font-size: 1.8em; font-weight: bold; color: #1565c0; background: #e3f2fd;
+  }
+  .slot.filled { border-style: solid; background: #c8e6c9; color: #2e7d32; border-color: #43a047; }
+  .plus { font-size: 2em; align-self: center; color: #888; }
+  .pieces { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .piece {
+    padding: 10px 18px; background: #ffe0b2; border: 2px solid #fb8c00;
+    border-radius: 12px; font-size: 1.2em; cursor: pointer; color: #e65100; font-weight: bold;
+  }
+  .piece.used { opacity: .35; pointer-events: none; }
+  .piece:hover { background: #ffcc80; }
+  footer { text-align: center; color: #fff; opacity: .85; padding: 20px; font-size: .9em; }
 </style>
 </head>
 <body>
 <header>
-  <h1>月饼 → 足球 图像替换</h1>
-  <p>识别手部月饼区域并修复背景，原位绘制足球</p>
+  <h1>🎈 拼音乐园</h1>
+  <p>小学二年级 · 趣味拼音学习小助手</p>
 </header>
-<div class="wrap">
-  <div class="grid">
-    <div class="card">
-      <div class="t">原始图片<span class="tag old">替换前</span></div>
-      <img src="source.png" alt="原始图片">
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="learn">📚 学一学</button>
+    <button class="tab-btn" data-tab="read">🎯 认读挑战</button>
+    <button class="tab-btn" data-tab="listen">🔊 听音选词</button>
+    <button class="tab-btn" data-tab="combine">🧩 拼读闯关</button>
+  </div>
+
+  <div class="panel active" id="panel-learn">
+    <h2>📚 学一学：点击拼音卡片听发音</h2>
+    <div class="grade-toggle">
+      <button class="grade-btn active" data-set="initial">声母</button>
+      <button class="grade-btn" data-set="final">韵母</button>
+      <button class="grade-btn" data-set="tone">声调</button>
     </div>
-    <div class="card">
-      <div class="t">处理结果<span class="tag new">替换后</span></div>
-      <img src="result.png" alt="处理结果">
+    <div class="pinyin-grid" id="pinyinGrid"></div>
+    <div class="learn-detail" id="learnDetail">
+      <div class="tip">👆 点击上面的拼音卡片开始学习吧！</div>
     </div>
   </div>
-  <div class="info">
-    <b>处理说明：</b><br>
-    1. 基于金色色调阈值定位手中月饼区域（约 255,665 – 615,1065）；<br>
-    2. 用椭圆羽化蒙版 + 高斯模糊 + 轻噪点完成背景修复，去除月饼痕迹；<br>
-    3. 在原位置绘制带明暗球面、黑色五边形拼块与高光的足球，并加地面投影；<br>
-    4. 输出 897×1280 原尺寸图片 <b>result.png</b>。
+
+  <div class="panel" id="panel-read">
+    <h2>🎯 认读挑战：看汉字选正确拼音</h2>
+    <div class="game-top">
+      <span class="score" id="readScore">得分：0</span>
+      <span class="score" id="readStreak">连对：0</span>
+    </div>
+    <div class="question-box">
+      <div class="q-word" id="readWord">春</div>
+      <div class="q-hint">这个字怎么读？选出正确拼音 👇</div>
+    </div>
+    <div class="options" id="readOptions"></div>
+    <div class="feedback" id="readFeedback"></div>
+    <button class="next-btn" id="readNext">下一题 ➡️</button>
+  </div>
+
+  <div class="panel" id="panel-listen">
+    <h2>🔊 听音选词：听发音选正确汉字</h2>
+    <div class="game-top">
+      <span class="score" id="listenScore">得分：0</span>
+      <button class="play-btn" id="playBtn">▶️ 再听一遍</button>
+    </div>
+    <div class="question-box">
+      <div class="q-hint">仔细听，选出你听到的字：</div>
+      <div class="listen-word" id="listenWord">？</div>
+    </div>
+    <div class="options" id="listenOptions"></div>
+    <div class="feedback" id="listenFeedback"></div>
+    <button class="next-btn" id="listenNext">下一题 ➡️</button>
+  </div>
+
+  <div class="panel" id="panel-combine">
+    <h2>🧩 拼读闯关：把声母和韵母拼起来</h2>
+    <div class="game-top">
+      <span class="score" id="combineScore">关卡：1 / 10</span>
+      <span class="score" id="combineBest">最佳：0</span>
+    </div>
+    <div class="combine-area">
+      <div class="question-box">
+        <div class="q-hint" id="combineTip">点击下面的部件，拼出目标音节</div>
+        <div class="slots">
+          <div class="slot" id="slot1">？</div>
+          <span class="plus">+</span>
+          <div class="slot" id="slot2">？</div>
+        </div>
+        <div class="listen-word" id="combineTarget">m + a → ?</div>
+      </div>
+      <div class="pieces" id="combinePieces"></div>
+      <div class="feedback" id="combineFeedback"></div>
+    </div>
+    <button class="next-btn" id="combineReset">重新拼 💪</button>
   </div>
 </div>
-<footer>Demo · app-6287wh</footer>
+
+<footer>💛 玩得开心，拼音每天进步一点点！</footer>
+
+<script>
+const INITIALS = ["b","p","m","f","d","t","n","l","g","k","h","j","q","x","zh","ch","sh","r","z","c","s","y","w"];
+const FINALS = ["a","o","e","i","u","ü","ai","ei","ui","ao","ou","iu","ie","üe","er","an","en","in","un","ün","ang","eng","ing","ong"];
+const TONES = [
+  {t:"ā", name:"第一声（平又平）", ex:"mā 妈", tip:"声音高高的、平平的，像汽车在平路开 🚗"},
+  {t:"á", name:"第二声（往上扬）", ex:"má 麻", tip:"声音往上扬，像在问「什么？」 📈"},
+  {t:"ǎ", name:"第三声（拐个弯）", ex:"mǎ 马", tip:"先降再升，像下坡再上坡 ⛰️"},
+  {t:"à", name:"第四声（往下降）", ex:"mà 骂", tip:"声音重重往下砸，像下楼梯 📉"}
+];
+const WORDS = [
+  {w:"春", p:"chūn"}, {w:"花", p:"huā"}, {w:"草", p:"cǎo"}, {w:"树", p:"shù"},
+  {w:"山", p:"shān"}, {w:"水", p:"shuǐ"}, {w:"鸟", p:"niǎo"}, {w:"鱼", p:"yú"},
+  {w:"大", p:"dà"}, {w:"小", p:"xiǎo"}, {w:"上", p:"shàng"}, {w:"下", p:"xià"},
+  {w:"爸", p:"bà"}, {w:"妈", p:"mā"}, {w:"我", p:"wǒ"}, {w:"你", p:"nǐ"},
+  {w:"他", p:"tā"}, {w:"好", p:"hǎo"}, {w:"家", p:"jiā"}, {w:"学", p:"xué"},
+  {w:"云", p:"yún"}, {w:"雨", p:"yǔ"}, {w:"风", p:"fēng"}, {w:"月", p:"yuè"},
+  {w:"星", p:"xīng"}, {w:"光", p:"guāng"}, {w:"早", p:"zǎo"}, {w:"晚", p:"wǎn"},
+  {w:"猫", p:"māo"}, {w:"狗", p:"gǒu"}, {w:"手", p:"shǒu"}, {w:"足", p:"zú"}
+];
+const COMBOS = [
+  ["b","ā","bā","八"], ["m","ā","mā","妈"], ["p","á","pá","爬"], ["f","ēi","fēi","飞"],
+  ["d","à","dà","大"], ["t","iān","tiān","天"], ["n","ǐ","nǐ","你"], ["l","è","lè","乐"],
+  ["g","ē","gē","哥"], ["k","ū","kū","哭"], ["h","ǎi","hǎi","海"], ["j","ī","jī","鸡"],
+  ["q","ì","qì","气"], ["x","ué","xué","学"], ["zh","ū","zhū","猪"], ["ch","ūn","chūn","春"],
+  ["sh","ān","shān","山"], ["r","ì","rì","日"], ["z","ì","zì","字"], ["c","ǎo","cǎo","草"],
+  ["s","ēn","sēn","森"], ["y","ǔ","yǔ","雨"], ["w","ō","wō","窝"]
+];
+
+function speak(text){
+  if(!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-CN"; u.rate = 0.8; u.pitch = 1.15;
+  window.speechSynthesis.speak(u);
+}
+
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+  });
+});
+
+/* 学一学 */
+const grid = document.getElementById("pinyinGrid");
+const detail = document.getElementById("learnDetail");
+let currentSet = "initial";
+
+function renderLearn(){
+  grid.innerHTML = "";
+  let items = [];
+  if(currentSet === "initial") items = INITIALS.map(x=>({main:x, sub:"声母"}));
+  else if(currentSet === "final") items = FINALS.map(x=>({main:x, sub:"韵母"}));
+  else items = TONES.map(t=>({main:t.t, sub:"声调"}));
+  items.forEach(it=>{
+    const card = document.createElement("div");
+    card.className = "pinyin-card";
+    card.innerHTML = "<div>"+it.main+"</div><div class='tone'>"+it.sub+"</div>";
+    card.addEventListener("click", ()=>{
+      if(currentSet === "tone"){
+        const t = TONES.find(t=>t.t===it.main);
+        speak(t.ex);
+        detail.innerHTML = "<div class='big'>"+t.t+"</div><div class='word'>"+t.ex+"</div>"
+          + "<div class='tip'>"+t.name+"<br>"+t.tip+"</div>"
+          + "<button class='speak-btn' id='speakAgain'>🔊 读一读 "+t.ex+"</button>";
+        document.getElementById("speakAgain").onclick = ()=>speak(t.ex);
+      } else {
+        speak(it.main);
+        detail.innerHTML = "<div class='big'>"+it.main+"</div>"
+          + "<div class='word'>"+it.sub+"："+it.main+"</div>"
+          + "<div class='tip'>点击下方按钮听发音 👇</div>"
+          + "<button class='speak-btn' id='speakAgain'>🔊 听发音</button>";
+        document.getElementById("speakAgain").onclick = ()=>speak(it.main);
+      }
+    });
+    grid.appendChild(card);
+  });
+}
+document.querySelectorAll(".grade-btn").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    document.querySelectorAll(".grade-btn").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    currentSet = b.dataset.set;
+    renderLearn();
+  });
+});
+renderLearn();
+
+/* 认读挑战 */
+let readScore = 0, readStreak = 0, readAnswer = null;
+function shuffle(a){ return a.slice().sort(()=>Math.random()-.5); }
+function showFB(id, msg, ok){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = "feedback " + (ok ? "ok" : "no");
+}
+
+function newReadQ(){
+  const right = WORDS[Math.floor(Math.random()*WORDS.length)];
+  readAnswer = right.p;
+  const wrongs = shuffle(WORDS.filter(w=>w.p!==right.p)).slice(0,3).map(w=>w.p);
+  document.getElementById("readWord").textContent = right.w;
+  document.getElementById("readFeedback").textContent = "";
+  document.getElementById("readFeedback").className = "feedback";
+  const box = document.getElementById("readOptions");
+  box.innerHTML = ""; box.dataset.done = "";
+  shuffle([right.p].concat(wrongs)).forEach(p=>{
+    const b = document.createElement("button");
+    b.className = "opt-btn"; b.textContent = p;
+    b.addEventListener("click", ()=>{
+      if(box.dataset.done) return;
+      box.dataset.done = "1";
+      if(p === readAnswer){
+        b.classList.add("correct");
+        readScore += 10; readStreak += 1;
+        speak(right.w);
+        showFB("readFeedback", "✅ 太棒啦！+10 分", true);
+      } else {
+        b.classList.add("wrong");
+        Array.prototype.forEach.call(box.children, c=>{
+          if(c.textContent === readAnswer) c.classList.add("correct");
+        });
+        readStreak = 0;
+        showFB("readFeedback", "❌ 正确答案是 " + readAnswer + "，再接再厉！", false);
+      }
+      document.getElementById("readScore").textContent = "得分：" + readScore;
+      document.getElementById("readStreak").textContent = "连对：" + readStreak;
+    });
+    box.appendChild(b);
+  });
+}
+document.getElementById("readNext").addEventListener("click", newReadQ);
+newReadQ();
+
+/* 听音选词 */
+let listenScore = 0, listenAnswer = null;
+function newListenQ(){
+  const right = WORDS[Math.floor(Math.random()*WORDS.length)];
+  listenAnswer = right.w;
+  document.getElementById("listenWord").textContent = "？";
+  document.getElementById("listenFeedback").textContent = "";
+  document.getElementById("listenFeedback").className = "feedback";
+  const box = document.getElementById("listenOptions");
+  box.innerHTML = ""; box.dataset.done = "";
+  const wrongs = shuffle(WORDS.filter(w=>w.w!==right.w)).slice(0,3).map(w=>w.w);
+  shuffle([right.w].concat(wrongs)).forEach(w=>{
+    const b = document.createElement("button");
+    b.className = "opt-btn"; b.textContent = w;
+    b.addEventListener("click", ()=>{
+      if(box.dataset.done) return;
+      box.dataset.done = "1";
+      document.getElementById("listenWord").textContent = right.w + "（" + right.p + "）";
+      if(w === listenAnswer){
+        b.classList.add("correct");
+        listenScore += 10;
+        showFB("listenFeedback", "✅ 答对啦！+10 分", true);
+      } else {
+        b.classList.add("wrong");
+        Array.prototype.forEach.call(box.children, c=>{
+          if(c.textContent === right.w) c.classList.add("correct");
+        });
+        showFB("listenFeedback", "❌ 正确的是「" + right.w + "」，读音 " + right.p, false);
+      }
+      document.getElementById("listenScore").textContent = "得分：" + listenScore;
+    });
+    box.appendChild(b);
+  });
+  setTimeout(()=>speak(right.w), 300);
+}
+document.getElementById("playBtn").addEventListener("click", ()=>{
+  if(listenAnswer) speak(listenAnswer);
+});
+document.getElementById("listenNext").addEventListener("click", newListenQ);
+newListenQ();
+
+/* 拼读闯关 */
+let level = 1;
+let combineBest = 0;
+try { combineBest = Number(localStorage.getItem("pyBest") || 0); } catch(e) {}
+let curCombo = null, picked = {1:null, 2:null};
+document.getElementById("combineBest").textContent = "最佳：" + combineBest;
+
+function newCombo(){
+  curCombo = COMBOS[Math.floor(Math.random()*COMBOS.length)];
+  picked = {1:null, 2:null};
+  const s1 = document.getElementById("slot1"), s2 = document.getElementById("slot2");
+  s1.textContent = "？"; s2.textContent = "？";
+  s1.classList.remove("filled"); s2.classList.remove("filled");
+  document.getElementById("combineTarget").textContent = curCombo[0] + " + " + curCombo[1] + " = ?";
+  document.getElementById("combineFeedback").textContent = "";
+  document.getElementById("combineFeedback").className = "feedback";
+  document.getElementById("combineScore").textContent = "关卡：" + level + " / 10";
+
+  const ini = curCombo[0], fin = curCombo[1];
+  const wrongIni = INITIALS.filter(x=>x!==ini);
+  const wrongFin = FINALS.filter(x=>x!==fin);
+  const pool = shuffle([
+    ini, fin,
+    wrongIni[Math.floor(Math.random()*wrongIni.length)],
+    wrongFin[Math.floor(Math.random()*wrongFin.length)],
+    wrongIni[Math.floor(Math.random()*wrongIni.length)]
+  ]);
+  const box = document.getElementById("combinePieces");
+  box.innerHTML = "";
+  pool.forEach(p=>{
+    const b = document.createElement("div");
+    b.className = "piece"; b.textContent = p;
+    b.addEventListener("click", ()=>pickPiece(b, p));
+    box.appendChild(b);
+  });
+}
+function pickPiece(el, val){
+  if(picked[1] === null){
+    picked[1] = val;
+    document.getElementById("slot1").textContent = val;
+    document.getElementById("slot1").classList.add("filled");
+    el.classList.add("used");
+  } else if(picked[2] === null){
+    picked[2] = val;
+    document.getElementById("slot2").textContent = val;
+    document.getElementById("slot2").classList.add("filled");
+    el.classList.add("used");
+    checkCombo();
+  }
+}
+function checkCombo(){
+  const a = picked[1], b = picked[2];
+  const ok = (a === curCombo[0] && b === curCombo[1]) || (b === curCombo[0] && a === curCombo[1]);
+  const fb = document.getElementById("combineFeedback");
+  if(ok){
+    fb.textContent = "🎉 拼对啦！" + curCombo[2] + "（" + curCombo[3] + "）";
+    fb.className = "feedback ok";
+    speak(curCombo[2]);
+    if(level >= 10){
+      fb.textContent = "🏆 恭喜通关！10 关全部完成！";
+      try {
+        combineBest = Math.max(combineBest, 10);
+        localStorage.setItem("pyBest", combineBest);
+      } catch(e) {}
+      document.getElementById("combineBest").textContent = "最佳：" + combineBest;
+      level = 1;
+      setTimeout(newCombo, 2500);
+      return;
+    }
+    level++;
+    try {
+      combineBest = Math.max(combineBest, level - 1);
+      localStorage.setItem("pyBest", combineBest);
+    } catch(e) {}
+    document.getElementById("combineBest").textContent = "最佳：" + combineBest;
+    setTimeout(newCombo, 1400);
+  } else {
+    fb.textContent = "❌ 再想想哦，点「重新拼」再试一次";
+    fb.className = "feedback no";
+    speak(curCombo[3]);
+  }
+}
+document.getElementById("combineReset").addEventListener("click", newCombo);
+newCombo();
+</script>
 </body>
 </html>
