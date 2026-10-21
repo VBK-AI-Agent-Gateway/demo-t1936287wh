@@ -8,8 +8,6 @@
 </head>
 <body>
 <div class="phone">
-
-  <!-- 顶部状态栏 -->
   <div class="statusbar">
     <span class="sb-time">9:41</span>
     <span class="sb-icons">
@@ -18,7 +16,6 @@
     </span>
   </div>
 
-  <!-- 顶部导航 -->
   <header class="appbar">
     <div class="brand">
       <div class="logo">ROEWE</div>
@@ -33,150 +30,341 @@
     </div>
   </header>
 
-  <main class="content">
+  <main class="content" id="content">
 
-    <!-- 车辆卡片 -->
-    <section class="car-card">
-      <div class="car-card-top">
-        <div class="car-name">
-          <h1>荣威RX5</h1>
-          <span class="trim">2024款 · 超混豪华版</span>
+    <!-- ============ 首页 ============ -->
+    <section class="page active" id="page-home">
+      <div class="car-card">
+        <div class="car-card-top">
+          <div class="car-name">
+            <h1>荣威RX5</h1>
+            <span class="trim">2024款 · 超混豪华版</span>
+          </div>
+          <div class="conn"><i class="conn-dot"></i>已连接</div>
         </div>
-        <div class="conn"><i class="conn-dot"></i>已连接</div>
+
+        <div class="car-visual">
+          <svg class="car-svg" viewBox="0 0 320 110" fill="none">
+            <path d="M40 78c-6 0-10-3-12-8l-6-16c-2-6 1-11 7-12l28-4 22-16c4-3 8-4 13-4h76c6 0 11 2 15 6l18 16 42 7c8 1 13 6 14 13l1 7c1 6-3 11-9 11h-18" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M57 38l16-12c3-2 6-3 10-3h64c4 0 8 1 11 4l13 11H57z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M110 23v16M57 38h130" stroke="currentColor" stroke-width="1.6" opacity="0.55"/>
+            <path d="M40 78h30M104 78h68M214 78h34" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="86" cy="78" r="14" stroke="currentColor" stroke-width="2.2"/>
+            <circle cx="86" cy="78" r="6" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="232" cy="78" r="14" stroke="currentColor" stroke-width="2.2"/>
+            <circle cx="232" cy="78" r="6" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M268 55h14" stroke="#c9a45c" stroke-width="3" stroke-linecap="round"/>
+            <path d="M25 60h10" stroke="#c9a45c" stroke-width="3" stroke-linecap="round"/>
+            <path d="M143 40v30" stroke="currentColor" stroke-width="1.4" opacity="0.5"/>
+          </svg>
+          <div class="car-plate">沪A · 8L52X</div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="m-label">燃油 / 电量</div>
+            <div class="m-value">68<span>%</span></div>
+            <div class="bar"><i style="width:68%"></i></div>
+          </div>
+          <div class="m-divider"></div>
+          <div class="metric">
+            <div class="m-label">剩余续航</div>
+            <div class="m-value">563<span>km</span></div>
+            <div class="m-sub">纯电 82 km</div>
+          </div>
+          <div class="m-divider"></div>
+          <div class="metric">
+            <div class="m-label">总里程</div>
+            <div class="m-value">12,486<span>km</span></div>
+            <div class="m-sub">上次行驶 昨天</div>
+          </div>
+        </div>
       </div>
 
-      <div class="car-visual">
-        <svg class="car-svg" viewBox="0 0 320 110" fill="none">
-          <path d="M40 78c-6 0-10-3-12-8l-6-16c-2-6 1-11 7-12l28-4 22-16c4-3 8-4 13-4h76c6 0 11 2 15 6l18 16 42 7c8 1 13 6 14 13l1 7c1 6-3 11-9 11h-18" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
-          <path d="M57 38l16-12c3-2 6-3 10-3h64c4 0 8 1 11 4l13 11H57z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M110 23v16M57 38h130" stroke="currentColor" stroke-width="1.6" opacity="0.55"/>
-          <path d="M40 78h30M104 78h68M214 78h34" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      <div class="quick-panel">
+        <div class="panel-head">
+          <h2>快捷控制</h2>
+          <span class="hint">点击发送指令</span>
+        </div>
+        <div class="quick-grid">
+          <button class="quick-btn" data-action="解锁">
+            <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M17 9V7a5 5 0 00-10 0v2H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-3zM9 7a3 3 0 016 0v2H9V7zm4 9.7V19h-2v-2.3a2 2 0 112 0z"/></svg></span>
+            <span class="q-text">解锁</span>
+          </button>
+          <button class="quick-btn on" data-action="闭锁">
+            <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M17 9V7a5 5 0 00-10 0v2H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-3zm-8 0V7a3 3 0 016 0v2H9zm5 6.7V19h-2v-3.3a2 2 0 112 0z"/></svg></span>
+            <span class="q-text">闭锁</span>
+          </button>
+          <button class="quick-btn" data-action="寻车">
+            <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 00-7 7c0 5.2 7 11 7 11s7-5.8 7-11a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 7a2.5 2.5 0 010 5.5z"/></svg></span>
+            <span class="q-text">寻车</span>
+          </button>
+          <button class="quick-btn" data-action="空调">
+            <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" fill="none"/></svg></span>
+            <span class="q-text">空调</span>
+          </button>
+          <button class="quick-btn" data-action="后备箱">
+            <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M4 14l1.6-5.2A3 3 0 018.5 7h7a3 3 0 012.9 1.8L20 14v4a1 1 0 01-1 1h-1.5a1 1 0 01-1-1v-1h-9v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm2.4-.9h11.2l-1.1-3.4a1 1 0 00-.9-.7H8.4a1 1 0 00-1 .7L6.4 13.1zM7.5 16.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4zm9 0a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z"/></svg></span>
+            <span class="q-text">后备箱</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-head">
+          <h2>胎压监测</h2>
+          <span class="status-ok">正常</span>
+        </div>
+        <div class="tire-grid">
+          <div class="tire"><div class="tire-pos">左前</div><div class="tire-val">2.4<span>bar</span></div><div class="tire-temp">28°C</div></div>
+          <div class="tire"><div class="tire-pos">右前</div><div class="tire-val">2.4<span>bar</span></div><div class="tire-temp">28°C</div></div>
+          <div class="tire"><div class="tire-pos">左后</div><div class="tire-val">2.3<span>bar</span></div><div class="tire-temp">27°C</div></div>
+          <div class="tire"><div class="tire-pos">右后</div><div class="tire-val">2.3<span>bar</span></div><div class="tire-temp">27°C</div></div>
+        </div>
+        <div class="tire-note">标准胎压 2.3 – 2.5 bar · 数据更新于 09:38</div>
+      </div>
+
+      <div class="card">
+        <div class="panel-head">
+          <h2>车辆门窗</h2>
+          <span class="status-ok">已全部关闭</span>
+        </div>
+        <div class="door-layout">
+          <svg class="door-map" viewBox="0 0 200 150">
+            <rect x="55" y="12" width="90" height="126" rx="30" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M62 42c8-12 22-18 38-18s30 6 38 18" stroke="currentColor" stroke-width="1.6" fill="none" opacity="0.6"/>
+            <path d="M62 108c8 12 22 18 38 18s30-6 38-18" stroke="currentColor" stroke-width="1.6" fill="none" opacity="0.6"/>
+            <rect class="door closed" x="48" y="46" width="14" height="26" rx="5"/>
+            <rect class="door closed" x="138" y="46" width="14" height="26" rx="5"/>
+            <rect class="door closed" x="48" y="78" width="14" height="26" rx="5"/>
+            <rect class="door closed" x="138" y="78" width="14" height="26" rx="5"/>
+            <path class="door closed" d="M80 132h40" stroke-width="5" stroke-linecap="round"/>
+            <text x="100" y="76" text-anchor="middle" class="door-label">RX5</text>
+          </svg>
+          <ul class="door-list">
+            <li><i class="ok"></i>四门车窗<span>已关闭</span></li>
+            <li><i class="ok"></i>车门<span>已上锁</span></li>
+            <li><i class="ok"></i>后备箱<span>已关闭</span></li>
+            <li><i class="ok"></i>天窗<span>已关闭</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="remind-row">
+        <div class="remind-card" data-goto="service">
+          <div class="r-ico warn">⚙</div>
+          <div class="r-txt"><b>保养提醒</b><span>距下次保养 1,514 km</span></div>
+        </div>
+        <div class="remind-card" data-goto="service">
+          <div class="r-ico">⛨</div>
+          <div class="r-txt"><b>系统升级</b><span>OTA v3.2.1 可用</span></div>
+        </div>
+      </div>
+
+      <div class="foot-note">车辆状态每 5 分钟自动刷新 · 上次同步 09:41</div>
+    </section>
+
+    <!-- ============ 钥匙 ============ -->
+    <section class="page" id="page-key">
+      <div class="key-hero card">
+        <div class="key-hero-top">
+          <span class="key-status"><i class="conn-dot"></i>蓝牙钥匙已激活</span>
+          <span class="hint">UWB + BLE 双重定位</span>
+        </div>
+        <svg class="key-car" viewBox="0 0 320 110" fill="none">
+          <path d="M40 78c-6 0-10-3-12-8l-6-16c-2-6 1-11 7-12l28-4 22-16c4-3 8-4 13-4h76c6 0 11 2 15 6l18 16 42 7c8 1 13 6 14 13l1 7c1 6-3 11-9 11h-18" stroke="currentColor" stroke-width="2.2"/>
           <circle cx="86" cy="78" r="14" stroke="currentColor" stroke-width="2.2"/>
-          <circle cx="86" cy="78" r="6" stroke="currentColor" stroke-width="1.6"/>
           <circle cx="232" cy="78" r="14" stroke="currentColor" stroke-width="2.2"/>
-          <circle cx="232" cy="78" r="6" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M268 55h14" stroke="#c9a45c" stroke-width="3" stroke-linecap="round"/>
-          <path d="M25 60h10" stroke="#c9a45c" stroke-width="3" stroke-linecap="round"/>
-          <path d="M143 40v30" stroke="currentColor" stroke-width="1.4" opacity="0.5"/>
+          <path d="M160 10v-8M136 16l-6-7M184 16l6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
         </svg>
-        <div class="car-plate">沪A · 8L52X</div>
-      </div>
-
-      <div class="metrics">
-        <div class="metric">
-          <div class="m-label">燃油 / 电量</div>
-          <div class="m-value">68<span>%</span></div>
-          <div class="bar"><i style="width:68%"></i></div>
-        </div>
-        <div class="m-divider"></div>
-        <div class="metric">
-          <div class="m-label">剩余续航</div>
-          <div class="m-value">563<span>km</span></div>
-          <div class="m-sub">纯电 82 km</div>
-        </div>
-        <div class="m-divider"></div>
-        <div class="metric">
-          <div class="m-label">总里程</div>
-          <div class="m-value">12,486<span>km</span></div>
-          <div class="m-sub">上次行驶 昨天</div>
+        <div class="key-actions">
+          <button class="key-act" data-toast="靠近解锁指令已发送"><b>靠近解锁</b><span>Auto Unlock</span></button>
+          <button class="key-act" data-toast="离车落锁已开启"><b>离车落锁</b><span>Auto Lock</span></button>
+          <button class="key-act" data-toast="需生物识别验证后启动"><b>远程启动</b><span>需验证</span></button>
         </div>
       </div>
-    </section>
 
-    <!-- 快捷控制 -->
-    <section class="quick-panel">
-      <div class="panel-head">
-        <h2>快捷控制</h2>
-        <span class="hint">点击发送指令</span>
+      <div class="card">
+        <div class="panel-head"><h2>分享钥匙</h2><button class="link-btn" data-toast="请选择好友并设置有效期">+ 新增</button></div>
+        <ul class="share-list">
+          <li><div class="s-ava">妈</div><div class="s-txt"><b>家人 · 妈妈</b><span>仅开车门 · 永久有效</span></div><button class="s-revoke" data-toast="已吊销该钥匙权限">吊销</button></li>
+          <li><div class="s-ava g">李</div><div class="s-txt"><b>朋友 · 李师傅</b><span>完整权限 · 今日 22:00 到期</span></div><button class="s-revoke" data-toast="已吊销该钥匙权限">吊销</button></li>
+          <li><div class="s-ava b">代</div><div class="s-txt"><b>代客模式</b><span>未启用 · 停车场代泊专用</span></div><button class="s-revoke" data-toast="代客模式需在车机端开启">查看</button></li>
+        </ul>
       </div>
-      <div class="quick-grid">
-        <button class="quick-btn" data-action="解锁">
-          <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M17 9V7a5 5 0 00-10 0v2H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-3zM9 7a3 3 0 016 0v2H9V7zm4 9.7V19h-2v-2.3a2 2 0 112 0z"/></svg></span>
-          <span class="q-text">解锁</span>
-        </button>
-        <button class="quick-btn" data-action="闭锁">
-          <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M17 9V7a5 5 0 00-10 0v2H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-3zm-8 0V7a3 3 0 016 0v2H9zm5 6.7V19h-2v-3.3a2 2 0 112 0z"/></svg></span>
-          <span class="q-text">闭锁</span>
-        </button>
-        <button class="quick-btn" data-action="寻车">
-          <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 00-7 7c0 5.2 7 11 7 11s7-5.8 7-11a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 7a2.5 2.5 0 010 5.5z"/></svg></span>
-          <span class="q-text">寻车</span>
-        </button>
-        <button class="quick-btn" data-action="空调">
-          <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" fill="none"/></svg></span>
-          <span class="q-text">空调</span>
-        </button>
-        <button class="quick-btn" data-action="后备箱">
-          <span class="q-icon"><svg viewBox="0 0 24 24"><path d="M4 14l1.6-5.2A3 3 0 018.5 7h7a3 3 0 012.9 1.8L20 14v4a1 1 0 01-1 1h-1.5a1 1 0 01-1-1v-1h-9v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm2.4-.9h11.2l-1.1-3.4a1 1 0 00-.9-.7H8.4a1 1 0 00-1 .7L6.4 13.1zM7.5 16.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4zm9 0a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z"/></svg></span>
-          <span class="q-text">后备箱</span>
-        </button>
-      </div>
-    </section>
 
-    <!-- 胎压状态 -->
-    <section class="card">
-      <div class="panel-head">
-        <h2>胎压监测</h2>
-        <span class="status-ok">正常</span>
+      <div class="card">
+        <div class="panel-head"><h2>NFC 卡片钥匙</h2><span class="status-ok">已绑定 1 张</span></div>
+        <div class="nfc-card">
+          <div class="nfc-logo">ROEWE</div>
+          <div class="nfc-no">•••• •••• 8L52X</div>
+          <div class="nfc-tip">贴近车辆 B 柱刷卡解锁</div>
+        </div>
       </div>
-      <div class="tire-grid">
-        <div class="tire"><div class="tire-pos">左前</div><div class="tire-val">2.4<span>bar</span></div><div class="tire-temp">28°C</div></div>
-        <div class="tire"><div class="tire-pos">右前</div><div class="tire-val">2.4<span>bar</span></div><div class="tire-temp">28°C</div></div>
-        <div class="tire"><div class="tire-pos">左后</div><div class="tire-val">2.3<span>bar</span></div><div class="tire-temp">27°C</div></div>
-        <div class="tire"><div class="tire-pos">右后</div><div class="tire-val">2.3<span>bar</span></div><div class="tire-temp">27°C</div></div>
-      </div>
-      <div class="tire-note">标准胎压 2.3 – 2.5 bar · 数据更新于 09:38</div>
-    </section>
 
-    <!-- 门窗状态 -->
-    <section class="card">
-      <div class="panel-head">
-        <h2>车辆门窗</h2>
-        <span class="status-ok">已全部关闭</span>
-      </div>
-      <div class="door-layout">
-        <svg class="door-map" viewBox="0 0 200 150">
-          <rect x="55" y="12" width="90" height="126" rx="30" stroke="currentColor" stroke-width="2" fill="none"/>
-          <path d="M62 42c8-12 22-18 38-18s30 6 38 18" stroke="currentColor" stroke-width="1.6" fill="none" opacity="0.6"/>
-          <path d="M62 108c8 12 22 18 38 18s30-6 38-18" stroke="currentColor" stroke-width="1.6" fill="none" opacity="0.6"/>
-          <rect class="door closed" x="48" y="46" width="14" height="26" rx="5"/>
-          <rect class="door closed" x="138" y="46" width="14" height="26" rx="5"/>
-          <rect class="door closed" x="48" y="78" width="14" height="26" rx="5"/>
-          <rect class="door closed" x="138" y="78" width="14" height="26" rx="5"/>
-          <path class="door closed" d="M80 132h40" stroke-width="5" stroke-linecap="round"/>
-          <text x="100" y="76" text-anchor="middle" class="door-label">RX5</text>
-        </svg>
-        <ul class="door-list">
-          <li><i class="ok"></i>四门车窗<span>已关闭</span></li>
-          <li><i class="ok"></i>车门<span>已上锁</span></li>
-          <li><i class="ok"></i>后备箱<span>已关闭</span></li>
-          <li><i class="ok"></i>天窗<span>已关闭</span></li>
+      <div class="card">
+        <div class="panel-head"><h2>安全策略</h2></div>
+        <ul class="setting-list">
+          <li>高危操作生物识别确认<i class="sw on" data-sw></i></li>
+          <li>连续失败锁定（5 次 / 30 分钟）<i class="sw on" data-sw></i></li>
+          <li>行驶中禁用远程车窗<i class="sw on" data-sw></i></li>
         </ul>
       </div>
     </section>
 
-    <div class="foot-note">车辆状态每 5 分钟自动刷新 · 上次同步 09:41</div>
+    <!-- ============ 行程 ============ -->
+    <section class="page" id="page-trip">
+      <div class="card">
+        <div class="panel-head"><h2>行程轨迹</h2><span class="hint">近 7 天</span></div>
+        <div class="map-box">
+          <svg viewBox="0 0 320 180" class="map-svg">
+            <rect width="320" height="180" fill="#eef1f3"/>
+            <path d="M0 60h320M0 120h320M70 0v180M180 0v180M260 0v180" stroke="#dfe4e8" stroke-width="6"/>
+            <path d="M30 150 C 90 140, 110 90, 170 88 S 250 60, 290 34" stroke="#3f6c8f" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="1 8"/>
+            <circle cx="30" cy="150" r="7" fill="#4e8f72"/>
+            <circle cx="290" cy="34" r="7" fill="#c2604f"/>
+            <rect x="196" y="104" width="86" height="34" rx="8" fill="#fff" stroke="#e7eaed"/>
+            <text x="206" y="119" font-size="10" fill="#5c6771">家 · 电子围栏内</text>
+            <text x="206" y="132" font-size="10" fill="#939da6">18:42 进入提醒</text>
+          </svg>
+        </div>
+        <div class="geo-row">
+          <div class="geo-txt"><b>电子围栏「家」</b><span>半径 500m · 进出均提醒</span></div>
+          <i class="sw on" data-sw></i>
+        </div>
+        <div class="geo-row">
+          <div class="geo-txt"><b>电子围栏「公司」</b><span>半径 300m · 仅进入提醒</span></div>
+          <i class="sw" data-sw></i>
+        </div>
+        <button class="ghost-btn" data-toast="请选择地图上的位置创建新围栏">+ 新建电子围栏</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat"><b>128.6</b><span>本周里程 km</span></div>
+        <div class="stat"><b>6.2</b><span>平均油耗 L/100km</span></div>
+        <div class="stat"><b>4</b><span>本周行程</span></div>
+        <div class="stat"><b>2</b><span>围栏事件</span></div>
+      </div>
+
+      <div class="card">
+        <div class="panel-head"><h2>行程记录</h2><span class="hint">数据本地加密</span></div>
+        <ul class="trip-list">
+          <li><div class="t-dot"></div><div class="t-txt"><b>家 → 公司</b><span>今天 08:12 · 18.4 km · 32 分钟</span></div><span class="t-fuel">6.0L</span></li>
+          <li><div class="t-dot"></div><div class="t-txt"><b>公司 → 家</b><span>昨天 18:40 · 19.1 km · 36 分钟</span></div><span class="t-fuel">6.5L</span></li>
+          <li><div class="t-dot"></div><div class="t-txt"><b>家 → 虹桥机场</b><span>周六 09:05 · 46.2 km · 55 分钟</span></div><span class="t-fuel">6.3L</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 服务 ============ -->
+    <section class="page" id="page-service">
+      <div class="card charge-card">
+        <div class="panel-head">
+          <h2>充电管理 <em class="tag-phev">插混版</em></h2>
+          <span class="status-warn">充电中</span>
+        </div>
+        <div class="charge-body">
+          <svg viewBox="0 0 120 120" class="soc">
+            <circle cx="60" cy="60" r="50" stroke="#eef1f3" stroke-width="10" fill="none"/>
+            <circle cx="60" cy="60" r="50" stroke="#3f6c8f" stroke-width="10" fill="none"
+              stroke-linecap="round" stroke-dasharray="213 314" transform="rotate(-90 60 60)"/>
+            <text x="60" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#232a31">68%</text>
+            <text x="60" y="76" text-anchor="middle" font-size="10" fill="#939da6">SOC</text>
+          </svg>
+          <div class="charge-info">
+            <div class="c-row"><span>预计充满</span><b>42 分钟 · 10:23</b></div>
+            <div class="c-row"><span>充电功率</span><b>6.6 kW</b></div>
+            <div class="c-row"><span>纯电续航</span><b>82 km</b></div>
+            <div class="c-row"><span>当前电价</span><b>¥0.62 / 度</b></div>
+          </div>
+        </div>
+        <div class="charge-ctrl">
+          <button class="ghost-btn wide" data-toast="充电已停止（演示）">停止充电</button>
+          <button class="ghost-btn wide" data-toast="已设置谷电 23:00 定时充电">定时 23:00</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-head"><h2>保养提醒</h2><span class="status-warn">1,514 km 后</span></div>
+        <div class="maint-bar"><i style="width:75%"></i></div>
+        <div class="maint-meta"><span>首保 5,000 km</span><span>已完成 3,486 / 5,000</span></div>
+        <ul class="setting-list mt">
+          <li>保养到期短信提醒<i class="sw on" data-sw></i></li>
+          <li>故障码预警推送<i class="sw on" data-sw></i></li>
+        </ul>
+        <button class="ghost-btn wide" data-toast="已跳转至 4S 店预约（演示）">预约保养</button>
+      </div>
+
+      <div class="grid-menu">
+        <button class="menu-item" data-toast="正在扫描附近充电桩…"><i>⚡</i>充电桩导航</button>
+        <button class="menu-item" data-toast="车辆自检完成，无故障码"><i>🔍</i>车辆自检</button>
+        <button class="menu-item" data-toast="OTA v3.2.1 下载中 36%"><i>⬆</i>OTA 升级</button>
+        <button class="menu-item" data-toast="正在为您接通道路救援…"><i>📞</i>道路救援</button>
+        <button class="menu-item" data-toast="客服 400-XXX-XXXX 在线"><i>💬</i>在线客服</button>
+        <button class="menu-item" data-toast="已查询：违章 0 条"><i>🧾</i>违章查询</button>
+      </div>
+    </section>
+
+    <!-- ============ 我的 ============ -->
+    <section class="page" id="page-me">
+      <div class="card profile">
+        <div class="p-ava">W</div>
+        <div class="p-txt"><b>WildWind</b><span>138****6688 · 车主认证</span></div>
+        <span class="conn"><i class="conn-dot"></i>已绑定</span>
+      </div>
+
+      <div class="card">
+        <div class="panel-head"><h2>我的车辆</h2></div>
+        <div class="my-car">
+          <b>荣威RX5 2024款 超混豪华版</b>
+          <span>沪A·8L52X · VIN LSVA****8L52X6</span>
+        </div>
+        <ul class="setting-list mt">
+          <li>家庭账号（2 人）<i class="arrow">›</i></li>
+          <li>车辆转移 / 解绑<i class="arrow">›</i></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="panel-head"><h2>隐私与权限中心</h2></div>
+        <ul class="setting-list">
+          <li>位置权限<span class="s-val">使用期间</span><i class="arrow">›</i></li>
+          <li>行程轨迹采集<span class="s-val">已授权</span><i class="arrow">›</i></li>
+          <li>个性化推荐<i class="sw" data-sw></i></li>
+          <li>第三方 SDK 目录<i class="arrow">›</i></li>
+          <li>个人信息导出 / 删除<i class="arrow">›</i></li>
+          <li>隐私政策与用户协议<i class="arrow">›</i></li>
+        </ul>
+        <div class="safe-note">依据《个人信息保护法》与《汽车数据安全管理规定》，车辆位置等敏感信息仅在您单独授权后处理，注销后 15 日内彻底删除。</div>
+      </div>
+
+      <div class="card">
+        <ul class="setting-list">
+          <li>消息通知<i class="sw on" data-sw></i></li>
+          <li>关于 APP<span class="s-val">v1.0.0</span><i class="arrow">›</i></li>
+        </ul>
+      </div>
+    </section>
   </main>
 
-  <!-- 底部 Tab -->
   <nav class="tabbar">
-    <button class="tab active">
+    <button class="tab active" data-page="home">
       <svg viewBox="0 0 24 24"><path d="M4 11.5L12 4l8 7.5V20a1 1 0 01-1 1h-4.5v-6h-5v6H5a1 1 0 01-1-1v-8.5z"/></svg>
       <span>首页</span>
     </button>
-    <button class="tab">
+    <button class="tab" data-page="key">
       <svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 00-7 7v3.5L3.5 16A1.5 1.5 0 004.4 18h15.2a1.5 1.5 0 00.9-2L19 13.5V10a7 7 0 00-7-7zm0 2a5 5 0 015 5v2.8l1 1.7H6l1-1.7V10a5 5 0 015-5zm0 6a2 2 0 100 4 2 2 0 000-4z"/></svg>
       <span>钥匙</span>
     </button>
-    <button class="tab">
+    <button class="tab" data-page="trip">
       <svg viewBox="0 0 24 24"><path d="M4 17l4.5-6 3.5 4 4-7L20 17H4z"/><path d="M4 20h16" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
       <span>行程</span>
     </button>
-    <button class="tab">
+    <button class="tab" data-page="service">
       <svg viewBox="0 0 24 24"><path d="M12 2l2.4 2.1 3.1-.6.9 3 2.9 1.5-1.4 2.8 1.4 2.8-2.9 1.5-.9 3-3.1-.6L12 22l-2.4-2.1-3.1.6-.9-3-2.9-1.5L4.1 13 2.7 10.2l2.9-1.5.9-3 3.1.6L12 2zm0 7a3 3 0 100 6 3 3 0 000-6z"/></svg>
       <span>服务</span>
     </button>
-    <button class="tab">
+    <button class="tab" data-page="me">
       <svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0 2c-4 0-8 2-8 4.5V20h16v-1.5c0-2.5-4-4.5-8-4.5z"/></svg>
       <span>我的</span>
     </button>
