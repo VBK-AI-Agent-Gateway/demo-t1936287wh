@@ -3,51 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>月饼换足球 · 图像替换结果</title>
+<title>月饼换足球 · 成果展示</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f4f6f8;color:#1f2937;min-height:100vh}
-header{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;padding:26px 24px;text-align:center}
-header h1{font-size:22px;letter-spacing:1px}
-header p{color:#93c5fd;margin-top:8px;font-size:14px}
-.wrap{max-width:1100px;margin:0 auto;padding:24px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-@media(max-width:760px){.grid{grid-template-columns:1fr}}
-.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07)}
-.card .t{padding:12px 16px;font-size:15px;font-weight:600;border-bottom:1px solid #eef1f4;display:flex;justify-content:space-between;align-items:center}
-.tag{font-size:12px;font-weight:400;padding:2px 10px;border-radius:999px}
-.tag.old{background:#fdecea;color:#c0563e}
-.tag.new{background:#e8f5ee;color:#2f6f5e}
-.card img{width:100%;display:block}
-.info{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-top:18px;font-size:14px;line-height:1.9;color:#4b5563}
-.info b{color:#1f2937}
-footer{text-align:center;color:#9ca3af;font-size:12px;padding:22px 0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(160deg,#0f2027,#203a43,#2c5364);min-height:100vh;color:#eaf2f5;display:flex;flex-direction:column;align-items:center;padding:40px 16px}
+h1{font-size:28px;margin-bottom:8px;letter-spacing:2px}
+.sub{color:#9fb8c4;margin-bottom:28px;font-size:14px}
+.card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:22px;max-width:760px;width:100%;backdrop-filter:blur(6px);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.compare{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+.fig{flex:1;min-width:260px;text-align:center}
+.fig img{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.15);display:block}
+.fig .tag{margin-top:10px;font-size:14px;color:#ffd166;letter-spacing:4px}
+.fig .tag.after{color:#6ee7b7}
+.note{margin-top:22px;font-size:13px;line-height:1.9;color:#b8ccd6}
+.badge{display:inline-block;background:#ffd166;color:#123;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700;margin-right:8px}
+footer{margin-top:26px;color:#6f8896;font-size:12px}
 </style>
 </head>
 <body>
-<header>
-  <h1>月饼 → 足球 图像替换</h1>
-  <p>识别手部月饼区域并修复背景，原位绘制足球</p>
-</header>
-<div class="wrap">
-  <div class="grid">
-    <div class="card">
-      <div class="t">原始图片<span class="tag old">替换前</span></div>
-      <img src="source.png" alt="原始图片">
+<h1>🥮 → ⚽ 月饼换成足球</h1>
+<p class="sub">自动检测金色月饼区域 · 修复背景 · 合成带光影与阴影的足球</p>
+<div class="card">
+  <div class="compare">
+    <div class="fig">
+      <img src="before.png" alt="原图">
+      <div class="tag">原图 BEFORE</div>
     </div>
-    <div class="card">
-      <div class="t">处理结果<span class="tag new">替换后</span></div>
-      <img src="result.png" alt="处理结果">
+    <div class="fig">
+      <img src="result.png" alt="替换后">
+      <div class="tag after">成品 AFTER</div>
     </div>
   </div>
-  <div class="info">
-    <b>处理说明：</b><br>
-    1. 基于金色色调阈值定位手中月饼区域（约 255,665 – 615,1065）；<br>
-    2. 用椭圆羽化蒙版 + 高斯模糊 + 轻噪点完成背景修复，去除月饼痕迹；<br>
-    3. 在原位置绘制带明暗球面、黑色五边形拼块与高光的足球，并加地面投影；<br>
-    4. 输出 897×1280 原尺寸图片 <b>result.png</b>。
+  <div class="note">
+    <span class="badge">检测</span>基于金色像素连通域定位到 3 块月饼区域（主体月饼位于画面中部）。<br>
+    <span class="badge">修复</span>主体区域用邻域纹理回填，其余月饼做边缘融合淡化。<br>
+    <span class="badge">合成</span>程序化绘制经典黑白块足球，叠加左上主光、球体暗缘与接触阴影，融入原图光照。
   </div>
 </div>
-<footer>Demo · app-6287wh</footer>
+<footer>demo-t1936287wh / app-6287wh</footer>
 </body>
 </html>
