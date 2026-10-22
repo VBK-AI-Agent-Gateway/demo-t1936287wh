@@ -2,125 +2,349 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>贪吃蛇</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>五子棋</title>
 <style>
-  body { background: #222; color: #eee; font-family: sans-serif; text-align: center; }
-  canvas { background: #111; border: 2px solid #444; }
-  .hud { margin: 10px; font-size: 18px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #eee;
+    padding: 20px;
+  }
+  h1 { margin-bottom: 8px; font-size: 28px; letter-spacing: 4px; }
+  .status {
+    margin-bottom: 14px;
+    font-size: 18px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .dot.black { background: #111; border: 1px solid #555; }
+  .dot.white { background: #f5f5f5; border: 1px solid #999; }
+  #board {
+    position: relative;
+    background: #dcb35c;
+    background-image: radial-gradient(circle at 30% 20%, #e8c477 0%, #d0a44e 70%);
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5), inset 0 0 30px rgba(0,0,0,.08);
+    padding: 20px;
+    touch-action: manipulation;
+  }
+  canvas { display: block; cursor: pointer; }
+  .toolbar { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  button {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #eee;
+    padding: 9px 20px;
+    border-radius: 20px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: .2s;
+  }
+  button:hover { background: rgba(255,255,255,.22); transform: translateY(-1px); }
+  button.primary { background: #e94560; border-color: #e94560; }
+  button.primary:hover { background: #ff5f7a; }
+  .info { margin-top: 12px; font-size: 13px; color: #999; }
 </style>
 </head>
 <body>
-<div class="hud">得分: <span id="score">0</span> — 方向键 / WASD 控制，空格暂停 / 重开</div>
-<canvas id="board" width="400" height="400"></canvas>
+
+<h1>五 子 棋</h1>
+<div class="status" id="status"></div>
+<div id="board"><canvas id="canvas"></canvas></div>
+<div class="toolbar">
+  <button class="primary" id="newGame">新对局</button>
+  <button id="undo">悔棋</button>
+  <button id="aiToggle">AI: 关</button>
+  <button id="swapColor">执子切换</button>
+</div>
+<div class="info">点击交叉点落子 · 五子连珠即获胜</div>
+
 <script>
-const cvs = document.getElementById('board');
-const ctx = cvs.getContext('2d');
-const CELL = 20;
-const COLS = cvs.width / CELL;
-const ROWS = cvs.height / CELL;
+const N = 15;                 // 15 x 15
+const GAP = 36;                // 格距
+const PAD = 24;                // 内边距
+const SIZE = PAD * 2 + GAP * (N - 1);
 
-let snake, dir, nextDir, food, score, dead, paused;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+canvas.width = SIZE * dpr;
+canvas.height = SIZE * dpr;
+canvas.style.width = SIZE + 'px';
+canvas.style.height = SIZE + 'px';
+ctx.scale(dpr, dpr);
 
-function reset() {
-  snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
-  dir = {x: 1, y: 0};
-  nextDir = dir;
-  score = 0;
-  dead = false;
-  paused = false;
-  spawnFood();
-  updateScore();
+let board, history, current, gameOver, aiOn = false, playerColor = 1; // 1黑 2白
+let hoverPos = null;
+
+function init() {
+  board = Array.from({length: N}, () => Array(N).fill(0));
+  history = [];
+  current = 1;
+  gameOver = false;
+  hoverPos = null;
+  draw();
+  updateStatus();
 }
 
-function spawnFood() {
-  do {
-    food = {x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS)};
-  } while (snake.some(s => s.x === food.x && s.y === food.y));
-}
-
-function updateScore() {
-  document.getElementById('score').textContent = score;
-}
-
-function step() {
-  if (dead || paused) return;
-  dir = nextDir;
-  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
-
-  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS ||
-      snake.some(s => s.x === head.x && s.y === head.y)) {
-    dead = true;
-    return;
-  }
-
-  snake.unshift(head);
-  if (head.x === food.x && head.y === food.y) {
-    score += 10;
-    updateScore();
-    spawnFood();
-  } else {
-    snake.pop();
-  }
-}
+function px(i) { return PAD + i * GAP; }
 
 function draw() {
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  ctx.clearRect(0, 0, SIZE, SIZE);
 
-  // food
-  ctx.fillStyle = '#e74c3c';
-  ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
+  // 棋盘线
+  ctx.strokeStyle = '#5a4520';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < N; i++) {
+    ctx.beginPath();
+    ctx.moveTo(px(0), px(i));
+    ctx.lineTo(px(N-1), px(i));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px(i), px(0));
+    ctx.lineTo(px(i), px(N-1));
+    ctx.stroke();
+  }
 
-  // snake
-  snake.forEach((s, i) => {
-    ctx.fillStyle = i === 0 ? '#2ecc71' : '#27ae60';
-    ctx.fillRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2);
+  // 星位
+  ctx.fillStyle = '#5a4520';
+  [[3,3],[3,11],[11,3],[11,11],[7,7]].forEach(([r,c]) => {
+    ctx.beginPath();
+    ctx.arc(px(c), px(r), 3.5, 0, Math.PI * 2);
+    ctx.fill();
   });
 
-  if (dead) {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, cvs.width, cvs.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '28px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('游戏结束', cvs.width / 2, cvs.height / 2 - 10);
-    ctx.font = '16px sans-serif';
-    ctx.fillText('按空格重新开始', cvs.width / 2, cvs.height / 2 + 24);
-  } else if (paused) {
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(0, 0, cvs.width, cvs.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('已暂停', cvs.width / 2, cvs.height / 2);
+  // 棋子
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (board[r][c]) drawPiece(r, c, board[r][c]);
+    }
+  }
+
+  // 最后一手标记
+  if (history.length) {
+    const [r, c] = history[history.length - 1];
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px(c), px(r), 8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 悬停预览
+  if (hoverPos && !gameOver && board[hoverPos[0]][hoverPos[1]] === 0) {
+    const [r, c] = hoverPos;
+    ctx.globalAlpha = 0.35;
+    drawPiece(r, c, current);
+    ctx.globalAlpha = 1;
   }
 }
 
-const KEYS = {
-  ArrowUp:    {x: 0, y: -1}, KeyW: {x: 0, y: -1},
-  ArrowDown:  {x: 0, y: 1},  KeyS: {x: 0, y: 1},
-  ArrowLeft:  {x: -1, y: 0}, KeyA: {x: -1, y: 0},
-  ArrowRight: {x: 1, y: 0},  KeyD: {x: 1, y: 0},
-};
+function drawPiece(r, c, color) {
+  const x = px(c), y = px(r), rad = GAP / 2 - 2;
+  const grad = ctx.createRadialGradient(x - rad*0.3, y - rad*0.3, rad*0.1, x, y, rad);
+  if (color === 1) {
+    grad.addColorStop(0, '#555');
+    grad.addColorStop(1, '#000');
+  } else {
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(1, '#cfcfcf');
+  }
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(x, y, rad, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
 
-document.addEventListener('keydown', e => {
-  if (e.code === 'Space') {
-    e.preventDefault();
-    if (dead) reset();
-    else paused = !paused;
+function checkWin(r, c, color) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  for (const [dr, dc] of dirs) {
+    let count = 1;
+    for (let s = 1; s < 5; s++) {
+      const nr = r + dr*s, nc = c + dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==color) break;
+      count++;
+    }
+    for (let s = 1; s < 5; s++) {
+      const nr = r - dr*s, nc = c - dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==color) break;
+      count++;
+    }
+    if (count >= 5) return true;
+  }
+  return false;
+}
+
+function place(r, c) {
+  if (gameOver || board[r][c] !== 0) return;
+  board[r][c] = current;
+  history.push([r, c]);
+
+  if (checkWin(r, c, current)) {
+    gameOver = true;
     draw();
+    updateStatus();
     return;
   }
-  const nd = KEYS[e.code];
-  if (!nd) return;
-  e.preventDefault();
-  // 不能直接掉头
-  if (nd.x === -dir.x && nd.y === -dir.y) return;
-  nextDir = nd;
-});
+  if (history.length === N * N) {
+    gameOver = true;
+    draw();
+    updateStatus();
+    return;
+  }
+  current = current === 1 ? 2 : 1;
+  draw();
+  updateStatus();
 
-reset();
-draw();
-setInterval(() => { step(); draw(); }, 120);
+  if (aiOn && current !== playerColor && !gameOver) {
+    setTimeout(aiMove, 300);
+  }
+}
+
+function updateStatus() {
+  const el = document.getElementById('status');
+  if (gameOver) {
+    if (history.length === N * N) {
+      el.innerHTML = '平局！';
+    } else {
+      const winner = board[history[history.length-1][0]][history[history.length-1][1]];
+      el.innerHTML = `<span class="dot ${winner===1?'black':'white'}"></span>${winner===1?'黑':'白'}棋获胜！`;
+    }
+    return;
+  }
+  const isAI = aiOn && current !== playerColor;
+  el.innerHTML = `<span class="dot ${current===1?'black':'white'}"></span>${current===1?'黑':'白'}棋走${isAI?'（AI思考中…）':''}`;
+}
+
+// ---- 简易 AI：优先堵/冲，其次进攻 ----
+function aiMove() {
+  if (gameOver) return;
+  const me = current, opp = me === 1 ? 2 : 1;
+  let best = null, bestScore = -Infinity;
+
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (board[r][c] !== 0) continue;
+      // 只考虑已有棋子的邻近区域，加速
+      if (!hasNeighbor(r, c, 2)) continue;
+      let score = 0;
+      score += evaluatePoint(r, c, me) * 1.1;   // 进攻
+      score += evaluatePoint(r, c, opp);         // 防守
+      score += Math.random() * 0.5;
+      if (score > bestScore) { bestScore = score; best = [r, c]; }
+    }
+  }
+  if (best) place(best[0], best[1]);
+}
+
+function hasNeighbor(r, c, dist) {
+  for (let i = -dist; i <= dist; i++)
+    for (let j = -dist; j <= dist; j++) {
+      const nr = r+i, nc = c+j;
+      if (nr>=0&&nr<N&&nc>=0&&nc<N&&board[nr][nc]!==0) return true;
+    }
+  return false;
+}
+
+function evaluatePoint(r, c, color) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  let total = 0;
+  for (const [dr, dc] of dirs) {
+    let count = 1, blocked = 0;
+    for (let s = 1; s < 5; s++) {
+      const nr = r+dr*s, nc = c+dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N) { blocked++; break; }
+      if (board[nr][nc] === color) count++;
+      else { if (board[nr][nc] !== 0) blocked++; break; }
+    }
+    for (let s = 1; s < 5; s++) {
+      const nr = r-dr*s, nc = c-dc*s;
+      if (nr<0||nr>=N||nc<0||nc>=N) { blocked++; break; }
+      if (board[nr][nc] === color) count++;
+      else { if (board[nr][nc] !== 0) blocked++; break; }
+    }
+    if (count >= 5) total += 100000;
+    else if (count === 4 && blocked === 0) total += 10000;
+    else if (count === 4 && blocked === 1) total += 1000;
+    else if (count === 3 && blocked === 0) total += 800;
+    else if (count === 3 && blocked === 1) total += 100;
+    else if (count === 2 && blocked === 0) total += 60;
+    else if (count === 2 && blocked === 1) total += 10;
+    else if (count === 1 && blocked === 0) total += 2;
+  }
+  return total;
+}
+
+// ---- 交互 ----
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  const c = Math.round((x - PAD) / GAP);
+  const r = Math.round((y - PAD) / GAP);
+  if (r < 0 || r >= N || c < 0 || c >= N) return null;
+  // 距离判定
+  if (Math.abs(px(c) - x) > GAP/2 || Math.abs(px(r) - y) > GAP/2) return null;
+  return [r, c];
+}
+
+canvas.addEventListener('mousemove', e => {
+  const p = getPos(e);
+  if (JSON.stringify(p) !== JSON.stringify(hoverPos)) {
+    hoverPos = p;
+    draw();
+  }
+});
+canvas.addEventListener('mouseleave', () => { hoverPos = null; draw(); });
+canvas.addEventListener('click', e => {
+  const p = getPos(e);
+  if (p) place(p[0], p[1]);
+});
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const p = getPos(e);
+  if (p) place(p[0], p[1]);
+}, {passive: false});
+
+document.getElementById('newGame').onclick = init;
+document.getElementById('undo').onclick = () => {
+  if (!history.length) return;
+  gameOver = false;
+  const steps = (aiOn && history.length >= 2) ? 2 : 1;
+  for (let i = 0; i < steps && history.length; i++) {
+    const [r, c] = history.pop();
+    board[r][c] = 0;
+    current = current === 1 ? 2 : 1;
+  }
+  draw();
+  updateStatus();
+};
+document.getElementById('aiToggle').onclick = function() {
+  aiOn = !aiOn;
+  this.textContent = 'AI: ' + (aiOn ? '开' : '关');
+  updateStatus();
+  if (aiOn && current !== playerColor && !gameOver) setTimeout(aiMove, 300);
+};
+document.getElementById('swapColor').onclick = () => {
+  playerColor = playerColor === 1 ? 2 : 1;
+  alert('你已执' + (playerColor === 1 ? '黑' : '白') + '棋');
+  if (aiOn && current !== playerColor && !gameOver) setTimeout(aiMove, 300);
+};
+
+init();
 </script>
 </body>
 </html>
