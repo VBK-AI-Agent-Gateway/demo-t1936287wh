@@ -2,85 +2,551 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>月饼换足球 · AI 图像替换 Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>极简 OA 办公系统</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
-    background:radial-gradient(1200px 700px at 20% -10%, #2a0d10 0%, #16070a 55%, #0c0406 100%);
-    color:#f5e9e2; min-height:100vh; padding:40px 20px;
-  }
-  .wrap { max-width:1080px; margin:0 auto; }
-  header { text-align:center; margin-bottom:34px; }
-  .tag { display:inline-block; font-size:13px; letter-spacing:4px; color:#ffbf6b;
-         border:1px solid #6b3a1f; border-radius:999px; padding:6px 18px; margin-bottom:16px; }
-  h1 { font-size:40px; font-weight:800; background:linear-gradient(90deg,#ffd98a,#ff8f5e);
-       -webkit-background-clip:text; background-clip:text; color:transparent; }
-  header p { margin-top:12px; color:#c9a99b; font-size:15px; }
-  .stage {
-    display:grid; grid-template-columns:1fr auto 1fr; gap:22px; align-items:center;
-    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09);
-    border-radius:24px; padding:26px; backdrop-filter:blur(6px);
-  }
-  .card { position:relative; border-radius:18px; overflow:hidden;
-           box-shadow:0 18px 44px rgba(0,0,0,.5); background:#000; }
-  .card img { width:100%; display:block; aspect-ratio:897/1280; object-fit:cover; }
-  .badge { position:absolute; top:12px; left:12px; font-size:12px; font-weight:700;
-           padding:5px 12px; border-radius:999px; }
-  .b-before { background:rgba(255,80,80,.85); color:#fff; }
-  .b-after  { background:rgba(60,220,130,.9); color:#062; }
-  .arrow { font-size:44px; color:#ffbf6b; animation:pulse 1.6s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{transform:translateX(0); opacity:.7} 50%{transform:translateX(8px); opacity:1} }
-  .caption { text-align:center; color:#c9a99b; font-size:13px; margin-top:10px; }
-  .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:30px; }
-  .step { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
-           border-radius:16px; padding:18px; }
-  .step b { display:block; color:#ffd98a; margin-bottom:8px; font-size:15px; }
-  .step span { font-size:13px; line-height:1.7; color:#cbb1a6; }
-  footer { text-align:center; margin-top:34px; font-size:12px; color:#7a5c52; }
-  @media (max-width:760px){
-    .stage { grid-template-columns:1fr; }
-    .arrow { transform:rotate(90deg); justify-self:center; }
-    h1 { font-size:30px; }
-  }
+:root{
+  --blue:#2563eb;--blue-d:#1d4ed8;--blue-l:#eff6ff;
+  --bg:#f4f6fb;--card:#ffffff;--text:#1e293b;--sub:#64748b;
+  --line:#e2e8f0;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;
+  --radius:14px;--shadow:0 4px 18px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,select,textarea{font-family:inherit;font-size:14px;outline:none;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:#fff;color:var(--text);width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+label{font-size:13px;color:var(--sub);display:block;margin-bottom:6px;font-weight:500}
+
+/* ---- 顶栏 ---- */
+header{background:linear-gradient(135deg,#1e3a8a,#2563eb 60%,#3b82f6);color:#fff;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(30,58,138,.35)}
+.hd-in{max-width:1100px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;letter-spacing:.5px}
+.logo .ico{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:18px}
+.roles{display:flex;gap:8px;background:rgba(255,255,255,.12);padding:5px;border-radius:12px;flex-wrap:wrap}
+.role-btn{padding:8px 14px;border-radius:9px;background:transparent;color:rgba(255,255,255,.85);font-size:13px;font-weight:600;transition:.2s;white-space:nowrap}
+.role-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.role-btn.active{background:#fff;color:var(--blue-d);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;background:rgba(255,255,255,.14);padding:7px 13px;border-radius:20px}
+.dot{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80}
+
+/* ---- 布局 ---- */
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+.tabs{display:flex;gap:8px;margin-bottom:20px;background:#fff;padding:6px;border-radius:14px;box-shadow:var(--shadow);overflow-x:auto}
+.tab{flex:1;padding:11px 8px;border-radius:10px;background:transparent;color:var(--sub);font-size:14px;font-weight:600;transition:.2s;white-space:nowrap;min-width:100px}
+.tab:hover{background:var(--blue-l);color:var(--blue)}
+.tab.active{background:linear-gradient(135deg,var(--blue),#3b82f6);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.35)}
+.page{display:none;animation:fade .25s ease}
+.page.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:20px}
+.card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1px solid rgba(226,232,240,.7)}
+.card .t{font-size:13px;color:var(--sub);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.card .v{font-size:30px;font-weight:800;color:var(--text);line-height:1.2}
+.card .v small{font-size:14px;font-weight:500;color:var(--sub)}
+.card.b{background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff}
+.card.b .t{color:rgba(255,255,255,.85)}
+.card.b .v{color:#fff}
+.hint{font-size:12px;margin-top:6px;color:var(--sub)}
+.card.b .hint{color:rgba(255,255,255,.8)}
+
+.sec{background:var(--card);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);border:1px solid rgba(226,232,240,.7);margin-bottom:20px}
+.sec h3{font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.sec h3::before{content:"";width:4px;height:16px;background:var(--blue);border-radius:2px}
+
+.btn{padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;background:var(--blue);color:#fff;transition:.2s;box-shadow:0 4px 12px rgba(37,99,235,.3)}
+.btn:hover{background:var(--blue-d);transform:translateY(-1px)}
+.btn:disabled{background:#cbd5e1;box-shadow:none;cursor:not-allowed;transform:none}
+.btn.ghost{background:#fff;color:var(--blue);border:1px solid var(--blue);box-shadow:none}
+.btn.ghost:hover{background:var(--blue-l)}
+.btn.green{background:var(--ok);box-shadow:0 4px 12px rgba(22,163,74,.3)}
+.btn.red{background:var(--bad);box-shadow:0 4px 12px rgba(220,38,38,.3)}
+.btn.sm{padding:6px 14px;font-size:13px;border-radius:8px}
+.btn.big{padding:16px 44px;font-size:17px;border-radius:14px;width:100%;max-width:420px}
+
+/* 打卡 */
+.punch-zone{text-align:center;padding:16px 0 6px}
+.now-time{font-size:44px;font-weight:800;color:var(--blue);letter-spacing:2px;font-variant-numeric:tabular-nums}
+.now-date{color:var(--sub);font-size:14px;margin:6px 0 20px}
+.punch-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.punch-row .btn{min-width:170px}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:11px 10px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:#f8fafc;color:var(--sub);font-weight:600;font-size:12.5px;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#f8fbff}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-wait{background:#fef3c7;color:#b45309}
+.b-ok{background:#dcfce7;color:#15803d}
+.b-no{background:#fee2e2;color:#b91c1c}
+.b-info{background:#dbeafe;color:#1d4ed8}
+.empty{text-align:center;color:var(--sub);padding:34px 10px;font-size:14px}
+.empty::before{content:"📭";display:block;font-size:34px;margin-bottom:8px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f-group{margin-bottom:14px}
+.form-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap}
+
+/* 公告 */
+.post{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;transition:.2s;background:#fff}
+.post:hover{border-color:#bfdbfe;box-shadow:0 4px 14px rgba(37,99,235,.08)}
+.post .ph{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.post .pt{font-size:15.5px;font-weight:700;color:var(--blue-d)}
+.post .pm{font-size:12px;color:var(--sub);margin-top:4px}
+.post .pb{font-size:14px;color:#334155;margin-top:10px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.del-x{background:none;color:#94a3b8;font-size:17px;padding:0 6px;border-radius:6px}
+.del-x:hover{color:var(--bad);background:#fee2e2}
+
+/* 弹窗 */
+.mask{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.mask.show{display:flex}
+.modal{background:#fff;border-radius:18px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;padding:26px;animation:pop .2s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h3{font-size:18px;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.modal h3::before{content:"";width:4px;height:18px;background:var(--blue);border-radius:2px}
+.m-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+/* Toast */
+#toast{position:fixed;top:78px;left:50%;transform:translateX(-50%) translateY(-16px);background:#0f172a;color:#fff;padding:11px 22px;border-radius:30px;font-size:14px;z-index:200;opacity:0;pointer-events:none;transition:.28s;box-shadow:0 8px 24px rgba(0,0,0,.28);max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{background:#15803d}
+#toast.err{background:#b91c1c}
+
+footer{text-align:center;color:#94a3b8;font-size:12px;padding:10px 0 30px}
+
+@media(max-width:720px){
+  .hd-in{padding:11px 12px}
+  .logo span.txt{display:none}
+  .roles{order:3;width:100%;justify-content:center}
+  .role-btn{flex:1;padding:8px 4px;font-size:12.5px;text-align:center}
+  .who{font-size:12px;padding:5px 10px}
+  .wrap{padding:14px 10px 50px}
+  .grid2{grid-template-columns:1fr}
+  .now-time{font-size:36px}
+  .punch-row .btn{min-width:0;flex:1}
+  .card .v{font-size:26px}
+  .sec{padding:16px 14px}
+  table{font-size:12.5px}
+  th,td{padding:8px 6px}
+  .modal{padding:20px 16px;border-radius:16px}
+}
 </style>
 </head>
 <body>
+
+<header>
+  <div class="hd-in">
+    <div class="logo"><div class="ico">🏢</div><span class="txt">极简 OA 办公系统</span></div>
+    <div class="roles">
+      <button class="role-btn active" data-role="staff">👤 普通员工</button>
+      <button class="role-btn" data-role="manager">📋 部门经理</button>
+      <button class="role-btn" data-role="admin">⚙️ 系统管理员</button>
+    </div>
+    <div class="who"><span class="dot"></span><span id="whoTxt">普通员工 · 张三</span></div>
+  </div>
+</header>
+
 <div class="wrap">
-  <header>
-    <div class="tag">AI IMAGE SWAP DEMO</div>
-    <h1>把手中的月饼换成足球</h1>
-    <p>定位主体 → 掩码修复背景 → 合成足球，一键完成节日到球场的变身</p>
-  </header>
+  <nav class="tabs">
+    <button class="tab active" data-pg="home">🏠 工作台</button>
+    <button class="tab" data-pg="att">⏰ 考勤打卡</button>
+    <button class="tab" data-pg="flow">📄 流程审批</button>
+    <button class="tab" data-pg="ann">📢 通知公告</button>
+  </nav>
 
-  <div class="stage">
-    <div class="card">
-      <span class="badge b-before">BEFORE · 原图</span>
-      <img id="beforeImg" alt="原图">
-      <div class="caption">手中金色的月饼（原素材）</div>
+  <!-- 工作台 -->
+  <section class="page show" id="pg-home">
+    <div class="cards">
+      <div class="card b"><div class="t">🕐 当前时间</div><div class="v" id="hTime">--:--:--</div><div class="hint" id="hDate">--</div></div>
+      <div class="card"><div class="t">⏰ 今日打卡</div><div class="v" id="hPunch">未打卡</div><div class="hint" id="hPunchHint">请前往考勤模块打卡</div></div>
+      <div class="card"><div class="t">📄 我的待办审批</div><div class="v" id="hFlow">0 <small>条</small></div><div class="hint" id="hFlowHint">暂无待处理流程</div></div>
+      <div class="card"><div class="t">📢 最新公告</div><div class="v" id="hAnn">0 <small>条</small></div><div class="hint" id="hAnnHint">暂无公告</div></div>
     </div>
-    <div class="arrow">➜</div>
-    <div class="card">
-      <span class="badge b-after">AFTER · 成品</span>
-      <img id="afterImg" alt="效果图">
-      <div class="caption">月饼已被替换为经典黑白足球</div>
+    <div class="sec">
+      <h3>最近 5 条公告</h3>
+      <div id="homeAnn"></div>
     </div>
-  </div>
+    <div class="sec">
+      <h3>快捷入口</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn ghost" onclick="go('att')">⏰ 去打卡</button>
+        <button class="btn ghost" onclick="go('flow');openApply()">📝 发起申请</button>
+        <button class="btn ghost" onclick="go('ann')">📢 查看公告</button>
+      </div>
+    </div>
+  </section>
 
-  <div class="steps">
-    <div class="step"><b>① 主体定位</b><span>按金黄色调特征自动检测月饼像素，输出边界框与掩码，无需人工标注。</span></div>
-    <div class="step"><b>② 背景修复</b><span>多尺度模糊填充 + 羽化混合 + 颗粒噪声，把月饼从画面中无痕移除。</span></div>
-    <div class="step"><b>③ 足球合成</b><span>程序化绘制五边形/六边形球面，叠加球体明暗、高光与投影，贴合原图透视。</span></div>
-    <div class="step"><b>④ 页面交付</b><span>前后对比图以 base64 内嵌静态页，零依赖、秒加载，随处可部署。</span></div>
-  </div>
+  <!-- 考勤 -->
+  <section class="page" id="pg-att">
+    <div class="cards">
+      <div class="card"><div class="t">🌞 上班打卡</div><div class="v" id="aIn">--:--</div><div class="hint" id="aInS">未打卡</div></div>
+      <div class="card"><div class="t">🌙 下班打卡</div><div class="v" id="aOut">--:--</div><div class="hint" id="aOutS">未打卡</div></div>
+      <div class="card b"><div class="t">📅 本月出勤</div><div class="v" id="aDays">0 <small>天</small></div><div class="hint">上班打卡成功即计 1 天</div></div>
+    </div>
+    <div class="sec">
+      <div class="punch-zone">
+        <div class="now-time" id="aNow">--:--:--</div>
+        <div class="now-date" id="aDate">--</div>
+        <div class="punch-row">
+          <button class="btn" id="btnIn" onclick="punch('in')">🌞 上班打卡</button>
+          <button class="btn ghost" id="btnOut" onclick="punch('out')">🌙 下班打卡</button>
+        </div>
+        <p class="hint" style="margin-top:14px">规则：09:00 前为正常，09:00 后记为迟到；工作日 18:00 后下班为正常。</p>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>本月个人打卡记录</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>日期</th><th>星期</th><th>上班</th><th>下班</th><th>状态</th></tr></thead>
+          <tbody id="attBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="attEmpty" style="display:none">本月暂无打卡记录，快去打卡吧！</div>
+    </div>
+  </section>
 
-  <footer>demo-t1936287wh · 月饼 → 足球 · Generated by pi coding agent</footer>
+  <!-- 流程 -->
+  <section class="page" id="pg-flow">
+    <div class="cards">
+      <div class="card"><div class="t">📨 本月已提交</div><div class="v" id="fMine">0 <small>条</small></div><div class="hint">我发起的全部申请</div></div>
+      <div class="card b" id="fPendCard"><div class="t" id="fPendT">⏳ 待我处理</div><div class="v" id="fPend">0 <small>条</small></div><div class="hint" id="fPendH">经理身份可审批</div></div>
+      <div class="card"><div class="t">✅ 已通过</div><div class="v" id="fOk">0 <small>条</small></div><div class="hint">全部已通过申请</div></div>
+    </div>
+
+    <div class="sec">
+      <h3>发起新申请</h3>
+      <div class="grid2">
+        <div class="f-group"><label>申请类型</label>
+          <select id="apType">
+            <option value="leave">🏖️ 请假申请</option>
+            <option value="expense">💰 报销申请</option>
+            <option value="common">📝 通用审批</option>
+          </select>
+        </div>
+        <div class="f-group"><label>申请标题</label><input id="apTitle" placeholder="例：年假申请 / 3 月打车报销"></div>
+        <div class="f-group" id="gLeave" style="display:none"><label>请假日期（起）</label><input type="date" id="apFrom"></div>
+        <div class="f-group" id="gLeave2" style="display:none"><label>请假日期（止）</label><input type="date" id="apTo"></div>
+        <div class="f-group" id="gMoney" style="display:none"><label>报销金额（元）</label><input type="number" id="apAmt" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="f-group" style="grid-column:1/-1"><label>详细说明</label><textarea id="apDesc" rows="3" placeholder="请填写事由、明细等"></textarea></div>
+      </div>
+      <div class="form-acts"><button class="btn ghost" onclick="resetApply()">重置</button><button class="btn" onclick="submitApply()">🚀 提交申请</button></div>
+    </div>
+
+    <div class="sec" id="mgrSec">
+      <h3>🔔 待办审批（经理专用）</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>类型</th><th>标题</th><th>申请人</th><th>金额/日期</th><th>说明</th><th>提交时间</th><th style="min-width:150px">操作</th></tr></thead>
+          <tbody id="mgrBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="mgrEmpty">🎉 没有待审批的流程</div>
+    </div>
+
+    <div class="sec">
+      <h3>📑 我的申请记录</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>类型</th><th>标题</th><th>金额/日期</th><th>状态</th><th>处理意见</th><th>时间</th></tr></thead>
+          <tbody id="myBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="myEmpty">还没有提交过申请</div>
+    </div>
+  </section>
+
+  <!-- 公告 -->
+  <section class="page" id="pg-ann">
+    <div class="sec" id="annForm">
+      <h3>✏️ 发布公司公告</h3>
+      <div class="f-group"><label>公告标题</label><input id="anTitle" placeholder="例：关于 2025 年五一放假安排的通知"></div>
+      <div class="f-group"><label>公告内容</label><textarea id="anBody" rows="4" placeholder="请输入公告正文"></textarea></div>
+      <div class="form-acts"><button class="btn" onclick="postAnn()">📢 立即发布</button></div>
+      <p class="hint">仅「系统管理员」可发布公告；所有身份均可实时查看。</p>
+    </div>
+    <div class="sec">
+      <h3>📢 公司公告栏 <span class="badge b-info" id="annCount">0 条</span></h3>
+      <div id="annList"></div>
+      <div class="empty" id="annEmpty">暂无公告</div>
+    </div>
+  </section>
+
+  <footer>极简 OA · 单文件版 · 数据保存在浏览器 LocalStorage</footer>
 </div>
-<script src="assets_loader.js"></script>
+
+<!-- 弹窗 -->
+<div class="mask" id="mask">
+  <div class="modal">
+    <h3 id="mTitle">标题</h3>
+    <div id="mBody"></div>
+    <div class="m-acts"><button class="btn ghost" onclick="closeModal()">关 闭</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
 <script>
-  document.getElementById('beforeImg').src = window.BEFORE_IMG || '';
-  document.getElementById('afterImg').src  = window.AFTER_IMG  || '';
+"use strict";
+/* ================== 存储层 ================== */
+var DB_KEY='mini_oa_db_v1';
+var db={role:'staff',atts:[],flows:[],anns:[],seq:1};
+function load(){try{var s=localStorage.getItem(DB_KEY);if(s){var o=JSON.parse(s);if(o&&typeof o==='object'){db=Object.assign(db,o);if(!db.seq)db.seq=1;}}}catch(e){}}
+function save(){try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){toast('存储失败：'+e.message,'err');}}
+load();
+
+var ROLES={
+  staff:{name:'普通员工',user:'张三'},
+  manager:{name:'部门经理',user:'李经理'},
+  admin:{name:'系统管理员',user:'王管理'}
+};
+var TYPE={leave:'请假',expense:'报销',common:'通用审批'};
+
+/* ================== 工具 ================== */
+function pad(n){return n<10?'0'+n:''+n;}
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function hm(d){return pad(d.getHours())+':'+pad(d.getMinutes());}
+function hms(d){return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
+function isWorkday(d){var w=d.getDay();return w!==0&&w!==6;}
+function wk(d){return '日一二三四五六'[d.getDay()];}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function ts(){return ymd(new Date())+' '+hm(new Date());}
+function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='show'+(type?' '+type:'');clearTimeout(t._h);t._h=setTimeout(function(){t.className='';},2200);}
+function me(){return ROLES[db.role];}
+function todayStr(){return ymd(new Date());}
+
+function seed(){
+  if(db.anns.length===0){
+    db.anns=[
+      {id:db.seq++,title:'欢迎使用极简 OA 办公系统',body:'本系统支持考勤打卡、流程审批、通知公告三大模块。\n顶部可随时切换身份：普通员工 / 部门经理 / 系统管理员。\n所有数据保存在浏览器本地，刷新不丢失。',time:'2025-01-02 09:00',by:'系统管理员'},
+      {id:db.seq++,title:'关于 2025 年五一放假安排的通知',body:'根据国家法定节假日安排，5 月 1 日至 5 月 5 日放假调休，共 5 天。\n4 月 27 日（星期日）正常上班，请各部门提前做好工作安排。',time:'2025-04-25 14:30',by:'系统管理员'}
+    ];
+  }
+  save();
+}
+seed();
+
+/* ================== 角色 / 导航 ================== */
+function renderRole(){
+  document.querySelectorAll('.role-btn').forEach(function(b){b.classList.toggle('active',b.dataset.role===db.role);});
+  document.getElementById('whoTxt').textContent=me().name+' · '+me().user;
+  document.getElementById('annForm').style.display=db.role==='admin'?'block':'none';
+  document.getElementById('mgrSec').style.display=(db.role==='manager')?'block':'none';
+  document.getElementById('fPendT').textContent=db.role==='manager'?'⏳ 待我处理':'⏳ 待审批（经理）';
+  document.getElementById('fPendH').textContent=db.role==='manager'?'请逐条审核并操作':'切换为经理身份即可处理';
+}
+document.querySelectorAll('.role-btn').forEach(function(b){
+  b.addEventListener('click',function(){db.role=b.dataset.role;save();renderRole();renderAll();toast('已切换为「'+ROLES[db.role].name+'」');});
+});
+function go(pg){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.pg===pg);});
+  document.querySelectorAll('.page').forEach(function(s){s.classList.toggle('show',s.id==='pg-'+pg);});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){go(t.dataset.pg);});});
+
+/* ================== 时钟 ================== */
+function tick(){
+  var d=new Date();
+  var s=hms(d);
+  var hT=document.getElementById('hTime'); if(hT)hT.textContent=s;
+  var hD=document.getElementById('hDate'); if(hD)hD.textContent=ymd(d)+' 星期'+wk(d);
+  var aN=document.getElementById('aNow'); if(aN)aN.textContent=s;
+  var aD=document.getElementById('aDate'); if(aD)aD.textContent=ymd(d)+' 星期'+wk(d)+' · 上班 09:00 / 下班 18:00';
+}
+setInterval(tick,1000);
+
+/* ================== 打卡 ================== */
+function todayRec(){var t=todayStr();return db.atts.filter(function(a){return a.date===t&&a.user===me().user;})[0];}
+function punch(kind){
+  var now=new Date();
+  var t=todayStr();
+  var rec=todayRec();
+  if(!rec){rec={date:t,user:me().user,in:'',out:'',inS:'',outS:''};db.atts.push(rec);}
+  if(kind==='in'){
+    if(rec.in){toast('今天已打过上班卡（'+rec.in+'）','err');return;}
+    var late=now.getHours()*60+now.getMinutes()>540;
+    rec.in=hm(now);
+    rec.inS=late?'迟到':'正常';
+    toast((late?'⚠️ 打卡成功，但已迟到！':'✅ 上班打卡成功！')+' '+rec.in,late?'err':'ok');
+  }else{
+    if(rec.in===''){toast('请先打上班卡再打下班卡','err');return;}
+    if(rec.out){toast('今天已打过下班卡（'+rec.out+'）','err');return;}
+    var early=isWorkday(now)&&(now.getHours()*60+now.getMinutes()<1080);
+    rec.out=hm(now);
+    rec.outS=early?'早退':'正常';
+    toast((early?'⚠️ 打卡成功，但早退！':'✅ 下班打卡成功！')+' '+rec.out,early?'err':'ok');
+  }
+  save();renderAll();
+}
+function renderAtt(){
+  var rec=todayRec();
+  var inS=document.getElementById('aIn'),inH=document.getElementById('aInS');
+  var outS=document.getElementById('aOut'),outH=document.getElementById('aOutS');
+  if(rec&&rec.in){inS.textContent=rec.in;inH.textContent='状态：'+rec.inS;inH.style.color=rec.inS==='迟到'?'var(--bad)':'var(--ok)';}
+  else{inS.textContent='--:--';inH.textContent='未打卡';inH.style.color='';}
+  if(rec&&rec.out){outS.textContent=rec.out;outH.textContent='状态：'+rec.outS;outH.style.color=rec.outS==='早退'?'var(--bad)':'var(--ok)';}
+  else{outS.textContent='--:--';outH.textContent='未打卡';outH.style.color='';}
+  document.getElementById('btnIn').disabled=!!(rec&&rec.in);
+  document.getElementById('btnOut').disabled=!(rec&&rec.in)||!!(rec&&rec.out);
+
+  var prefix=todayStr().slice(0,7);
+  var mine=db.atts.filter(function(a){return a.user===me().user&&a.date.indexOf(prefix)===0;}).sort(function(a,b){return a.date<b.date?1:-1;});
+  var days=mine.filter(function(a){return a.in;}).length;
+  document.getElementById('aDays').innerHTML=days+' <small>天</small>';
+  var tb=document.getElementById('attBody');tb.innerHTML='';
+  mine.forEach(function(a){
+    var d=new Date(a.date+'T00:00:00');
+    var st=a.in?(a.inS==='迟到'?'<span class="badge b-no">迟到</span>':(a.outS==='早退'?'<span class="badge b-wait">早退</span>':'<span class="badge b-ok">正常</span>')):'<span class="badge b-wait">缺卡</span>';
+    tb.innerHTML+='<tr><td>'+a.date+'</td><td>周'+wk(d)+'</td><td>'+(a.in||'—')+'</td><td>'+(a.out||'—')+'</td><td>'+st+'</td></tr>';
+  });
+  document.getElementById('attEmpty').style.display=mine.length?'none':'block';
+}
+
+/* ================== 流程 ================== */
+function syncApFields(){
+  var t=document.getElementById('apType').value;
+  document.getElementById('gLeave').style.display=t==='leave'?'block':'none';
+  document.getElementById('gLeave2').style.display=t==='leave'?'block':'none';
+  document.getElementById('gMoney').style.display=t==='expense'?'block':'none';
+}
+document.getElementById('apType').addEventListener('change',syncApFields);
+function openApply(){document.getElementById('apTitle').focus();go('flow');}
+function resetApply(){
+  document.getElementById('apType').value='leave';
+  document.getElementById('apTitle').value='';
+  document.getElementById('apDesc').value='';
+  document.getElementById('apAmt').value='';
+  document.getElementById('apFrom').value='';
+  document.getElementById('apTo').value='';
+  syncApFields();
+}
+function submitApply(){
+  var type=document.getElementById('apType').value;
+  var title=document.getElementById('apTitle').value.trim();
+  var desc=document.getElementById('apDesc').value.trim();
+  if(!title){toast('请填写申请标题','err');return;}
+  var extra='';
+  if(type==='leave'){
+    var f=document.getElementById('apFrom').value,t2=document.getElementById('apTo').value;
+    if(!f||!t2){toast('请选择请假起止日期','err');return;}
+    if(t2<f){toast('结束日期不能早于开始日期','err');return;}
+    extra=f+' ~ '+t2;
+  }else if(type==='expense'){
+    var amt=parseFloat(document.getElementById('apAmt').value);
+    if(!(amt>0)){toast('请填写有效的报销金额','err');return;}
+    extra='¥'+amt.toFixed(2);
+  }
+  db.flows.unshift({id:db.seq++,type:type,title:title,extra:extra,desc:desc,by:me().user,status:'wait',note:'',time:ts()});
+  save();resetApply();renderAll();
+  toast('✅ 申请已提交，等待经理审批','ok');
+}
+function decide(id,st){
+  var f=db.flows.filter(function(x){return x.id===id;})[0];
+  if(!f)return;
+  if(st==='no'){
+    var r=prompt('请填写拒绝原因：','不符合报销/休假规定');
+    if(r===null)return;
+    r=r.trim();if(!r){toast('必须填写拒绝原因','err');return;}
+    f.note=r;
+  }else{f.note='经理已同意（'+me().user+' '+ts()+'）';}
+  f.status=st;f.handler=me().user;
+  save();renderAll();
+  toast(st==='ok'?'✅ 已通过：'+f.title:'❌ 已拒绝：'+f.title,st==='ok'?'ok':'err');
+}
+function badge(s){return s==='wait'?'<span class="badge b-wait">待审批</span>':s==='ok'?'<span class="badge b-ok">已通过</span>':'<span class="badge b-no">已拒绝</span>';}
+function renderFlow(){
+  var mine=db.flows.filter(function(f){return f.by===me().user;});
+  document.getElementById('fMine').innerHTML=mine.length+' <small>条</small>';
+  document.getElementById('fOk').innerHTML=db.flows.filter(function(f){return f.status==='ok';}).length+' <small>条</small>';
+
+  var pend=db.flows.filter(function(f){return f.status==='wait';});
+  document.getElementById('fPend').innerHTML=pend.length+' <small>条</small>';
+  document.getElementById('fPend').parentNode.style.opacity=db.role==='manager'?'1':'.6';
+
+  var mb=document.getElementById('mgrBody');mb.innerHTML='';
+  pend.forEach(function(f){
+    var ops=f.type==='expense'?'¥'+f.replace?0:0:'';
+    mb.innerHTML+='<tr>'+
+      '<td>'+TYPE[f.type]+'</td><td>'+esc(f.title)+'</td><td>'+esc(f.by)+'</td>'+
+      '<td>'+esc(f.extra||'—')+'</td><td style="max-width:220px">'+esc(f.desc||'—')+'</td><td>'+f.time+'</td>'+
+      '<td><button class="btn sm green" onclick="decide('+f.id+',\'ok\')">同意</button> '+
+      '<button class="btn sm red" onclick="decide('+f.id+',\'no\')">拒绝</button></td></tr>';
+  });
+  document.getElementById('mgrEmpty').style.display=pend.length?'none':'block';
+
+  var tb=document.getElementById('myBody');tb.innerHTML='';
+  mine.forEach(function(f){
+    tb.innerHTML+='<tr><td>'+TYPE[f.type]+'</td><td>'+esc(f.title)+'</td><td>'+esc(f.extra||'—')+'</td>'+
+      '<td>'+badge(f.status)+'</td><td style="max-width:220px">'+esc(f.note||'—')+'</td><td>'+f.time+'</td></tr>';
+  });
+  document.getElementById('myEmpty').style.display=mine.length?'none':'block';
+}
+
+/* ================== 公告 ================== */
+function postAnn(){
+  var t=document.getElementById('anTitle').value.trim();
+  var b=document.getElementById('anBody').value.trim();
+  if(!t){toast('请填写公告标题','err');return;}
+  if(!b){toast('请填写公告内容','err');return;}
+  db.anns.unshift({id:db.seq++,title:t,body:b,time:ts(),by:me().user});
+  document.getElementById('anTitle').value='';
+  document.getElementById('anBody').value='';
+  save();renderAll();toast('📢 公告发布成功','ok');
+}
+function delAnn(id){
+  if(!confirm('确定删除这条公告吗？'))return;
+  db.anns=db.anns.filter(function(a){return a.id!==id;});
+  save();renderAll();toast('公告已删除');
+}
+function annItem(a,showDel){
+  return '<div class="post"><div class="ph"><div><div class="pt">'+esc(a.title)+'</div>'+
+    '<div class="pm">发布时间：'+esc(a.time)+' · 发布人：'+esc(a.by)+'</div></div>'+
+    (showDel?'<button class="del-x" title="删除" onclick="delAnn('+a.id+')">✕</button>':'')+
+    '</div><div class="pb">'+esc(a.body)+'</div></div>';
+}
+function renderAnn(){
+  var isAdmin=db.role==='admin';
+  var html=db.anns.map(function(a){return annItem(a,isAdmin);}).join('');
+  document.getElementById('annList').innerHTML=html;
+  document.getElementById('annEmpty').style.display=db.anns.length?'none':'block';
+  document.getElementById('annCount').textContent=db.anns.length+' 条';
+
+  document.getElementById('hAnn').innerHTML=db.anns.length+' <small>条</small>';
+  document.getElementById('hAnnHint').textContent=db.anns.length?db.anns[0].title:'暂无公告';
+  var last=db.anns.slice(0,5);
+  document.getElementById('homeAnn').innerHTML=last.length?last.map(function(a){return annItem(a,false);}).join(''):'<div class="empty">暂无公告</div>';
+}
+
+/* ================== 工作台 ================== */
+function renderHome(){
+  var rec=todayRec();
+  var hP=document.getElementById('hPunch'),hPH=document.getElementById('hPunchHint');
+  if(rec&&rec.in){
+    hP.innerHTML=rec.in+' <small>'+(rec.in||'')+'</small>';
+    hP.textContent=rec.in+(rec.out?' → '+rec.out:'');
+    hPH.textContent='上班状态：'+rec.inS+(rec.out?(' · 下班状态：'+rec.outS):' · 下班未打卡');
+    hPH.style.color=rec.inS==='迟到'?'var(--bad)':'';
+  }else{
+    hP.textContent='未打卡';
+    hPH.textContent='请前往考勤模块打卡';
+    hPH.style.color='';
+  }
+  var pend=db.flows.filter(function(f){return f.status==='wait';});
+  document.getElementById('hFlow').innerHTML=pend.length+' <small>条</small>';
+  document.getElementById('hFlowHint').textContent=db.role==='manager'?(pend.length?'有申请等待你处理':'暂无待处理流程'):(pend.length?'有申请等待经理审批':'暂无待处理流程');
+}
+
+/* ================== 弹窗(预留) ================== */
+function closeModal(){document.getElementById('mask').className='mask';}
+document.getElementById('mask').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+/* ================== 总渲染 ================== */
+function renderAll(){renderRole();renderAtt();renderFlow();renderAnn();renderHome();tick();syncApFields();}
+renderAll();
 </script>
 </body>
 </html>
