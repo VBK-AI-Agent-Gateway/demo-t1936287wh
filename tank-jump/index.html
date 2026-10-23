@@ -2,77 +2,447 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0c1726">
-<title>坦克跳坑 · 手机版</title>
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>坦克跳坑</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,#16233f 0%,#233a24 100%);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; color:#fff;
+  }
+  h1 { margin:14px 0 4px; font-size:26px; letter-spacing:4px; text-shadow:0 3px 6px rgba(0,0,0,.5); }
+  .subtitle { font-size:13px; color:#ffd700; margin-bottom:10px; }
+  .hud {
+    display:flex; gap:14px; margin-bottom:10px; flex-wrap:wrap; justify-content:center;
+    background:rgba(0,0,0,.35); padding:8px 18px; border-radius:30px; font-size:14px;
+  }
+  .hud b { color:#ffd700; font-size:18px; }
+  .stage { position:relative; width:min(94vw,760px); }
+  canvas { width:100%; display:block; background:#0e1526; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.55); touch-action:manipulation; }
+  .overlay {
+    position:absolute; inset:0; background:rgba(8,12,24,.9); border-radius:16px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    text-align:center; padding:20px; z-index:5;
+  }
+  .overlay.hidden { display:none; }
+  .overlay h2 { font-size:32px; color:#ffd700; text-shadow:0 3px 8px rgba(0,0,0,.6); }
+  .overlay p { font-size:15px; line-height:1.9; color:#dfe8ff; max-width:460px; }
+  .btn {
+    padding:13px 44px; font-size:19px; font-weight:700; border:none; cursor:pointer;
+    background:linear-gradient(180deg,#ffd700,#ff9500); color:#4a2800; border-radius:40px;
+    box-shadow:0 6px 0 #b36600, 0 10px 20px rgba(0,0,0,.4); transition:.1s;
+  }
+  .btn:active { transform:translateY(4px); box-shadow:0 2px 0 #b36600; }
+  .ctrl { display:flex; gap:16px; margin-top:12px; }
+  .ctrl button {
+    width:78px; height:58px; font-size:24px; font-weight:900; border:none; cursor:pointer;
+    background:rgba(255,255,255,.12); color:#fff; border-radius:14px;
+    border:2px solid rgba(255,255,255,.25);
+  }
+  .ctrl button:active { background:rgba(255,215,0,.35); }
+  .hint { font-size:12px; color:#8fa8d8; margin-top:8px; }
+</style>
 </head>
 <body>
-<div id="game-wrap">
-  <canvas id="game" width="360" height="640"></canvas>
+  <h1>🛡️ 坦克跳坑</h1>
+  <div class="subtitle">驾驶坦克冲过一道道壕沟 · 空格/点击 = 跳跃</div>
 
-  <!-- 顶部 HUD -->
-  <div id="hud">
-    <div class="hud-box"><span class="hud-icon">⭐</span><span id="score">0</span></div>
-    <div class="hud-box"><span class="hud-icon">🚩</span><span id="dist">0</span>m</div>
-    <div class="hud-box hearts"><span id="lives">❤️❤️❤️</span></div>
-    <button id="btn-pause" class="hud-btn" aria-label="暂停">⏸</button>
+  <div class="hud">
+    <div>🏆 关卡 <b id="lv">1</b>/<b>8</b></div>
+    <div>⭐ 得分 <b id="score">0</b></div>
+    <div>⏱️ <b id="time">0</b>s</div>
+    <div> lives ❤️ <b id="life">3</b></div>
   </div>
 
-  <!-- 底部触控区：大跳键 + 蓄力条 -->
-  <div id="controls">
-    <div id="charge-wrap">
-      <div id="charge-bar"><div id="charge-fill"></div></div>
-      <div id="charge-label">蓄力</div>
-    </div>
-    <button id="jump-btn" aria-label="跳跃按钮">
-      <span class="jump-icon">🚀</span>
-      <span class="jump-text">跳</span>
-      <span class="jump-hint">按住蓄力 · 松开起跳</span>
-    </button>
-  </div>
-
-  <!-- 开始界面 -->
-  <div id="overlay-start" class="overlay">
-    <div class="panel">
-      <div class="tank-art">🪖</div>
-      <h1 class="title">坦克跳坑</h1>
-      <p class="subtitle">手机版 · 蓄力飞跃深坑</p>
-      <div class="howto">
-        <p>👇 <b>按住大按钮</b>（或屏幕）蓄力</p>
-        <p>✋ <b>松开</b>即起跳，越久跳越高</p>
-        <p>🕳️ 过坑 +10 · ⭐ 星星 +50 · 掉坑 −1❤️</p>
-      </div>
-      <button id="btn-start" class="btn-main">▶ 开始游戏</button>
-      <p class="tip">建议竖屏游玩，横屏也可</p>
+  <div class="stage">
+    <canvas id="game" width="760" height="420"></canvas>
+    <div class="overlay" id="overlay">
+      <h2></h2>
+      <p></p>
+      <button class="btn" type="button">开始</button>
     </div>
   </div>
 
-  <!-- 暂停界面 -->
-  <div id="overlay-pause" class="overlay hidden">
-    <div class="panel">
-      <h2>⏸ 已暂停</h2>
-      <button id="btn-resume" class="btn-main">继续游戏</button>
-    </div>
+  <div class="ctrl">
+    <button id="leftBtn">◀</button>
+    <button id="jumpBtn">跳</button>
+    <button id="rightBtn">▶</button>
   </div>
+  <div class="hint">键盘：← → 移动 · 空格/↑ 跳跃 · 触屏：点画面跳跃</div>
 
-  <!-- 结束界面 -->
-  <div id="overlay-over" class="overlay hidden">
-    <div class="panel">
-      <div class="tank-art">💥</div>
-      <h2 class="title-sm">游戏结束</h2>
-      <div class="result-grid">
-        <div class="result-cell"><div class="rv" id="final-score">0</div><div class="rl">得分</div></div>
-        <div class="result-cell"><div class="rv" id="final-dist">0</div><div class="rl">距离(m)</div></div>
-        <div class="result-cell"><div class="rv" id="best-score">0</div><div class="rl">最佳</div></div>
-      </div>
-      <button id="btn-restart" class="btn-main">🔄 再来一局</button>
-    </div>
-  </div>
-</div>
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const GROUND_Y = H - 70;
+const MAX_LEVEL = 8;
+const el = id => document.getElementById(id);
 
-<script src="game.js"></script>
+const G = 0.65, JUMP_V = -13.2, MOVE_ACC = 0.7, MAX_VX = 6.5, FRICTION = 0.86;
+
+let state = {
+  level:1, score:0, time:0, life:3, playing:false,
+  tank:{x:120, y:GROUND_Y, vx:0, vy:0, onGround:true, angle:0},
+  keys:{left:false, right:false},
+  pits:[], // {x,w}
+  coins:[],
+  scenery:[],
+  spawnT:0, tick:null, running:false,
+  goalX: 0, reached:false,
+  cameraX: 0, worldW: 0
+};
+
+function levelConfig(lv){
+  return {
+    worldW: 2200 + lv*500,
+    pitCount: 4 + lv*2,
+    pitMinW: 70 + lv*6,
+    pitMaxW: 110 + lv*10,
+    moving: lv >= 5,           // 后期出现移动坦克帮助? 不, 出现碎石障碍
+    rocks: lv >= 3 ? Math.floor(lv/2) : 0,
+    speed: 6.0 + lv*0.3
+  };
+}
+
+function buildLevel(lv){
+  const cfg = levelConfig(lv);
+  state.worldW = cfg.worldW;
+  state.pits = []; state.coins = []; state.scenery = [];
+  const safeZone = 340;
+  let x = safeZone + 260;
+  for(let i=0;i<cfg.pitCount;i++){
+    const w = cfg.pitMinW + Math.random()*(cfg.pitMaxW-cfg.pitMinW);
+    if(x + w + 240 > cfg.worldW - 260) break;
+    state.pits.push({x, w});
+    // 金币在坑之间
+    state.coins.push({x: x - 90, y: GROUND_Y - 90 - Math.random()*40, got:false});
+    x += w + 230 + Math.random()*90;
+  }
+  // 终点旗帜
+  state.goalX = cfg.worldW - 140;
+  // 装饰
+  for(let sx=100; sx<cfg.worldW; sx += 260 + Math.random()*200){
+    state.scenery.push({x:sx, type: Math.random()<0.5?'tree':'bush'});
+  }
+  state.tank = {x:120, y:GROUND_Y, vx:0, vy:0, onGround:true, angle:0};
+  state.cameraX = 0;
+  state.reached = false;
+}
+
+function inPit(x){
+  for(const p of state.pits){ if(x > p.x && x < p.x + p.w) return p; }
+  return null;
+}
+
+function update(dt){
+  const t = state.tank;
+  if(state.keys.left) t.vx -= MOVE_ACC;
+  if(state.keys.right) t.vx += MOVE_ACC;
+  if(!state.keys.left && !state.keys.right) t.vx *= FRICTION;
+  t.vx = Math.max(-MAX_VX, Math.min(MAX_VX, t.vx));
+
+  t.vy += G;
+  t.x += t.vx;
+  t.y += t.vy;
+
+  if(t.x < 10){ t.x = 10; t.vx = 0; }
+  if(t.x > state.worldW - 30){ t.x = state.worldW - 30; t.vx = 0; }
+
+  const footPit = inPit(t.x);
+  const groundHere = footPit ? H + 200 : GROUND_Y;
+
+  if(t.y >= groundHere){
+    t.y = groundHere;
+    t.vy = 0;
+    t.onGround = true;
+    if(footPit){ // 掉坑
+      loseLife();
+      return;
+    }
+  } else {
+    t.onGround = false;
+  }
+
+  // 金币
+  for(const c of state.coins){
+    if(c.got) continue;
+    const dx = t.x - c.x, dy = (t.y - 30) - c.y;
+    if(Math.abs(dx) < 40 && Math.abs(dy) < 45){ c.got = true; state.score += 2; updateHUD(); }
+  }
+
+  // 到达终点
+  if(!state.reached && t.x >= state.goalX){
+    state.reached = true;
+    levelClear();
+  }
+
+  // 镜头
+  const targetCam = Math.max(0, Math.min(state.worldW - W, t.x - W*0.35));
+  state.cameraX += (targetCam - state.cameraX) * 0.12;
+
+  t.angle += t.vx * 0.04;
+}
+
+function jump(){
+  if(!state.playing) return;
+  const t = state.tank;
+  if(t.onGround){ t.vy = JUMP_V; t.onGround = false; }
+}
+
+function loseLife(){
+  state.life--;
+  updateHUD();
+  if(state.life <= 0){ gameOver(); return; }
+  // 重生到本关安全点（最近已通过的平地）
+  const t = state.tank;
+  let rx = 120;
+  for(const p of state.pits){ if(p.x + p.w < t.x) rx = p.x + p.w + 60; }
+  t.x = rx; t.y = GROUND_Y; t.vx = 0; t.vy = 0; t.onGround = true;
+  state.cameraX = Math.max(0, rx - W*0.35);
+  flash();
+}
+
+function flash(){
+  const o = el('overlay');
+  // 简单闪屏：canvas 变红
+  cv.style.boxShadow = '0 0 0 4px #ff4444';
+  setTimeout(()=>cv.style.boxShadow='', 300);
+}
+
+function updateHUD(){
+  el('lv').textContent = state.level;
+  el('score').textContent = state.score;
+  el('time').textContent = state.time;
+  el('life').textContent = state.life;
+}
+
+function startLevel(lv){
+  if(lv > MAX_LEVEL) lv = MAX_LEVEL;
+  state.level = lv;
+  state.life = 3;
+  state.time = 0;
+  state.playing = true;
+  buildLevel(lv);
+  el('overlay').classList.add('hidden');
+  updateHUD();
+  clearInterval(state.tick);
+  state.tick = setInterval(()=>{ if(state.playing){ state.time++; updateHUD(); } }, 1000);
+}
+
+function stopAll(){ clearInterval(state.tick); state.playing = false; }
+
+function levelClear(){
+  stopAll();
+  state.score += 10;
+  updateHUD();
+  if(state.level >= MAX_LEVEL){
+    showOverlay('🎉 全部通关！', `你驾驶坦克闯过了全部 ${MAX_LEVEL} 关！<br>总得分 <b style="color:#ffd700">${state.score}</b><br>王牌坦克手！👑`, '🔄 再玩一次', ()=>{ state.score=0; startLevel(1); });
+  } else {
+    showOverlay(`✅ 第 ${state.level} 关通过！`, `用时 <b style="color:#ffd700">${state.time}s</b> · 总分 <b style="color:#ffd700">${state.score}</b><br>下一关壕沟更宽更密…`, '➡️ 下一关', ()=>startLevel(state.level+1));
+  }
+}
+
+function gameOver(){
+  stopAll();
+  showOverlay('💀 挑战失败', `坦克损毁！到达第 <b style="color:#ffd700">${state.level}</b> 关 · 总分 <b style="color:#ffd700">${state.score}</b>`, '🔄 重新挑战', ()=>{ state.score=0; startLevel(1); });
+}
+
+function showOverlay(title, html, btnText, cb){
+  const o = el('overlay');
+  o.classList.remove('hidden');
+  o.querySelector('h2').textContent = title;
+  o.querySelector('p').innerHTML = html;
+  const b = o.querySelector('.btn');
+  b.textContent = btnText;
+  b.onclick = cb;
+}
+
+// ---------- 渲染 ----------
+function draw(){
+  const cam = state.cameraX;
+  ctx.clearRect(0,0,W,H);
+
+  // 天空渐变
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#101a33'); sky.addColorStop(1,'#1d2f4a');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+
+  // 远山
+  ctx.fillStyle = '#17263d';
+  for(let i=0;i<6;i++){
+    const mx = ((i*420 - cam*0.3) % (W+420) + W+420) % (W+420) - 210;
+    ctx.beginPath();
+    ctx.moveTo(mx-160, GROUND_Y);
+    ctx.lineTo(mx, GROUND_Y-120);
+    ctx.lineTo(mx+160, GROUND_Y);
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(-cam, 0);
+
+  // 地面（分段绘制，跳过坑）
+  ctx.fillStyle = '#3f6a2b';
+  const segs = [];
+  let start = cam - 50;
+  const end = cam + W + 50;
+  let cur = start;
+  const allPits = state.pits.slice().sort((a,b)=>a.x-b.x);
+  for(const p of allPits){
+    if(p.w <= 0) continue;
+    if(p.x > end) break;
+    if(p.x + p.w <= start) continue;
+    if(p.x > cur){ segs.push([cur, Math.min(p.x, end)]); }
+    cur = Math.max(cur, p.x + p.w);
+  }
+  if(cur < end) segs.push([cur, end]);
+
+  for(const [a,b] of segs){
+    if(b<=a) continue;
+    ctx.fillStyle = '#3f6a2b';
+    ctx.fillRect(a, GROUND_Y, b-a, H-GROUND_Y);
+    ctx.fillStyle = '#5a9440';
+    ctx.fillRect(a, GROUND_Y, b-a, 10);
+    // 草纹
+    ctx.fillStyle = '#345c24';
+    ctx.fillRect(a, GROUND_Y+30, b-a, 6);
+  }
+  // 坑壁
+  for(const p of allPits){
+    if(p.x+p.w < cam-20 || p.x > cam+W+20) continue;
+    ctx.fillStyle = '#120b06';
+    ctx.fillRect(p.x, GROUND_Y, p.w, H-GROUND_Y);
+    ctx.fillStyle = '#3a2415';
+    ctx.fillRect(p.x, GROUND_Y, 8, H-GROUND_Y);
+    ctx.fillRect(p.x+p.w-8, GROUND_Y, 8, H-GROUND_Y);
+    // 危险条纹
+    ctx.fillStyle = '#c9a100';
+    for(let sx=p.x; sx<p.x+p.w; sx+=20){
+      ctx.fillRect(sx, GROUND_Y+4, 10, 5);
+    }
+  }
+
+  // 装饰
+  for(const s of state.scenery){
+    if(s.x < cam-60 || s.x > cam+W+60) continue;
+    if(s.type==='tree'){
+      ctx.fillStyle='#5a3a1a'; ctx.fillRect(s.x-5, GROUND_Y-38, 10, 38);
+      ctx.fillStyle='#2f6b30'; ctx.beginPath(); ctx.arc(s.x, GROUND_Y-52, 26, 0, 7); ctx.fill();
+      ctx.fillStyle='#3e8a3f'; ctx.beginPath(); ctx.arc(s.x-8, GROUND_Y-60, 16, 0, 7); ctx.fill();
+    } else {
+      ctx.fillStyle='#2c5c28'; ctx.beginPath(); ctx.arc(s.x, GROUND_Y-8, 14, Math.PI, 0); ctx.fill();
+    }
+  }
+
+  // 金币
+  for(const c of state.coins){
+    if(c.got) continue;
+    if(c.x < cam-40 || c.x > cam+W+40) continue;
+    ctx.fillStyle='#ffd700';
+    ctx.beginPath(); ctx.arc(c.x, c.y, 11, 0, 7); ctx.fill();
+    ctx.strokeStyle='#b38600'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='#a87d00'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('★', c.x, c.y+5);
+  }
+
+  // 终点旗帜
+  const gx = state.goalX;
+  if(gx > cam-60 && gx < cam+W+60){
+    ctx.strokeStyle='#ddd'; ctx.lineWidth=5;
+    ctx.beginPath(); ctx.moveTo(gx, GROUND_Y); ctx.lineTo(gx, GROUND_Y-110); ctx.stroke();
+    // 方格旗
+    const fw=60, fh=36;
+    for(let r=0;r<3;r++) for(let cc=0;cc<5;cc++){
+      ctx.fillStyle = (r+cc)%2 ? '#fff' : '#111';
+      ctx.fillRect(gx+2+cc*fw/5, GROUND_Y-110+r*fh/3, fw/5, fh/3);
+    }
+  }
+
+  // 坦克
+  drawTank(state.tank.x, state.tank.y, state.tank.vx);
+
+  ctx.restore();
+}
+
+function drawTank(x, y, vx){
+  ctx.save();
+  ctx.translate(x, y);
+  // 履带
+  ctx.fillStyle = '#23282e';
+  roundRect(-32, -16, 64, 18, 9);
+  // 轮子
+  ctx.fillStyle = '#454b52';
+  for(let i=-2;i<=2;i++){
+    ctx.beginPath(); ctx.arc(i*13, -8, 6, 0, 7); ctx.fill();
+  }
+  // 车身
+  ctx.fillStyle = '#4a7a3a';
+  roundRect(-28, -34, 56, 20, 5);
+  // 炮塔
+  ctx.fillStyle = '#3c6530';
+  roundRect(-14, -46, 28, 14, 6);
+  // 炮管
+  const dir = vx >= 0 ? 1 : -1;
+  ctx.strokeStyle = '#2b4a22'; ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(dir*6, -40);
+  ctx.lineTo(dir*40, -46);
+  ctx.stroke();
+  // 高光
+  ctx.fillStyle = 'rgba(255,255,255,.18)';
+  roundRect(-28, -34, 56, 6, 3);
+  ctx.restore();
+}
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath(); ctx.fill();
+}
+
+// ---------- 主循环 ----------
+let last = 0;
+function loop(ts){
+  const dt = Math.min(32, ts - last); last = ts;
+  if(state.playing) update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ---------- 输入 ----------
+addEventListener('keydown', e=>{
+  if(e.code==='ArrowLeft') state.keys.left = true;
+  if(e.code==='ArrowRight') state.keys.right = true;
+  if(e.code==='Space'||e.code==='ArrowUp'){ e.preventDefault(); jump(); }
+});
+addEventListener('keyup', e=>{
+  if(e.code==='ArrowLeft') state.keys.left = false;
+  if(e.code==='ArrowRight') state.keys.right = false;
+});
+function bindHold(id, key){
+  const b = el(id);
+  const on = e=>{ e.preventDefault(); state.keys[key]=true; };
+  const off = e=>{ state.keys[key]=false; };
+  b.addEventListener('pointerdown', on);
+  b.addEventListener('pointerup', off);
+  b.addEventListener('pointerleave', off);
+  b.addEventListener('pointercancel', off);
+}
+bindHold('leftBtn','left');
+bindHold('rightBtn','right');
+el('jumpBtn').addEventListener('pointerdown', e=>{ e.preventDefault(); jump(); });
+cv.addEventListener('pointerdown', e=>{ e.preventDefault(); jump(); });
+
+// ---------- 启动 ----------
+buildLevel(1);
+updateHUD();
+showOverlay('🛡️ 坦克跳坑', `共 <b style="color:#ffd700">${MAX_LEVEL}</b> 关，驾驶坦克冲过一道道壕沟抵达旗帜。<br>🟡 金币 +2 分 · 🏁 到旗过关 +10 分 · 掉坑损失 1 条命<br>空格/↑/点画面 跳跃，←→ 或按钮移动`, '🚀 开始闯关', ()=>startLevel(1));
+requestAnimationFrame(ts=>{ last=ts; requestAnimationFrame(loop); });
+</script>
 </body>
 </html>
