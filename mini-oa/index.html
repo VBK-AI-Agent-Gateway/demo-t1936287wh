@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>极简 OA 办公系统</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-d:#1d4ed8; --blue-l:#eff6ff;
+    --bg:#f4f7fc; --card:#fff; --text:#1e293b; --muted:#64748b;
+    --green:#16a34a; --red:#dc2626; --amber:#d97706;
+    --radius:14px; --shadow:0 4px 18px rgba(30,64,175,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"PingFang SC","Microsoft YaHei",sans-serif;}
+  body{background:var(--bg);color:var(--text);min-height:100vh;}
+
+  /* ===== 顶部状态栏 ===== */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(90deg,#1e3a8a,#2563eb);
+    color:#fff;padding:0 18px;height:60px;
+    display:flex;align-items:center;justify-content:space-between;
+    box-shadow:0 2px 12px rgba(30,58,138,.35);
+  }
+  .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;letter-spacing:1px;}
+  .logo .dot{width:12px;height:12px;border-radius:50%;background:#60a5fa;box-shadow:0 0 10px #93c5fd;}
+  .user-area{display:flex;align-items:center;gap:12px;}
+  .now-user{font-size:13px;opacity:.9;}
+  .now-user b{color:#fde68a;}
+  .role-switch{
+    display:flex;background:rgba(255,255,255,.15);border-radius:30px;padding:4px;gap:4px;
+  }
+  .role-switch button{
+    border:none;background:transparent;color:#dbeafe;font-size:13px;
+    padding:7px 14px;border-radius:30px;cursor:pointer;transition:.2s;white-space:nowrap;
+  }
+  .role-switch button.active{background:#fff;color:var(--blue-d);font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+
+  /* ===== 布局 ===== */
+  .layout{display:flex;max-width:1200px;margin:20px auto;padding:0 14px;gap:18px;}
+  nav{
+    width:200px;flex-shrink:0;background:var(--card);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px;height:fit-content;position:sticky;top:80px;
+  }
+  nav button{
+    width:100%;display:flex;align-items:center;gap:10px;border:none;background:transparent;
+    padding:13px 14px;border-radius:10px;font-size:15px;color:var(--text);cursor:pointer;
+    margin-bottom:6px;transition:.15s;text-align:left;
+  }
+  nav button:hover{background:var(--blue-l);}
+  nav button.active{background:var(--blue);color:#fff;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.35);}
+  nav .badge{
+    margin-left:auto;background:var(--red);color:#fff;font-size:11px;font-weight:700;
+    min-width:20px;height:20px;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:0 5px;
+  }
+  nav button.active .badge{background:#fff;color:var(--red);}
+
+  main{flex:1;min-width:0;}
+  .page{display:none;animation:fade .25s;}
+  .page.show{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:18px;}
+  .card h2{font-size:18px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .card h2::before{content:"";width:4px;height:18px;background:var(--blue);border-radius:4px;}
+  .card .sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:18px;}
+  .stat{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;}
+  .stat .num{font-size:28px;font-weight:800;color:var(--blue);}
+  .stat .lab{font-size:13px;color:var(--muted);margin-top:4px;}
+  .stat.g .num{color:var(--green);} .stat.a .num{color:var(--amber);} .stat.r .num{color:var(--red);}
+
+  /* 打卡 */
+  .clock-face{font-size:44px;font-weight:800;color:var(--blue-d);letter-spacing:2px;text-align:center;}
+  .clock-date{color:var(--muted);text-align:center;font-size:14px;margin-bottom:18px;}
+  .punch-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .btn{
+    border:none;border-radius:10px;padding:13px 30px;font-size:15px;font-weight:700;
+    cursor:pointer;transition:.15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.35);}
+  .btn-primary:hover{background:var(--blue-d);}
+  .btn-primary:disabled{background:#93c5fd;cursor:not-allowed;box-shadow:none;}
+  .btn-green{background:var(--green);color:#fff;}
+  .btn-red{background:var(--red);color:#fff;}
+  .btn-ghost{background:var(--blue-l);color:var(--blue-d);}
+  .btn-sm{padding:7px 16px;font-size:13px;border-radius:8px;}
+
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{background:var(--blue-l);color:var(--blue-d);text-align:left;padding:11px 12px;font-size:13px;white-space:nowrap;}
+  td{padding:11px 12px;border-bottom:1px solid #eef2f7;}
+  tr:last-child td{border-bottom:none;}
+  .tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+  .tag.ok{background:#dcfce7;color:#15803d;}
+  .tag.late{background:#fef3c7;color:#b45309;}
+  .tag.pending{background:#fef9c3;color:#a16207;}
+  .tag.approved{background:#dcfce7;color:#15803d;}
+  .tag.rejected{background:#fee2e2;color:#b91c1c;}
+  .tag.done{background:#e0e7ff;color:#3730a3;}
+  .empty{color:var(--muted);text-align:center;padding:30px 0;font-size:14px;}
+
+  /* 表单 */
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .field input,.field select,.field textarea{
+    width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:11px 12px;font-size:14px;
+    background:#fbfdff;transition:.15s;color:var(--text);
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  .field textarea{resize:vertical;min-height:80px;}
+
+  /* 公告 */
+  .notice{border-left:4px solid var(--blue);background:var(--blue-l);border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:12px;}
+  .notice h4{font-size:15px;margin-bottom:5px;}
+  .notice p{font-size:14px;color:#334155;line-height:1.7;}
+  .notice .meta{font-size:12px;color:var(--muted);margin-top:8px;}
+  .notice.warn{border-color:var(--amber);background:#fffbeb;}
+  .notice.urgent{border-color:var(--red);background:#fef2f2;}
+
+  /* toast */
+  #toast{
+    position:fixed;left:50%;top:74px;transform:translateX(-50%) translateY(-20px);
+    background:#0f172a;color:#fff;padding:12px 26px;border-radius:30px;font-size:14px;
+    opacity:0;pointer-events:none;transition:.3s;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.3);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  footer{text-align:center;color:#94a3b8;font-size:12px;padding:20px 0 30px;}
+
+  /* 响应式 */
+  @media (max-width:820px){
+    .layout{flex-direction:column;padding:0 10px;}
+    nav{width:100%;position:static;display:flex;gap:6px;overflow-x:auto;padding:8px;}
+    nav button{margin-bottom:0;white-space:nowrap;justify-content:center;padding:11px 14px;}
+    nav button .badge{margin-left:4px;}
+    header{flex-direction:column;height:auto;padding:10px;gap:8px;align-items:stretch;}
+    .user-area{justify-content:space-between;}
+    .role-switch{flex:1;justify-content:center;}
+    .role-switch button{flex:1;padding:8px 6px;font-size:12px;}
+    .clock-face{font-size:36px;}
+    table{font-size:13px;}
+    th,td{padding:9px 7px;}
+    .hide-sm{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="dot"></span>极简 OA 办公系统</div>
+  <div class="user-area">
+    <div class="now-user">当前身份：<b id="roleName">普通员工 · 张伟（市场部）</b></div>
+    <div class="role-switch" id="roleSwitch">
+      <button data-role="staff" class="active">👤 普通员工</button>
+      <button data-role="manager">📋 部门经理</button>
+      <button data-role="admin">⚙️ 系统管理员</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="nav">
+    <button data-page="home" class="active">🏠 工作台</button>
+    <button data-page="attend">🕒 考勤打卡</button>
+    <button data-page="flow">📄 流程审批<span class="badge" id="flowBadge" style="display:none">0</span></button>
+    <button data-page="notice">📢 通知公告</button>
+    <button data-page="myflow">🧾 我的申请</button>
+  </nav>
+
+  <main>
+    <!-- ===== 工作台 ===== -->
+    <section class="page show" id="page-home">
+      <div class="stats" id="homeStats"></div>
+      <div class="card">
+        <h2>今日概览</h2>
+        <div class="sub">数据实时来自本地存储，刷新不丢失</div>
+        <div id="homeToday"></div>
+      </div>
+      <div class="card">
+        <h2>最新公告</h2>
+        <div class="sub">公司重要通知一览</div>
+        <div id="homeNotices"></div>
+      </div>
+    </section>
+
+    <!-- ===== 考勤打卡 ===== -->
+    <section class="page" id="page-attend">
+      <div class="card">
+        <h2>一键打卡</h2>
+        <div class="sub">工作日 09:00 前打卡为正常，之后为迟到；18:00 后可打下班卡</div>
+        <div class="clock-face" id="liveClock">--:--:--</div>
+        <div class="clock-date" id="liveDate"></div>
+        <div class="punch-row">
+          <button class="btn btn-primary" id="punchIn">🟢 打上班卡</button>
+          <button class="btn btn-green" id="punchOut">🔵 打下班卡</button>
+        </div>
+        <div style="text-align:center;margin-top:14px;font-size:14px;color:var(--muted)" id="punchStatus"></div>
+      </div>
+      <div class="card">
+        <h2>本月打卡记录</h2>
+        <div class="sub" id="attendSummary"></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>日期</th><th>上班时间</th><th>状态</th><th>下班时间</th></tr></thead>
+            <tbody id="attendTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 流程审批（经理） ===== -->
+    <section class="page" id="page-flow">
+      <div class="card">
+        <h2>待办审批</h2>
+        <div class="sub" id="flowSub">切换为「部门经理」身份可审批；员工身份可提交新申请</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>申请人</th><th>类型</th><th>事由</th><th class="hide-sm">金额/天数</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody id="flowTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" id="applyCard">
+        <h2>提交新申请</h2>
+        <div class="sub">选择类型并填写事由，提交后等待经理审批</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>申请类型</label>
+            <select id="afType">
+              <option value="leave">请假</option>
+              <option value="expense">报销</option>
+              <option value="general">通用审批</option>
+            </select>
+          </div>
+          <div class="field">
+            <label id="afAmountLab">天数</label>
+            <input id="afAmount" type="number" min="0" step="0.5" placeholder="如 1 或 500">
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:16px">
+          <label>事由说明</label>
+          <textarea id="afReason" placeholder="请填写具体事由…"></textarea>
+        </div>
+        <button class="btn btn-primary" id="afSubmit">提交申请</button>
+      </div>
+    </section>
+
+    <!-- ===== 我的申请 ===== -->
+    <section class="page" id="page-myflow">
+      <div class="card">
+        <h2>我的申请记录</h2>
+        <div class="sub">查看本人提交的所有流程及审批结果</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>类型</th><th>事由</th><th class="hide-sm">金额/天数</th><th>提交时间</th><th>状态</th></tr></thead>
+            <tbody id="myFlowTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 通知公告 ===== -->
+    <section class="page" id="page-notice">
+      <div class="card" id="noticePublish">
+        <h2>发布公告（管理员专属）</h2>
+        <div class="sub">发布后所有员工实时可见</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>公告标题</label>
+            <input id="ntTitle" placeholder="如：关于春节放假安排的通知">
+          </div>
+          <div class="field">
+            <label>级别</label>
+            <select id="ntLevel">
+              <option value="normal">普通</option>
+              <option value="warn">重要</option>
+              <option value="urgent">紧急</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:16px">
+          <label>公告内容</label>
+          <textarea id="ntBody" placeholder="公告正文…"></textarea>
+        </div>
+        <button class="btn btn-primary" id="ntSubmit">发布公告</button>
+      </div>
+      <div class="card">
+        <h2>全部公告</h2>
+        <div class="sub">按发布时间倒序展示</div>
+        <div id="noticeList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>极简 OA 办公系统 · 单文件版 · 数据保存在浏览器 LocalStorage</footer>
+<div id="toast"></div>
+
+<script>
+/* ================= 基础工具 ================= */
+const $ = id => document.getElementById(id);
+const DB = {
+  get(k, def){ try{ const v = localStorage.getItem('oa_'+k); return v ? JSON.parse(v) : def; }catch(e){ return def; } },
+  set(k, v){ localStorage.setItem('oa_'+k, JSON.stringify(v)); }
+};
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function fmtTime(d){
+  const p = n => String(n).padStart(2,'0');
+  return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+function fmtDate(d){
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ================= 角色 ================= */
+const ROLES = {
+  staff:{ name:'普通员工 · 张伟（市场部）', user:'张伟', dept:'市场部' },
+  manager:{ name:'部门经理 · 李强（市场部）', user:'李强', dept:'市场部' },
+  admin:{ name:'系统管理员 · 王芳（行政部）', user:'王芳', dept:'行政部' }
+};
+let role = DB.get('role', 'staff');
+
+function setRole(r){
+  role = r; DB.set('role', r);
+  document.querySelectorAll('#roleSwitch button').forEach(b=>b.classList.toggle('active', b.dataset.role===r));
+  $('roleName').textContent = ROLES[r].name;
+  $('applyCard').style.display = (r==='admin') ? 'none' : '';
+  $('noticePublish').style.display = (r==='admin') ? '' : 'none';
+  $('flowSub').textContent = r==='manager' ? '✅ 经理身份：可对下方待办申请进行 同意/拒绝 操作'
+    : (r==='admin' ? '管理员可查看全部流程状态（仅经理可审批）' : '提交申请后等待部门经理审批');
+  renderAll();
+}
+
+document.querySelectorAll('#roleSwitch button').forEach(b=>{
+  b.addEventListener('click', ()=>{ setRole(b.dataset.role); toast('已切换为：'+ROLES[b.dataset.role].name); });
+});
+
+/* ================= 导航 ================= */
+document.querySelectorAll('#nav button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x===b));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+    $('page-'+b.dataset.page).classList.add('show');
+    renderAll();
+  });
+});
+
+/* ================= 考勤 ================= */
+function todayKey(){ return fmtDate(new Date()); }
+function getAtt(){ return DB.get('att', {}); }          // { '2025-01-01': {in:'08:59:00', out:'18:05:00'} }
+function setAtt(a){ DB.set('att', a); }
+
+$('punchIn').addEventListener('click', ()=>{
+  const now = new Date(), k = todayKey(), att = getAtt();
+  if(att[k] && att[k].in){ toast('今天已打过上班卡（'+att[k].in+'）'); return; }
+  att[k] = att[k] || {}; att[k].in = fmtTime(now);
+  setAtt(att);
+  const late = now.getHours()*60+now.getMinutes() > 9*60;
+  toast(late ? '打卡成功，但已迟到 ⏰' : '上班打卡成功，状态正常 ✅');
+  renderAttend(); renderHome();
+});
+$('punchOut').addEventListener('click', ()=>{
+  const now = new Date(), k = todayKey(), att = getAtt();
+  if(!att[k] || !att[k].in){ toast('请先打上班卡'); return; }
+  if(att[k].out){ toast('今天已打过下班卡（'+att[k].out+'）'); return; }
+  att[k].out = fmtTime(now);
+  setAtt(att);
+  toast('下班打卡成功 🎉');
+  renderAttend(); renderHome();
+});
+
+function renderAttend(){
+  const now = new Date(), k = todayKey(), att = getAtt(), today = att[k] || {};
+  $('punchStatus').innerHTML = today.in
+    ? '上班卡：'+today.in+(isLate(today.in)?' <span class="tag late">迟到</span>':' <span class="tag ok">正常</span>')
+      + (today.out ? ' ｜ 下班卡：'+today.out : ' ｜ 尚未打下班卡')
+    : '今天还未打卡';
+  $('punchIn').disabled = !!today.in;
+  $('punchOut').disabled = !(today.in) || !!today.out;
+
+  const month = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const rows = Object.entries(att).filter(([d])=>d.startsWith(month)).sort((a,b)=>b[0].localeCompare(a[0]));
+  let lateCnt = 0, okCnt = 0;
+  $('attendTable').innerHTML = rows.length ? rows.map(([d,v])=>{
+    const late = v.in && isLate(v.in); late?lateCnt++:(v.in?okCnt++:0);
+    return `<tr><td>${d}</td><td>${v.in||'-'}</td>
+      <td>${v.in ? (late?'<span class="tag late">迟到</span>':'<span class="tag ok">正常</span>'):'-'}</td>
+      <td>${v.out||'-'}</td></tr>`;
+  }).join('') : '<tr><td colspan="4" class="empty">本月暂无打卡记录</td></tr>';
+  $('attendSummary').textContent = `本月出勤 ${rows.length} 天 · 正常 ${okCnt} 天 · 迟到 ${lateCnt} 天`;
+}
+function isLate(t){
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m > 9*60;
+}
+
+/* 实时时钟 */
+function tickClock(){
+  const d = new Date();
+  $('liveClock').textContent = fmtTime(d);
+  const wk = ['日','一','二','三','四','五','六'][d.getDay()];
+  $('liveDate').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 星期${wk}`;
+}
+setInterval(tickClock, 1000); tickClock();
+
+/* ================= 流程审批 ================= */
+function getFlows(){ return DB.get('flows', seedFlows()); }
+function setFlows(f){ DB.set('flows', f); }
+function seedFlows(){
+  const f = [
+    {id:1, user:'张伟', type:'leave', reason:'家中有事，申请事假一天', amount:'1 天', time:'09:12', status:'pending'},
+    {id:2, user:'赵敏', type:'expense', reason:'客户拜访打车费报销', amount:'¥ 128', time:'10:35', status:'pending'},
+    {id:3, user:'刘洋', type:'general', reason:'申请领用办公笔记本一台', amount:'1 台', time:'11:20', status:'pending'},
+    {id:4, user:'张伟', type:'expense', reason:'部门团建餐费', amount:'¥ 860', time:'昨天 16:40', status:'approved'},
+  ];
+  setFlows(f); return f;
+}
+const TYPE_NAME = {leave:'请假', expense:'报销', general:'通用审批'};
+
+$('afType').addEventListener('change', ()=>{
+  $('afAmountLab').textContent = $('afType').value==='leave' ? '天数' : ($('afType').value==='expense' ? '金额（元）' : '数量');
+});
+$('afSubmit').addEventListener('click', ()=>{
+  const reason = $('afReason').value.trim();
+  const amount = $('afAmount').value.trim();
+  if(!reason){ toast('请填写事由说明'); return; }
+  const f = getFlows();
+  f.unshift({
+    id: Date.now(), user: ROLES[role].user, type: $('afType').value, reason,
+    amount: amount ? ($('afType').value==='expense' ? '¥ '+amount : amount) : '-',
+    time: fmtTime(new Date()).slice(0,5), status:'pending'
+  });
+  setFlows(f);
+  $('afReason').value = ''; $('afAmount').value = '';
+  toast('申请已提交，等待经理审批 ✅');
+  renderFlow(); renderMyFlow(); renderHome(); updateBadge();
+});
+
+function decide(id, st){
+  const f = getFlows();
+  const item = f.find(x=>x.id===id);
+  if(!item) return;
+  if(st==='rejected' && !confirm('确认拒绝该申请？')) return;
+  item.status = st; item.by = ROLES[role].user;
+  setFlows(f);
+  toast(st==='approved' ? '已同意该申请 ✅' : '已拒绝该申请 ❌');
+  renderFlow(); renderMyFlow(); renderHome(); updateBadge();
+}
+
+function flowRow(v, withOps){
+  const stTag = {pending:'<span class="tag pending">待审批</span>', approved:'<span class="tag approved">已同意</span>', rejected:'<span class="tag rejected">已拒绝</span>'}[v.status];
+  const ops = withOps && v.status==='pending' && role==='manager'
+    ? `<button class="btn btn-green btn-sm" onclick="decide(${v.id},'approved')">同意</button>
+       <button class="btn btn-red btn-sm" onclick="decide(${v.id},'rejected')">拒绝</button>` : (v.by ? `<span style="font-size:12px;color:var(--muted)">${esc(v.by)}</span>` : '-');
+  return `<tr><td>${esc(v.user)}</td><td>${TYPE_NAME[v.type]}</td><td>${esc(v.reason)}</td>
+    <td class="hide-sm">${esc(v.amount)}</td><td>${esc(v.time)}</td><td>${stTag}</td><td>${ops}</td></tr>`;
+}
+
+function renderFlow(){
+  const f = getFlows();
+  $('flowTable').innerHTML = f.length ? f.map(v=>flowRow(v, true)).join('')
+    : '<tr><td colspan="7" class="empty">暂无申请记录</td></tr>';
+}
+function renderMyFlow(){
+  const me = ROLES[role].user;
+  const f = getFlows().filter(v=>v.user===me);
+  $('myFlowTable').innerHTML = f.length ? f.map(v=>`<tr><td>${TYPE_NAME[v.type]}</td><td>${esc(v.reason)}</td>
+    <td class="hide-sm">${esc(v.amount)}</td><td>${esc(v.time)}</td>
+    <td>${{pending:'<span class="tag pending">待审批</span>',approved:'<span class="tag approved">已同意</span>',rejected:'<span class="tag rejected">已拒绝</span>'}[v.status]}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">您还没有提交过申请</td></tr>';
+}
+function updateBadge(){
+  const n = getFlows().filter(v=>v.status==='pending').length;
+  const b = $('flowBadge');
+  b.style.display = n ? 'flex' : 'none'; b.textContent = n;
+}
+
+/* ================= 公告 ================= */
+function getNotices(){ return DB.get('notices', seedNotices()); }
+function setNotices(n){ DB.set('notices', n); }
+function seedNotices(){
+  const n = [
+    {id:1, title:'关于 2026 年度年假方案的通知', body:'全体同事：本年度年假统一按入职时间折算，请登录系统在个人中心确认天数，如有疑问请联系行政部。', level:'normal', time:'09-20 10:00', by:'王芳'},
+    {id:2, title:'办公区网络维护提醒', body:'本周六 22:00-23:30 进行核心交换机升级，期间内网及 OA 系统可能短暂中断，请提前保存工作内容。', level:'warn', time:'09-22 14:30', by:'王芳'},
+    {id:3, title:'防火安全紧急演练', body:'明日 15:00 全楼消防演练，请各位同事听到警报后按疏散指示有序撤离，不要乘坐电梯。', level:'urgent', time:'09-23 08:15', by:'王芳'},
+  ];
+  setNotices(n); return n;
+}
+$('ntSubmit').addEventListener('click', ()=>{
+  const t = $('ntTitle').value.trim(), b = $('ntBody').value.trim();
+  if(!t || !b){ toast('请填写标题和内容'); return; }
+  const n = getNotices();
+  const d = new Date();
+  n.unshift({id:Date.now(), title:t, body:b, level:$('ntLevel').value,
+    time: String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+fmtTime(d).slice(0,5),
+    by: ROLES[role].user});
+  setNotices(n);
+  $('ntTitle').value=''; $('ntBody').value='';
+  toast('公告发布成功 📢');
+  renderNotice(); renderHome();
+});
+function noticeHTML(v){
+  return `<div class="notice ${v.level==='normal'?'':v.level}">
+    <h4>${v.level==='urgent'?'🚨 ':v.level==='warn'?'⚠️ ':''}${esc(v.title)}</h4>
+    <p>${esc(v.body)}</p>
+    <div class="meta">发布人：${esc(v.by)} ｜ ${esc(v.time)}</div>
+  </div>`;
+}
+function renderNotice(){
+  const n = getNotices();
+  $('noticeList').innerHTML = n.length ? n.map(noticeHTML).join('') : '<div class="empty">暂无公告</div>';
+}
+
+/* ================= 工作台 ================= */
+function renderHome(){
+  const att = getAtt(), k = todayKey(), today = att[k] || {};
+  const flows = getFlows();
+  const myPending = flows.filter(v=>v.status==='pending' && v.user===ROLES[role].user).length;
+  const allPending = flows.filter(v=>v.status==='pending').length;
+  const month = new Date();
+  const mk = month.getFullYear()+'-'+String(month.getMonth()+1).padStart(2,'0');
+  const days = Object.keys(att).filter(d=>d.startsWith(mk)).length;
+
+  $('homeStats').innerHTML = `
+    <div class="stat ${today.in?'':'a'}"><div class="num">${today.in?'✅':'⏰'}</div><div class="lab">${today.in?'今日已打卡':'今日未打卡'}</div></div>
+    <div class="stat g"><div class="num">${days}</div><div class="lab">本月出勤天数</div></div>
+    <div class="stat ${myPending?'a':''}"><div class="num">${myPending}</div><div class="lab">我的待审申请</div></div>
+    <div class="stat r"><div class="num">${role==='manager'?allPending:0}</div><div class="lab">${role==='manager'?'待我审批':'待经理审批'}</div></div>`;
+
+  $('homeToday').innerHTML = `
+    <table><tbody>
+      <tr><td style="color:var(--muted)">上班卡</td><td>${today.in || '未打卡'}</td>
+      <td style="color:var(--muted)">下班卡</td><td>${today.out || '未打卡'}</td></tr>
+      <tr><td style="color:var(--muted)">当前身份</td><td colspan="3">${ROLES[role].name}</td></tr>
+    </tbody></table>`;
+
+  $('homeNotices').innerHTML = getNotices().slice(0,3).map(noticeHTML).join('') || '<div class="empty">暂无公告</div>';
+}
+
+/* ================= 总渲染 ================= */
+function renderAll(){
+  renderHome(); renderAttend(); renderFlow(); renderMyFlow(); renderNotice(); updateBadge();
+}
+setRole(role);
+</script>
+</body>
+</html>
