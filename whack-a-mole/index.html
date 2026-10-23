@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>闯关打地鼠</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #1a2a4a 0%, #2d4a2a 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #fff;
+    overflow-x: hidden;
+  }
+  h1 { margin: 16px 0 4px; font-size: 28px; text-shadow: 0 3px 6px rgba(0,0,0,.5); letter-spacing: 4px; }
+  .subtitle { font-size: 13px; color: #ffd700; margin-bottom: 10px; }
+
+  .hud {
+    display: flex; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center;
+    background: rgba(0,0,0,.35); padding: 8px 18px; border-radius: 30px;
+  }
+  .hud .item { font-size: 14px; display: flex; align-items: center; gap: 5px; }
+  .hud b { color: #ffd700; font-size: 18px; min-width: 30px; display: inline-block; }
+
+  .board {
+    position: relative;
+    width: min(92vw, 560px);
+    aspect-ratio: 1;
+    background:
+      radial-gradient(circle at 50% 120%, #5a8f3c 0%, #3f7a2b 60%, #2f5e1f 100%);
+    border-radius: 24px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55), inset 0 0 60px rgba(0,0,0,.35);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding: 5%;
+    gap: 3%;
+  }
+  .hole {
+    position: relative;
+    background: radial-gradient(ellipse at 50% 65%, #3a2415 0%, #241408 55%, #1a0e05 100%);
+    border-radius: 50%;
+    box-shadow: inset 0 8px 14px rgba(0,0,0,.8), 0 4px 0 rgba(255,255,255,.08);
+    overflow: hidden;
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><text y='30' font-size='30'>🔨</text></svg>") 6 6, pointer;
+  }
+  .hole:active { transform: scale(.97); }
+
+  .mole {
+    position: absolute;
+    left: 50%; bottom: -8%;
+    width: 78%;
+    transform: translateX(-50%) translateY(105%);
+    transition: transform .16s cubic-bezier(.3,1.6,.5,1);
+    pointer-events: none;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,.5));
+    z-index: 2;
+  }
+  .hole.up .mole { transform: translateX(-50%) translateY(6%); }
+  .hole.hit .mole { transform: translateX(-50%) translateY(6%) rotate(20deg); filter: brightness(2) drop-shadow(0 0 8px #ff0); }
+
+  .hole.gold .mole { filter: drop-shadow(0 0 10px #ffd700); }
+  .hole.bomb .mole { filter: drop-shadow(0 0 10px #ff4444); }
+
+  .fx {
+    position: absolute; left: 50%; top: 30%; transform: translateX(-50%);
+    font-size: 34px; font-weight: 900; pointer-events: none; z-index: 5;
+    animation: fxUp .6s ease-out forwards; text-shadow: 0 2px 4px rgba(0,0,0,.6);
+  }
+  @keyframes fxUp {
+    0% { opacity: 0; transform: translate(-50%, 20px) scale(.5); }
+    30% { opacity: 1; transform: translate(-50%, -10px) scale(1.15); }
+    100% { opacity: 0; transform: translate(-50%, -55px) scale(1); }
+  }
+
+  .overlay {
+    position: absolute; inset: 0; background: rgba(10,15,30,.88);
+    border-radius: 24px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; z-index: 10;
+    text-align: center; padding: 20px;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h2 { font-size: 34px; color: #ffd700; text-shadow: 0 3px 8px rgba(0,0,0,.6); }
+  .overlay p { font-size: 16px; line-height: 1.8; color: #dfe8ff; max-width: 420px; }
+  .btn {
+    padding: 13px 42px; font-size: 19px; font-weight: 700; border: none; cursor: pointer;
+    background: linear-gradient(180deg, #ffd700, #ff9500); color: #4a2800;
+    border-radius: 40px; box-shadow: 0 6px 0 #b36600, 0 10px 20px rgba(0,0,0,.4);
+    transition: .1s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #b36600; }
+
+  .progress-wrap { width: min(80vw, 420px); margin-top: 14px; }
+  .progress-label { font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; color: #b8d4ff; }
+  .progress {
+    height: 14px; background: rgba(0,0,0,.45); border-radius: 10px; overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.5);
+  }
+  .progress i {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, #38d965, #ffd700);
+    transition: width .3s;
+  }
+
+  .life { color: #ff5a7a; letter-spacing: 2px; }
+  .combo { color: #6ef0ff; }
+  .toast {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.85); padding: 10px 26px; border-radius: 30px;
+    font-size: 15px; z-index: 99; opacity: 0; transition: .3s; pointer-events: none;
+    border: 1px solid #ffd700;
+  }
+  .toast.show { opacity: 1; top: 34px; }
+</style>
+</head>
+<body>
+  <h1>🔨 闯关打地鼠</h1>
+  <div class="subtitle">Gold = +3分 · 💣炸弹扣命 · 连击有加成</div>
+
+  <div class="hud">
+    <div class="item">🏆 关卡 <b id="level">1</b>/10</div>
+    <div class="item">⭐ 得分 <b id="score">0</b></div>
+    <div class="item">🎯 目标 <b id="target">10</b></div>
+    <div class="item">⏱️ <b id="time">30</b>s</div>
+    <div class="item">生命 <span class="life" id="life">❤️❤️❤️</span></div>
+    <div class="item combo">🔥 <b id="combo">0</b></div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="progress-wrap">
+    <div class="progress-label"><span>本关进度</span><span id="progressText">0 / 10</span></div>
+    <div class="progress"><i id="progressBar"></i></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const HOLES = 9;
+const MAX_LEVEL = 10;
+const board = document.getElementById('board');
+const el = id => document.getElementById(id);
+
+const MOLE_SVG = `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="62" rx="34" ry="36" fill="#8a5a30"/><ellipse cx="50" cy="70" rx="24" ry="24" fill="#e8c39e"/><circle cx="38" cy="48" r="7" fill="#fff"/><circle cx="62" cy="48" r="7" fill="#fff"/><circle cx="39" cy="49" r="3.5" fill="#222"/><circle cx="63" cy="49" r="3.5" fill="#222"/><ellipse cx="50" cy="64" rx="8" ry="6" fill="#5a3a1a"/><ellipse cx="24" cy="40" rx="9" ry="13" fill="#8a5a30" transform="rotate(-25 24 40)"/><ellipse cx="76" cy="40" rx="9" ry="13" fill="#8a5a30" transform="rotate(25 76 40)"/><rect x="41" y="74" width="6" height="9" rx="3" fill="#fff"/><rect x="53" y="74" width="6" height="9" rx="3" fill="#fff"/></svg>`;
+const GOLD_SVG = `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="62" rx="34" ry="36" fill="#e6b800"/><ellipse cx="50" cy="70" rx="24" ry="24" fill="#ffe98a"/><circle cx="38" cy="48" r="7" fill="#fff"/><circle cx="62" cy="48" r="7" fill="#fff"/><circle cx="39" cy="49" r="3.5" fill="#3a2a00"/><circle cx="63" cy="49" r="3.5" fill="#3a2a00"/><ellipse cx="50" cy="64" rx="8" ry="6" fill="#a07d00"/><ellipse cx="50" cy="30" rx="14" ry="8" fill="#ffd700" stroke="#a07d00" stroke-width="2"/><text x="50" y="34" font-size="11" text-anchor="middle" fill="#7a5c00" font-weight="bold">$</text></svg>`;
+const BOMB_SVG = `<svg viewBox="0 0 100 100"><circle cx="50" cy="62" r="32" fill="#2b2b2b"/><circle cx="40" cy="52" r="9" fill="#555"/><rect x="47" y="24" width="6" height="12" fill="#7a4a1a"/><path d="M53 26 q12 -6 8 -18" stroke="#e07020" stroke-width="4" fill="none"/><circle cx="62" cy="7" r="5" fill="#ffcc00"/><text x="50" y="74" font-size="22" text-anchor="middle" fill="#ff4444" font-weight="bold">!</text></svg>`;
+
+let state = { level:1, score:0, target:10, time:30, life:3, combo:0, hits:0, playing:false, spawnTimer:null, tickTimer:null, active:new Set() };
+
+function buildBoard(){
+  board.innerHTML = '';
+  for(let i=0;i<HOLES;i++){
+    const h = document.createElement('div');
+    h.className='hole';
+    h.dataset.i = i;
+    h.innerHTML = `<div class="mole">${MOLE_SVG}</div>`;
+    h.addEventListener('pointerdown', e => whack(i, e));
+    board.appendChild(h);
+  }
+}
+
+function holeEl(i){ return board.children[i]; }
+
+function whack(i, e){
+  if(!state.playing) return;
+  const h = holeEl(i);
+  if(!h.classList.contains('up')) return;
+  const type = h.dataset.type;
+  if(type === 'bomb'){
+    h.classList.remove('up','bomb');
+    state.active.delete(i);
+    state.life--;
+    state.combo = 0;
+    fx(i, '💥 -1❤️', '#ff5a7a');
+    shake();
+    if(state.life<=0) return gameOver(false);
+  } else if(type === 'gold'){
+    hitMole(i, 3, '+3', '#ffd700');
+  } else {
+    state.combo++;
+    const bonus = state.combo>=5 ? 2 : 1;
+    hitMole(i, bonus, `+${bonus}`, '#7dff9a');
+  }
+  updateHUD();
+}
+
+function hitMole(i, pts, label, color){
+  const h = holeEl(i);
+  h.classList.add('hit');
+  fx(i, label + (state.combo>=5?' 💥x'+state.combo:''), color);
+  state.active.delete(i);
+  state.score += pts;
+  state.hits++;
+  setTimeout(()=>{ h.classList.remove('up','hit','gold'); h.dataset.type=''; }, 180);
+  updateHUD();
+}
+
+function fx(i, text, color){
+  const h = holeEl(i);
+  const s = document.createElement('span');
+  s.className='fx'; s.textContent=text; s.style.color=color;
+  h.appendChild(s);
+  setTimeout(()=>s.remove(), 620);
+}
+
+function shake(){
+  board.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:180});
+}
+
+function spawn(){
+  if(!state.playing) return;
+  const free = [...Array(HOLES).keys()].filter(i=>!state.active.has(i));
+  if(!free.length) return;
+  const i = free[Math.floor(Math.random()*free.length)];
+  const h = holeEl(i);
+  const r = Math.random();
+  let type = 'normal', life = Math.max(450, 1100 - state.level*65);
+  if(r < 0.12){ type='gold'; life = Math.max(350, life-200); }
+  else if(state.level>=3 && r < 0.12 + 0.10 + state.level*0.015){ type='bomb'; }
+  h.dataset.type = type;
+  h.classList.toggle('gold', type==='gold');
+  h.classList.toggle('bomb', type==='bomb');
+  h.querySelector('.mole').innerHTML = type==='gold'?GOLD_SVG : type==='bomb'?BOMB_SVG : MOLE_SVG;
+  h.classList.add('up');
+  state.active.add(i);
+  setTimeout(()=>{
+    if(state.active.has(i)){
+      h.classList.remove('up','gold','bomb');
+      state.active.delete(i);
+      if(type==='normal'||type==='gold'){ state.combo=0; updateHUD(); }
+    }
+  }, life);
+}
+
+function scheduleSpawn(){
+  clearInterval(state.spawnTimer);
+  const interval = Math.max(340, 950 - state.level*60);
+  state.spawnTimer = setInterval(()=>{ spawn(); if(state.level>=6 && Math.random()<0.4) spawn(); }, interval);
+}
+
+function updateHUD(){
+  el('level').textContent = state.level;
+  el('score').textContent = state.score;
+  el('target').textContent = state.target;
+  el('time').textContent = state.time;
+  el('combo').textContent = state.combo;
+  el('life').textContent = '❤️'.repeat(Math.max(0,state.life)) + '🖤'.repeat(Math.max(0,3-state.life));
+  const done = Math.min(state.hits, state.target);
+  el('progressText').textContent = `${done} / ${state.target}`;
+  el('progressBar').style.width = (done/state.target*100)+'%';
+}
+
+function startLevel(lv){
+  state.level = lv;
+  state.target = 8 + lv*4;
+  state.time = 30 + Math.min(lv*2, 20);
+  state.life = 3;
+  state.combo = 0;
+  state.hits = 0;
+  state.playing = true;
+  el('overlay').classList.add('hidden');
+  buildBoard();
+  updateHUD();
+  scheduleSpawn();
+  clearInterval(state.tickTimer);
+  state.tickTimer = setInterval(()=>{
+    state.time--;
+    if(state.time<=0){ return state.score>=state.target ? levelClear() : gameOver(false); }
+    updateHUD();
+  },1000);
+}
+
+function stopAll(){ clearInterval(state.spawnTimer); clearInterval(state.tickTimer); state.playing=false; state.active.clear(); }
+
+function levelClear(){
+  stopAll();
+  if(state.level >= MAX_LEVEL) return showOverlay('🎉 全部通关！', `你完成了全部 ${MAX_LEVEL} 关！<br>总得分 <b style="color:#ffd700">${state.score}</b><br>你是打地鼠之王！👑`, '🔄 再玩一次', ()=>{ state.score=0; startLevel(1); });
+  const bonus = state.score;
+  showOverlay(`✅ 第 ${state.level} 关通过！`, `目标达成！当前总分 <b style="color:#ffd700">${bonus}</b><br>下一关地鼠更快、炸弹更多…`, '➡️ 下一关', ()=>startLevel(state.level+1));
+}
+
+function gameOver(win){
+  stopAll();
+  showOverlay('💀 挑战失败', (state.life<=0?'生命值用尽！':'时间到，未达目标。')+`<br>到达第 <b style="color:#ffd700">${state.level}</b> 关 · 总分 <b style="color:#ffd700">${state.score}</b>`, '🔄 重新挑战', ()=>{ state.score=0; startLevel(1); });
+}
+
+function showOverlay(title, html, btnText, cb){
+  const o = el('overlay');
+  o.classList.remove('hidden');
+  o.querySelector('h2').textContent = title;
+  o.querySelector('p').innerHTML = html;
+  const b = o.querySelector('.btn');
+  b.textContent = btnText;
+  b.onclick = cb;
+}
+
+let toastT;
+function toast(msg){
+  const t = el('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+buildBoard();
+showOverlay('🔨 闯关打地鼠', `共 <b style="color:#ffd700">${MAX_LEVEL}</b> 关，每关在限时内打中目标数量即可过关。<br>🥉 普通地鼠 +1分 · 🥇金色地鼠 +3分 · 💣炸弹扣1生命<br>连续打中5只触发连击，得分翻倍！`, '🚀 开始闯关', ()=>startLevel(1));
+</script>
+</body>
+</html>
